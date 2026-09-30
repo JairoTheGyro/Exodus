@@ -58,9 +58,9 @@ $dataArgs = @(
     "--add-data", "static;static",
     "--add-data", "scripts;scripts",
     "--add-data", "mcp_servers;mcp_servers",
-    "--add-data", "services/hwfit/data;services/hwfit/data",
+    "--add-data", "services/hwfit/catalogs;services/hwfit/catalogs",
     "--add-data", "config;config",
-    "--add-data", ".env.example;.env.example"
+    "--add-data", "env.example;env.example"
 )
 
 & $pyExe -m PyInstaller --noconfirm --clean --onedir --noconsole --icon=static/icon.ico --name Odysseus @dataArgs launcher.py

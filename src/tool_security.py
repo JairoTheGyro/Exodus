@@ -40,6 +40,7 @@ BUILTIN_EMAIL_TOOLS = frozenset({
 # included (SECURITY.md: email/MCP capabilities are privileged admin
 # functionality).
 NON_ADMIN_BLOCKED_TOOLS = BUILTIN_EMAIL_TOOLS | {
+    "notify_user",
     "bash",
     "python",
     "manage_bg_jobs",
@@ -140,6 +141,7 @@ PLAN_MODE_READONLY_TOOLS = {
 # here — read-only tools are covered by the allowlist. Keep in sync when adding
 # new mutating tools.
 _PLAN_MODE_KNOWN_MUTATORS = {
+    "notify_user",
     "write_file", "edit_file", "apply_patch", "todowrite",
     "create_document", "edit_document", "update_document",
     "suggest_document", "manage_documents", "create_session", "manage_session",

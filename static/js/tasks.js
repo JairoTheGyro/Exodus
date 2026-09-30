@@ -1289,7 +1289,7 @@ function _showForm(existing, initTaskType, initTriggerType) {
         ['razor', 'Razor'],
         ['nietzsche', 'Nietzsche'],
         ['spark', 'Spark'],
-        ['odysseus', 'Odysseus'],
+        ['odysseus', 'Exodus'],
       ];
       const _curPersona = (existing?.character_id || '').toLowerCase();
       const _personaOptsHtml = _personaOpts.map(([v, label]) =>
@@ -3171,6 +3171,7 @@ async function _pollTaskNotifications() {
 }
 
 function startNotificationPolling() {
+  if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
   if (_notifInterval) return;
   setTimeout(_pollTaskNotifications, 1500);
   _notifInterval = setInterval(_pollTaskNotifications, 30000);

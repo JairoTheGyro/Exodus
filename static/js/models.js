@@ -165,6 +165,7 @@ function _buildModelRow(mid, url, displayName, endpointId, offline, modelType) {
 }
 
 export async function refreshModels(force = false, opts = {}) {
+  if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
   const box = document.getElementById('models');
   const cacheOnly = !!(opts && opts.cacheOnly);
   const hasCache = _cachedItems.length > 0;
@@ -598,6 +599,7 @@ export async function refreshModels(force = false, opts = {}) {
  * Refresh and display OpenAI providers
  */
 export async function refreshProviders() {
+  if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
   const sel = document.getElementById('openai-model');
   if (!sel) return; // Exit if element doesn't exist
 

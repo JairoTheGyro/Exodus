@@ -2,13 +2,17 @@
 // ES6 module
 
 import Storage from './storage.js';
+import { applyExodusLogo, initLogoChoices } from './settings/brand.js';
 import uiModule from './ui.js';
 import { initColorPickers, attachColorPicker } from './colorPicker.js';
 import { hexToRgb } from './color/hex.js';
 import { makeWindowDraggable } from './windowDrag.js';
 import { snapModalToZone } from './tileManager.js';
+import { applyTemplePresentation } from './temple.js';
 
 export const THEMES = {
+  temple:     { bg:'#ffffff', fg:'#0000aa', panel:'#ffffff', border:'#0000aa', red:'#aa0000', presentation:'temple',
+                advanced: { sidebarBg:'#ffffff', inputBg:'#ffffff', userBubbleBg:'#ffffff', aiBubbleBg:'#ffffff', sendBtnBg:'#0000aa', sendBtnHover:'#000000', brandColor:'#0000aa', brandMixTo:'#0000aa' } },
   dark:       { bg:'#282c34', fg:'#9cdef2', panel:'#111111', border:'#355a66', red:'#e06c75' },
   light:      { bg:'#f0ebe3', fg:'#5a5248', panel:'#faf6f0', border:'#d4cdc2', red:'#c47d5a' },
   midnight:   { bg:'#0d1117', fg:'#c9d1d9', panel:'#161b22', border:'#30363d', red:'#f85149' },
@@ -184,7 +188,7 @@ const ADV_KEYS = [
   { key: 'aiBubbleBg',         css: '--ai-bubble-bg',      label: 'AI Chat Bubble',   group: 'Chat Bubbles' },
   { key: 'bubbleBorder',       css: '--bubble-border',     label: 'Border Chat Bubble', group: 'Chat Bubbles' },
   { key: 'sidebarBg',          css: '--sidebar-bg',        label: 'Sidebar Bg',       group: 'Sidebar' },
-  { key: 'brandColor',         css: '--brand-color',       label: 'Odysseus Logo',    group: 'Sidebar' },
+  { key: 'brandColor',         css: '--brand-color',       label: 'Brand text',      group: 'Sidebar' },
   { key: 'brandMixTo',         css: '--brand-mix-to',      label: 'Logo Gradient End', group: 'Sidebar' },
   { key: 'hamburgerColor',     css: '--hamburger-color',   label: 'Hamburger Menu',   group: 'Sidebar' },
   { key: 'inputBg',            css: '--input-bg',          label: 'Input Bg',         group: 'Chat Input / Prompt Area' },
@@ -255,6 +259,7 @@ function generateHarmonyColors(accentHex, harmonyType, mode) {
 }
 
 export function applyColors(colors) {
+  applyTemplePresentation(colors.presentation === 'temple');
   const s = document.documentElement.style;
   s.setProperty('--bg', colors.bg);
   s.setProperty('--fg', colors.fg);
@@ -289,6 +294,7 @@ export function applyColors(colors) {
 
   // Update favicon to match theme accent color
   _updateFavicon(colors.red || '#e06c75');
+  applyExodusLogo(colors);
 }
 
 // Per-route SVG shape registry — kept in sync with the inline favicon
@@ -332,13 +338,14 @@ const _ROUTE_FAVICON_SHAPES = {
 function _updateFavicon(fg) {
   const path = (window.location.pathname || '').toLowerCase();
   const routeShape = _ROUTE_FAVICON_SHAPES[path];
+  if (!routeShape) return; // Root icon is rendered with the Exodus logo choice.
   let svg;
   if (routeShape) {
     svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>${routeShape.split('__C__').join(fg)}</svg>`;
   } else {
-    svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 4L16 22L6 22Z' fill='${fg}'/><path d='M16 8L16 22L24 22Z' fill='${fg}' opacity='0.6'/><path d='M4 24Q10 20 16 24Q22 28 28 24' stroke='${fg}' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>`;
+    svg = null;
   }
-  const href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  const href = svg ? 'data:image/svg+xml,' + encodeURIComponent(svg) : '/static/icons/exodus.png';
   let link = document.querySelector("link[rel='icon']");
   if (!link) {
     link = document.createElement('link');
@@ -346,6 +353,8 @@ function _updateFavicon(fg) {
     link.type = 'image/svg+xml';
     document.head.appendChild(link);
   }
+  link.dataset.routeIcon = 'true';
+  link.type = svg ? 'image/svg+xml' : 'image/png';
   link.href = href;
   let apple = document.querySelector("link[rel='apple-touch-icon']");
   if (!apple) {
@@ -521,6 +530,7 @@ function syncAdvancedPickers(colors) {
 }
 
 export function initThemeUI() {
+  initLogoChoices();
   const themePopup = document.getElementById('theme-popup');
   const themeHeader = document.getElementById('theme-popup-header');
   if (themePopup && themeHeader && !themePopup.dataset.dragWired) {
@@ -640,14 +650,14 @@ export function initThemeUI() {
 
   // Render preset swatches
   grid.innerHTML = Object.entries(THEMES).map(([name, c]) => `
-    <div class="theme-swatch${name === activeName ? ' active' : ''}" data-theme="${name}">
+    <div class="theme-swatch${name === activeName ? ' active' : ''}" data-theme="${name}" role="button" tabindex="0" aria-label="${name === 'temple' ? 'Temple' : name} theme">
       <div class="theme-swatch-colors">
         <span style="background:${c.bg}"></span>
         <span style="background:${c.panel}"></span>
         <span style="background:${c.fg}"></span>
         <span style="background:${c.red}"></span>
       </div>
-      ${name === 'dark' ? 'original' : (name === 'gpt' ? 'GPT' : name)}
+      ${name === 'dark' ? 'original' : (name === 'gpt' ? 'GPT' : name === 'temple' ? 'Temple' : name)}
     </div>
   `).join('');
 
@@ -699,6 +709,9 @@ export function initThemeUI() {
   function clearAllActive() { allGrids.forEach(g => g.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'))); }
   allGrids.forEach(g => {
     g.querySelectorAll('.theme-swatch').forEach(sw => {
+      if (!sw.dataset.custom) sw.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sw.click(); }
+      });
       sw.addEventListener('click', (e) => {
         if (e.target.closest('.theme-delete-btn')) return;
         const name = sw.dataset.theme;
@@ -1287,7 +1300,7 @@ export function initThemeUI() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'odysseus_' + (obj.name || 'theme') + '.json';
+      a.download = 'exodus_' + (obj.name || 'theme') + '.json';
       a.click();
       URL.revokeObjectURL(url);
       newExp.innerHTML = '&#x2713; Downloaded!';

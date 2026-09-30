@@ -275,7 +275,13 @@ def ntfy_health(integrations: List[Dict[str, Any]], settings: Dict[str, Any],
     configured base_url carries, but `meta.base` is sanitized.
     """
     channel = settings.get("reminder_channel") or "browser"
+    import os
+    if os.getenv("NTFY_ENABLED", "true").lower() not in ("true", "1", "yes"):
+        return _svc("ntfy", DISABLED, "Notifications are disabled.", reminder_channel=channel)
     intg = _ntfy_integration(integrations)
+    if not intg and not any(i.get("preset") == "ntfy" for i in integrations):
+        if os.getenv("NTFY_BASE_URL"):
+            intg = {"base_url": os.environ["NTFY_BASE_URL"]}
     if not intg:
         return _svc("ntfy", DISABLED, "No ntfy integration configured.",
                     reminder_channel=channel)

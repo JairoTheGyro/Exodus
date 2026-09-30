@@ -260,6 +260,9 @@ LOCALHOST_BYPASS = os.getenv("LOCALHOST_BYPASS", "false").lower() == "true"
 if LOCALHOST_BYPASS:
     logger.warning("LOCALHOST_BYPASS is enabled, loopback requests bypass authentication. Do not expose this instance to a network.")
 
+from src.ai_policy import WorkspacePolicyMiddleware
+app.add_middleware(WorkspacePolicyMiddleware)
+
 if AUTH_ENABLED:
     AUTH_EXEMPT_EXACT = {
         "/api/auth/setup",
@@ -374,6 +377,13 @@ if AUTH_ENABLED:
             if is_cors_preflight(request.method, request.headers):
                 return await call_next(request)
             if _is_auth_exempt(path):
+                return await call_next(request)
+            # The separate Code container receives a model-only token. It can
+            # authenticate only the gateway's two exact routes, never app APIs.
+            from src.harness_bridge import bridge_owner
+            code_owner = bridge_owner(request)
+            if code_owner:
+                request.state.current_user = code_owner
                 return await call_next(request)
             # In-process internal-tool token bypass. Used by the agent
             # tool layer when it HTTP-loopbacks to admin-gated routes
@@ -768,6 +778,15 @@ from routes.document.document_routes import setup_document_routes
 document_router = setup_document_routes(session_manager, upload_handler)
 app.include_router(document_router)
 
+from routes.workshop_routes import setup_workshop_routes
+app.include_router(setup_workshop_routes())
+
+from routes.upstream_routes import setup_upstream_routes
+app.include_router(setup_upstream_routes())
+
+from routes.code_routes import setup_code_routes
+app.include_router(setup_code_routes())
+
 # Signatures (reusable image stamps)
 from routes.signature_routes import setup_signature_routes
 app.include_router(setup_signature_routes())
@@ -803,6 +822,9 @@ app.include_router(setup_shell_routes())
 # Cookbook (model download/serve/cache, cookbook state sync)
 from routes.cookbook_routes import setup_cookbook_routes
 app.include_router(setup_cookbook_routes())
+
+from routes.home_routes import setup_home_routes
+app.include_router(setup_home_routes())
 
 from routes.workspace_routes import setup_workspace_routes
 app.include_router(setup_workspace_routes())

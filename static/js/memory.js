@@ -370,6 +370,7 @@ async function syncPrefToggle(elementId, prefKey, onMsg, offMsg, dimBelow = true
 }
 
 export async function loadMemories() {
+  if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
   _ensureNewMemoryCategorySelect();
   memoriesLoading = true;
   renderMemoryList();

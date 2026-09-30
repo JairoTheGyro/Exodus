@@ -4,11 +4,14 @@
 // panels continue to own their data loading and side effects.
 
 import { DEFAULT_SETTINGS_PANEL_ID, isAdminManagedSettingsTab } from './registry.js';
+import { revealSettingsPanel } from './experience.js';
 
 const _boundModals = new WeakSet();
 
 export function activateSettingsPanel(modalEl, tab) {
   if (!modalEl || !tab) return null;
+
+  revealSettingsPanel(modalEl, tab);
 
   modalEl.querySelectorAll('[data-settings-tab]').forEach(button => {
     button.classList.toggle('active', button.dataset.settingsTab === tab);

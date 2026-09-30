@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Workshop preview</title>
+<style>html,body,iframe{margin:0;width:100%;height:100%;border:0}body{font:14px system-ui;background:#fff;color:#222}#status{padding:20px}iframe{display:block}</style>
+</head><body><p id="status" role="status">Loading local prototype…</p>
+<script>
+// This wrapper is trusted host code. Never interpolate generated source into it.
+(() => {
+  let channel, child, initialized = false;
+  function sdk() {
+    let current = {}, readyResolve, counter = 0;
+    const pending = new Map();
+    const ready = new Promise(resolve => { readyResolve = resolve; });
+    const channel = document.currentScript.dataset.channel;
+    window.addEventListener('message', event => {
+      if (event.source !== parent || event.data?.channel !== channel) return;
+      const msg = event.data;
+      if (msg.type === 'state') { current = msg.data; readyResolve(); }
+      if (msg.type === 'saved') {
+        const task = pending.get(msg.id);
+        if (!task) return;
+        pending.delete(msg.id); clearTimeout(task.timer);
+        if (msg.error) task.reject(new Error(msg.error));
+        else { current = msg.data; task.resolve(structuredClone(current)); }
+      }
+    });
+    Object.defineProperty(window, 'workshop', { value: Object.freeze({
+      ready,
+      getState: () => structuredClone(current),
+      saveState: async data => {
+        await ready;
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Save a JSON object.');
+        const value = JSON.parse(JSON.stringify(data));
+        if (new TextEncoder().encode(JSON.stringify(value)).length > 100000) throw new Error('App data exceeds 100 KB.');
+        const id = ++counter;
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => { pending.delete(id); reject(new Error('Save not confirmed. Reopen the app before retrying.')); }, 30000);
+          pending.set(id, { resolve, reject, timer });
+          parent.postMessage({ type: 'save', channel, id, data: value }, '*');
+        });
+      },
+    }), writable: false, configurable: false });
+    // Defence in depth for browsers without the CSP WebRTC directive.
+    for (const name of ['RTCPeerConnection', 'webkitRTCPeerConnection']) {
+      try { Object.defineProperty(window, name, { value: undefined, configurable: false, writable: false }); } catch (_) {}
+    }
+    parent.postMessage({ type: 'ready', channel }, '*');
+  }
+  let initialState;
+  window.addEventListener('message', event => {
+    const msg = event.data;
+    if (!msg || typeof msg !== 'object') return;
+    if (event.source === parent) {
+      if (msg.type === 'init' && !initialized && typeof msg.source === 'string') {
+        initialized = true; channel = msg.channel; initialState = msg.data;
+        const parsed = new DOMParser().parseFromString(msg.source, 'text/html');
+        const policy = parsed.createElement('meta');
+        policy.httpEquiv = 'Content-Security-Policy';
+        policy.content = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src data: blob:; connect-src 'none'; frame-src 'none'; child-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; webrtc 'block'";
+        const prelude = parsed.createElement('script');
+        prelude.dataset.channel = channel;
+        prelude.textContent = '(' + sdk.toString() + ')();';
+        parsed.head.prepend(policy, prelude);
+        child = document.createElement('iframe');
+        child.title = 'Generated local prototype';
+        child.setAttribute('sandbox', 'allow-scripts');
+        child.srcdoc = '<!doctype html>\n' + parsed.documentElement.outerHTML;
+        document.getElementById('status').remove();
+        document.body.append(child);
+      } else if (msg.channel === channel && msg.type === 'saved') {
+        child?.contentWindow.postMessage(msg, '*');
+      } else if (!initialized && msg.type === 'error') {
+        document.getElementById('status').textContent = msg.error;
+      }
+    } else if (child && event.source === child.contentWindow && msg.channel === channel) {
+      if (msg.type === 'ready') child.contentWindow.postMessage({type: 'state', channel, data: initialState}, '*');
+      if (msg.type === 'save') parent.postMessage({type: 'save', channel, id: msg.id, data: msg.data}, '*');
+    }
+  });
+  parent.postMessage({type: 'workshop-frame-ready'}, '*');
+})();
+</script></body></html>

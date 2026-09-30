@@ -57,7 +57,7 @@ def test_build_embedding_lanes_recreates_only_custom_when_fingerprint_changes(mo
     )
     old_custom.add(ids=["old"], embeddings=[[0.0] * 768], documents=["old"])
     fast = fake.get_or_create_collection(
-        "odysseus_rag_fastembed",
+        "exodus_knowledge",
         metadata={
             "embedding_lane": "fastembed",
             "embedding_dimension": 384,
@@ -76,7 +76,7 @@ def test_build_embedding_lanes_recreates_only_custom_when_fingerprint_changes(mo
     assert "odysseus_rag_custom" in fake.deleted
     assert fake.collections["odysseus_rag_custom"].count() == 1
     assert len(fake.collections["odysseus_rag_custom"].rows["old"]["embedding"]) == 1024
-    assert fake.collections["odysseus_rag_fastembed"].count() == 1
+    assert fake.collections["exodus_knowledge"].count() == 1
     assert built[0].dimension == 1024
 
 

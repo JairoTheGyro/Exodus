@@ -3,23 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content, viewport-fit=cover" />
-  <title>Odysseus Chat</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4L16 22L6 22Z' fill='%23e06c75'/%3E%3Cpath d='M16 8L16 22L24 22Z' fill='%23e06c75' opacity='0.6'/%3E%3Cpath d='M4 24Q10 20 16 24Q22 28 28 24' stroke='%23e06c75' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <title>Exodus Chat</title>
+  <link rel="icon" type="image/png" href="/static/icons/exodus.png">
+  <link rel="stylesheet" href="/static/temple.css">
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" content="#282c34">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <!-- Disable iOS / Android auto-linkifying of numbers (phone/date/address)
        in email bodies — was wrapping random digits in <a href="tel:..."> with
-       browser-default styling that didn't match the Odysseus theme. -->
+       browser-default styling that didn't match the Exodus theme. -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/static/icons/exodus.png">
   <script nonce="{{CSP_NONCE}}">
   window._odysseusLoadTime = Date.now();
   (function(){
     try {
       var t = JSON.parse(localStorage.getItem('odysseus-theme'));
       if (t && t.colors) {
+        if (t.colors.presentation === 'temple') document.documentElement.classList.add('theme-temple');
         var s = document.documentElement.style;
         var c = t.colors;
         s.setProperty('--bg', c.bg);
@@ -41,7 +43,7 @@
         // Update favicon to match accent color
         var ac = c.red || '#e06c75';
         var fav = document.querySelector("link[rel='icon']");
-        if (fav) fav.href = 'data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 4L16 22L6 22Z' fill='" + ac + "'/><path d='M16 8L16 22L24 22Z' fill='" + ac + "' opacity='0.6'/><path d='M4 24Q10 20 16 24Q22 28 28 24' stroke='" + ac + "' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>");
+        if (fav) fav.href = '/static/icons/exodus.png';
         // Derive syntax highlighting colors from theme
         function h2hsl(hex) {
           hex = hex.replace('#','');
@@ -114,7 +116,7 @@
   </script>
   <!-- Per-route favicon. Bookmarking /calendar shows a calendar icon,
        /notes a notes icon, etc. Each shape is rendered in the current
-       theme accent color. Falls back to the boat logo on the root path. -->
+       theme accent color. Uses the Exodus logo choice on the root path. -->
   <script nonce="{{CSP_NONCE}}">
   (function(){
     try {
@@ -158,25 +160,26 @@
           "<rect x='21' y='8' width='6' height='19' rx='1' fill='none' stroke='" + ac + "' stroke-width='2.5' transform='rotate(8 24 17)'/>",
       };
       var inner = SHAPES[path];
-      if (!inner) return; // Root path keeps the default boat icon.
+      if (!inner) return; // Root path uses the Exodus logo renderer.
       var svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>" + inner + "</svg>";
       var href = 'data:image/svg+xml,' + encodeURIComponent(svg);
       var fav = document.querySelector("link[rel='icon']");
       if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; fav.type = 'image/svg+xml'; document.head.appendChild(fav); }
+      fav.dataset.routeIcon = 'true';
       fav.href = href;
       var apple = document.querySelector("link[rel='apple-touch-icon']");
       if (!apple) { apple = document.createElement('link'); apple.rel = 'apple-touch-icon'; document.head.appendChild(apple); }
       apple.href = href;
       // Also customize the page title so the bookmark inherits a useful name.
       var titles = {
-        '/calendar': 'Calendar — Odysseus',
-        '/notes': 'Notes — Odysseus',
-        '/cookbook': 'Cookbook — Odysseus',
-        '/email': 'Email — Odysseus',
-        '/memory': 'Memory — Odysseus',
-        '/gallery': 'Gallery — Odysseus',
-        '/tasks': 'Tasks — Odysseus',
-        '/library': 'Library — Odysseus',
+        '/calendar': 'Calendar — Exodus',
+        '/notes': 'Notes — Exodus',
+        '/cookbook': 'Cookbook — Exodus',
+        '/email': 'Email — Exodus',
+        '/memory': 'Memory — Exodus',
+        '/gallery': 'Gallery — Exodus',
+        '/tasks': 'Tasks — Exodus',
+        '/library': 'Library — Exodus',
       };
       if (titles[path]) document.title = titles[path];
       // Per-route Android home-screen icon. We swap the <link rel="manifest">
@@ -186,8 +189,8 @@
       try {
         if (inner && typeof Blob !== 'undefined') {
           var pwa = {
-            name: (titles[path] || 'Odysseus'),
-            short_name: (titles[path] || 'Odysseus').split('—')[0].trim(),
+            name: (titles[path] || 'Exodus'),
+            short_name: (titles[path] || 'Exodus').split('—')[0].trim(),
             start_url: path,
             scope: '/',
             display: 'standalone',
@@ -245,7 +248,8 @@
        real request is discarded and the font fetched a second time. -->
   <link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/FiraCode-Regular.woff2">
   <link rel="preload" as="font" type="font/woff2" crossorigin href="/static/fonts/FiraCode-SemiBold.woff2">
-  <link rel="stylesheet" href="/static/style.css?v=20260808startupshell1">
+  <link rel="stylesheet" href="/static/style.css?v=sovereign-essentials1">
+  <link rel="stylesheet" href="/static/home.css">
   <link rel="modulepreload" href="/static/app.js?v=20260815toolapproval4">
   <link rel="modulepreload" href="/static/js/chat.js?v=20260815toolapproval4">
   <link rel="modulepreload" href="/static/js/ui.js">
@@ -520,9 +524,16 @@
 
     <!-- Tab: Browse themes -->
     <div id="theme-tab-browse" class="theme-tab-panel">
+      <p class="temple-description">Temple: Terry Davis’s TempleOS-inspired 640×480 workspace, original 8×8 font, and 16-color interface. Scales to fit your screen. Images keep their own colors.</p>
       <div class="admin-card">
         <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;opacity:0.6"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 20 4 4 0 0 1 0-8 4 4 0 0 0 0-8"/></svg>Default Themes</h2>
         <div class="theme-grid" id="themeGrid"></div>
+      </div>
+      <div class="admin-card" id="exodus-logo-card">
+        <h2>Exodus logo</h2>
+        <p>Match the current theme, or keep a favorite color version for the logo and Exodus tab icon.</p>
+        <div id="exodus-logo-choices" role="group" aria-label="Exodus logo colors"></div>
+        <p id="exodus-logo-status" role="status" aria-live="polite"></p>
       </div>
       <div class="admin-card" id="themeUserCard" style="display:none">
         <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;opacity:0.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Your Themes</h2>
@@ -558,7 +569,7 @@
         <div class="theme-adv-group">
           <div class="theme-adv-group-label">Sidebar</div>
           <div class="theme-custom">
-            <div class="color-row"><label>Odysseus Logo</label><input type="color" id="adv-brandColor"><button class="color-reset-btn" data-reset-adv="brandColor" title="Reset this color" aria-label="Reset color">&#x21BA;</button></div>
+            <div class="color-row"><label>Exodus Logo</label><input type="color" id="adv-brandColor"><button class="color-reset-btn" data-reset-adv="brandColor" title="Reset this color" aria-label="Reset color">&#x21BA;</button></div>
             <div class="color-row"><label title="Hamburger menu"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:-2px;"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></label><input type="color" id="adv-hamburgerColor"><button class="color-reset-btn" data-reset-adv="hamburgerColor" title="Reset this color" aria-label="Reset color">&#x21BA;</button></div>
           </div>
         </div>
@@ -753,7 +764,7 @@
     <div class="sidebar-header">
       <button class="sidebar-hamburger" id="sidebar-toggle-btn" title="Toggle sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="sidebar-brand" id="sidebar-brand-btn" style="cursor:pointer;" title="New chat">
-        <span class="sidebar-brand-title">Odysseus</span>
+        <img class="exodus-logo sidebar-exodus-logo" src="/static/icons/exodus.png" alt="" width="24" height="24"><span class="sidebar-brand-title">Exodus</span>
       </div>
     </div>
     <div class="sidebar-inner">
@@ -860,6 +871,12 @@
         <div class="section-header-flex">
           <span class="section-title"><svg class="section-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Tools</span>
         </div>
+        <button type="button" class="list-item" id="tool-workshop-btn" style="width:100%;font:inherit;text-align:left;background:transparent;border:0;color:inherit;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="flex-shrink:0;opacity:.5"><path d="M4 7h16v14H4zM8 7V3h8v4M4 12h16M10 12v3h4v-3"/></svg><span class="grow">AI Workshop</span>
+        </button>
+        <button type="button" class="list-item" id="tool-code-btn" data-local-service="code" style="width:100%;font:inherit;text-align:left;background:transparent;border:0;color:inherit;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="flex-shrink:0;opacity:.5"><path d="m8 6-6 6 6 6M16 6l6 6-6 6M14 3l-4 18"/></svg><span class="grow">Code</span>
+        </button>
         <div class="list-item" id="tool-memory-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -957,6 +974,20 @@
           <span class="grow">Theme</span>
         </div>
       </div>
+      <div class="section" id="local-services-section">
+        <div class="section-header-flex">
+          <button type="button" class="section-title" aria-expanded="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/><path d="M7 6h.01M7 17h.01"/></svg>Local Services</button>
+        </div>
+        <button type="button" class="list-item" data-local-service="searxng"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg><span class="grow">SearXNG</span></button>
+        <button type="button" class="list-item" data-local-service="chroma"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></svg><span class="grow">ChromaDB</span></button>
+        <button type="button" class="list-item" data-local-service="ntfy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="grow">ntfy</span></button>
+      </div>
+      <div class="section" id="privacy-hub-section">
+        <div class="section-header-flex">
+          <button type="button" class="section-title" aria-expanded="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7z"/></svg>Privacy Hub</button>
+        </div>
+        <button type="button" class="list-item" data-local-service="vaultwarden"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg><span class="grow">Vaultwarden</span></button>
+      </div>
     </div>
     <div class="sidebar-user-bar" id="sidebar-user-bar">
       <div class="user-bar-left" id="user-bar-profile">
@@ -976,12 +1007,12 @@
          never affects layout, but always present inside the main landmark
          (the sidebar that shows the visible brand is hidden off-canvas on
          mobile) so the page always exposes a single level-1 heading. -->
-    <h1 class="a11y-visually-hidden">Odysseus</h1>
+    <h1 class="a11y-visually-hidden">Exodus</h1>
     <div class="chat-top-bar">
       <button type="button" class="incognito-indicator" id="incognito-indicator" title="Nobody mode active — click to deactivate" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="8" y1="16" x2="16" y2="8"/><line x1="8" y1="8" x2="16" y2="16"/></svg></button>
-      <div class="chat-meta-overlay"><span id="current-meta">Odysseus Chat</span><span id="current-meta-count" class="chat-meta-count" aria-hidden="true"></span><span id="session-cost-display" class="session-cost-display" style="display:none;"></span><button type="button" class="chat-context-pill" id="chat-context-pill" title="Chat context" hidden><span class="chat-context-dot"></span><span id="chat-context-pill-label">0%</span></button><span class="export-dropdown-wrap" id="export-dropdown-wrap"><button type="button" class="export-dl-btn" id="export-dl-btn" title="More"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><div class="export-dropdown-menu" id="export-dropdown-menu"><div class="export-dropdown-item" id="export-rename-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span><span>Rename</span></div><div class="export-dropdown-item" id="export-compact-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M7 12h10"/><path d="M10 17h4"/></svg></span><span class="export-compact-pill">Compact</span></div><div class="export-dropdown-item" id="export-copy-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span><span>Copy Chat</span></div><div class="export-dropdown-item" id="export-pdf-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-2h2a1.5 1.5 0 0 1 0 3H9z"/></svg></span><span>PDF</span></div><div class="export-dropdown-item" id="export-doc-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span><span>Save to Documents</span></div><div class="export-dropdown-item dropdown-item-danger" id="export-delete-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></span><span>Delete Chat</span></div></div></span></div>    </div>
+      <div class="chat-meta-overlay"><span id="current-meta">Exodus Chat</span><span id="current-meta-count" class="chat-meta-count" aria-hidden="true"></span><span id="session-cost-display" class="session-cost-display" style="display:none;"></span><button type="button" class="chat-context-pill" id="chat-context-pill" title="Chat context" hidden><span class="chat-context-dot"></span><span id="chat-context-pill-label">0%</span></button><span class="export-dropdown-wrap" id="export-dropdown-wrap"><button type="button" class="export-dl-btn" id="export-dl-btn" title="More"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><div class="export-dropdown-menu" id="export-dropdown-menu"><div class="export-dropdown-item" id="export-rename-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span><span>Rename</span></div><div class="export-dropdown-item" id="export-compact-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M7 12h10"/><path d="M10 17h4"/></svg></span><span class="export-compact-pill">Compact</span></div><div class="export-dropdown-item" id="export-copy-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span><span>Copy Chat</span></div><div class="export-dropdown-item" id="export-pdf-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-2h2a1.5 1.5 0 0 1 0 3H9z"/></svg></span><span>PDF</span></div><div class="export-dropdown-item" id="export-doc-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span><span>Save to Documents</span></div><div class="export-dropdown-item dropdown-item-danger" id="export-delete-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></span><span>Delete Chat</span></div></div></span></div>    </div>
     <div id="welcome-screen">
-      <div class="welcome-name"><svg class="welcome-boat" viewBox="0 0 32 32"><path d="M16 4L16 22L6 22Z" fill="currentColor"/><path d="M16 8L16 22L24 22Z" fill="currentColor" opacity="0.6"/><path d="M4 24Q10 20 16 24Q22 28 28 24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>Odysseus</div>
+      <div class="welcome-name"><img class="welcome-boat exodus-logo" src="/static/icons/exodus.png" alt="" width="32" height="32">Exodus</div>
       <div class="welcome-sub" id="welcome-sub">New chat ready.</div>
       <div class="welcome-tip" id="welcome-tip"></div>
       <button type="button" class="incognito-btn" id="incognito-btn" title="Enable Nobody mode — no memory, no history saved">
@@ -1037,7 +1068,7 @@
     <div class="chat-input-bar">
       <div class="chat-input-top">
         <div id="message-ghost" class="ghost-text-overlay" aria-hidden="true"></div>
-        <textarea id="message" placeholder="Message Odysseus..." required autocomplete="off" aria-label="Message input" rows="1" autofocus></textarea>
+        <textarea id="message" placeholder="Message Exodus..." required autocomplete="off" aria-label="Message input" rows="1" autofocus></textarea>
         <div id="plan-mode-status" class="plan-mode-status" hidden>
           <span class="plan-mode-status-label">Plan mode</span>
           <button type="button" id="plan-mode-status-toggle" class="plan-mode-status-toggle" aria-label="Turn off plan mode" aria-pressed="true">
@@ -1397,7 +1428,7 @@
   </div>
 
   <!-- Settings Modal (all users) -->
-  <div id="settings-modal" class="modal hidden">
+  <div id="settings-modal" class="modal hidden settings-essentials" data-setup-choice="local">
     <div class="modal-content settings-modal-content" role="dialog" aria-label="Settings">
       <div class="modal-header">
         <h4><span style="vertical-align:-1px;margin-right:6px;font-size:15px">&#x2699;</span>Settings</h4>
@@ -1406,6 +1437,13 @@
           <span class="theme-opacity-label">Peek</span>
         </button>
         <button class="close-btn" aria-label="Close settings">✖</button>
+      </div>
+      <div class="settings-view-bar">
+        <div class="settings-view-controls" role="group" aria-label="Settings detail">
+          <button type="button" class="admin-btn-sm" data-settings-view="essentials" aria-pressed="true">Essentials</button>
+          <button type="button" class="admin-btn-sm" data-settings-view="advanced" aria-pressed="false">Advanced</button>
+        </div>
+        <p id="settings-view-hint" class="admin-toggle-sub" aria-live="polite">Everyday settings. Open Advanced whenever you want more control.</p>
       </div>
       <div class="settings-layout">
         <div class="settings-sidebar">
@@ -1467,11 +1505,11 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             <span>Added Models</span>
           </button>
-          <button class="settings-nav-item" data-settings-tab="ai">
+          <button class="settings-nav-item" data-settings-tab="ai" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"/></svg>
             <span>AI Defaults</span>
           </button>
-          <button class="settings-nav-item" data-settings-tab="search">
+          <button class="settings-nav-item" data-settings-tab="search" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span>Search</span>
           </button>
@@ -1487,7 +1525,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             <span>Email</span>
           </button>
-          <button class="settings-nav-item" data-settings-tab="reminders">
+          <button class="settings-nav-item" data-settings-tab="reminders" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             <span>Reminders</span>
           </button>
@@ -1497,7 +1535,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 0 20 4 4 0 0 1 0-8 4 4 0 0 0 0-8"/></svg>
             <span>Appearance</span>
           </button>
-          <button class="settings-nav-item" data-settings-tab="shortcuts">
+          <button class="settings-nav-item" data-settings-tab="shortcuts" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
             <span>Shortcuts</span>
           </button>
@@ -1507,17 +1545,21 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <span>Account</span>
           </button>
-          <div class="settings-sidebar-divider admin-only"></div>
-          <div class="settings-sidebar-label admin-only">Admin</div>
-          <button class="settings-nav-item admin-only" data-settings-tab="tools">
+          <button class="settings-nav-item" data-settings-tab="licenses">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+            <span>License Tracker</span>
+          </button>
+          <div class="settings-sidebar-divider admin-only" data-settings-advanced></div>
+          <div class="settings-sidebar-label admin-only" data-settings-advanced>Admin</div>
+          <button class="settings-nav-item admin-only" data-settings-tab="tools" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             <span>Agent Tools</span>
           </button>
-          <button class="settings-nav-item admin-only" data-settings-tab="users">
+          <button class="settings-nav-item admin-only" data-settings-tab="users" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Users</span>
           </button>
-          <button class="settings-nav-item admin-only" data-settings-tab="system">
+          <button class="settings-nav-item admin-only" data-settings-tab="system" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v-.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/></svg>
             <span>System</span>
           </button>
@@ -1823,7 +1865,7 @@
             <div class="vis-toggles">
               <label class="vis-row">
                 <span class="vis-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l2.5 2.5L16 9"/></svg></span>
-                <span class="vis-label">Odysseus <span class="vis-hint">Brand name</span></span>
+                <span class="vis-label">Exodus <span class="vis-hint">Brand name</span></span>
                 <input type="checkbox" checked data-ui-key="sidebar-brand"><span class="vis-switch"></span>
               </label>
               <label class="vis-row">
@@ -2018,6 +2060,65 @@
         </div>
 
 
+        <!-- ═══ LICENSE TRACKER ═══ -->
+        <section data-settings-panel="licenses" class="hidden license-tracker" aria-labelledby="license-tracker-title">
+          <div class="admin-card">
+            <h2 id="license-tracker-title">License Tracker</h2>
+            <p>Exodus is built with open-source software. This section credits the projects we use and links to their source code and license terms.</p>
+          </div>
+          <!-- Add future projects as separate articles. Verify their upstream
+               license and record the actual check date; do not imply live checks. -->
+          <article class="admin-card" aria-labelledby="license-odysseus-title">
+            <h3 id="license-odysseus-title">Odysseus</h3>
+            <p>The open-source foundation of Exodus, adapted with our own branding, interface changes, and features. Credit remains with the Odysseus project and its contributors.</p>
+            <dl class="license-tracker-details">
+              <div><dt>Latest verified license</dt><dd><strong>AGPL-3.0-or-later</strong><br>GNU Affero General Public License, version 3 or later</dd></div>
+              <div><dt>Last verified</dt><dd><time datetime="2026-09-25">September 25, 2026</time> · upstream default branch</dd></div>
+              <div><dt>Repository</dt><dd><a href="https://github.com/odysseus-dev/odysseus" target="_blank" rel="noopener noreferrer">github.com/odysseus-dev/odysseus</a></dd></div>
+            </dl>
+            <div class="license-tracker-links">
+              <a href="https://github.com/odysseus-dev/odysseus/blob/dev/LICENSE" target="_blank" rel="noopener noreferrer">Read license</a>
+              <a href="https://github.com/odysseus-dev/odysseus/blob/dev/README.md#license" target="_blank" rel="noopener noreferrer">View license declaration</a>
+            </div>
+            <p class="license-tracker-notice">Odysseus is provided without warranty under its license. You may use, modify, and redistribute it subject to those terms. Exodus is a modified project; these links point to the original upstream source.</p>
+          </article>
+          <article class="admin-card" aria-labelledby="license-vaultwarden-title">
+            <h3 id="license-vaultwarden-title">Vaultwarden</h3>
+            <p>The self-hosted password manager linked from Privacy Hub. We run the project's official container separately from Exodus. Credit remains with its contributors.</p>
+            <dl class="license-tracker-details">
+              <div><dt>Verified license</dt><dd><strong>AGPL-3.0-only</strong><br>GNU Affero General Public License, version 3 only</dd></div>
+              <div><dt>Last verified</dt><dd><time datetime="2026-09-28">September 28, 2026</time> · release 1.37.3</dd></div>
+              <div><dt>Repository</dt><dd><a href="https://github.com/dani-garcia/vaultwarden" target="_blank" rel="noopener noreferrer">github.com/dani-garcia/vaultwarden</a></dd></div>
+            </dl>
+            <div class="license-tracker-links">
+              <a href="https://github.com/dani-garcia/vaultwarden/blob/1.37.3/LICENSE.txt" target="_blank" rel="noopener noreferrer">Read license</a>
+              <a href="https://github.com/dani-garcia/vaultwarden/blob/1.37.3/Cargo.toml" target="_blank" rel="noopener noreferrer">View license declaration</a>
+            </div>
+            <p class="license-tracker-notice">Vaultwarden is provided without warranty under its license and is not affiliated with Bitwarden, Inc. The bundled web vault and other dependencies retain their own licenses and notices.</p>
+          </article>
+          <article class="admin-card" aria-labelledby="license-harness-title">
+            <h3 id="license-harness-title">DeepSeek Harness</h3>
+            <p>The agentic coding workspace behind Code. We run the published package in a separate container and connect it to Exodus's model gateway.</p>
+            <dl class="license-tracker-details">
+              <div><dt>Verified license</dt><dd><strong>MIT</strong></dd></div>
+              <div><dt>Last verified</dt><dd><time datetime="2026-09-28">September 28, 2026</time> · release dsh-v0.1.7-rc.2 (developer preview)</dd></div>
+              <div><dt>Repository</dt><dd><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">github.com/deepseek-ai/deepseek-harness</a></dd></div>
+            </dl>
+            <div class="license-tracker-links">
+              <a href="https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.2/LICENSE" target="_blank" rel="noopener noreferrer">Read license</a>
+              <a href="https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.2/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener noreferrer">Third-party notices</a>
+            </div>
+            <p class="license-tracker-notice">Copyright and attribution remain with DeepSeek and the project contributors. Provided without warranty under the MIT license.</p>
+          </article>
+          <div class="admin-card">
+            <h3>Update history</h3>
+            <p>Compare our starting revision with upstream changes. Opening this section reads saved history only. Check for updates, Load older, and Load file changes contact GitHub when the requested information is not already saved. Nothing is installed.</p>
+            <p class="license-tracker-notice">The server needs internet access to check GitHub. No account or API key is needed. Recent results are saved on this server for offline viewing; administrators can fetch new information.</p>
+            <div id="upstream-updates" aria-live="polite"><p>Open License Tracker to load saved update history.</p></div>
+          </div>
+          <p class="license-tracker-notice">This growing list currently covers Odysseus, Vaultwarden, and DeepSeek Harness, not every bundled dependency. Existing license files and notices remain in the source. License entries record the latest license verified on the date shown; update checks do not change those entries. The license supplied with the version in use remains relevant. External links open GitHub and require internet access.</p>
+        </section>
+
         <!-- ═══ ACCOUNT TAB ═══ -->
         <div data-settings-panel="account" class="hidden">
           <div class="admin-card">
@@ -2055,6 +2156,8 @@
         </div>
 
         <!-- ═══ EMAIL TAB ═══ -->
+
+
         <div data-settings-panel="email" class="hidden">
           <div class="admin-card">
             <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 8.92 4a1.65 1.65 0 0 0 1-1.51V2a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>Email Settings</h2>
@@ -2139,7 +2242,7 @@
           </div>
           <div class="admin-card">
             <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Public App URL</h2>
-            <div class="admin-toggle-sub" style="margin-bottom:8px">Used to build clickable links back to Odysseus inside outgoing reminder / urgent-email emails (e.g. <code>https://chat.yourdomain.com</code>). Leave blank to omit links.</div>
+            <div class="admin-toggle-sub" style="margin-bottom:8px">Used to build clickable links back to Exodus inside outgoing reminder / urgent-email emails (e.g. <code>https://chat.yourdomain.com</code>). Leave blank to omit links.</div>
             <div class="settings-col">
               <div class="settings-row">
                 <label class="settings-label">URL</label>
@@ -2192,10 +2295,18 @@
 
         <!-- ═══ SERVICES TAB ═══ -->
         <div data-settings-panel="services">
+          <div class="admin-card settings-setup-intro">
+            <h2>Choose how your AI runs</h2>
+            <p class="admin-toggle-sub">An AI model writes the answers. Connect one running on your computer, or use your own account with a cloud provider. You can add both.</p>
+            <div class="settings-setup-choices" role="group" aria-label="AI connection type">
+              <button type="button" class="admin-btn-sm" data-setup-choice="local" aria-pressed="true">Local model</button>
+              <button type="button" class="admin-btn-sm" data-setup-choice="cloud" aria-pressed="false">Cloud provider</button>
+            </div>
+          </div>
 
           <!-- ── Local card ─────────────────────────────────────────── -->
-          <div class="admin-card">
-            <h2 style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add Local Models <span style="opacity:0.45;font-weight:normal;font-size:0.82em">(Endpoint)</span>
+          <div class="admin-card" data-setup-card="local">
+            <h2 style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Connect a local model
               <span style="flex:1"></span>
               <button class="admin-btn-sm" id="adm-epLocalTestBtn" style="font-size:11px;font-weight:normal;display:inline-flex;align-items:center;gap:4px;">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Test
@@ -2208,23 +2319,27 @@
                   <button class="admin-btn-sm adm-more-item" id="adm-epDiscoverBtn" title="Scan your network for running model servers" style="background:none;border:0;border-radius:5px;padding:7px 9px;display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-size:12px;font-weight:normal;color:var(--fg);cursor:pointer;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Scan network
                   </button>
-                  <button class="admin-btn-sm adm-more-item" id="adm-epOllamaBtn" title="Fill the default Ollama endpoint" style="background:none;border:0;border-radius:5px;padding:7px 9px;display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-size:12px;font-weight:normal;color:var(--fg);cursor:pointer;"><span class="adm-ollama-logo" style="display:inline-flex;width:13px;height:13px;"></span>Add Ollama</button>
+
                   <button class="admin-btn-sm adm-more-item" id="adm-epLocalKeyBtn" title="Show / hide the API key field" aria-expanded="false" aria-controls="adm-epLocalApiKey-row" style="background:none;border:0;border-radius:5px;padding:7px 9px;display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-size:12px;font-weight:normal;color:var(--fg);cursor:pointer;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="M15.5 7.5l3 3"/></svg>API key
                   </button>
                 </div>
               </div>
             </h2>
-            <div class="admin-toggle-sub" style="margin:0 0 10px 2px;">Add a local model server (Ollama, llama.cpp, vLLM).</div>
+            <div class="admin-toggle-sub" style="margin:0 0 10px 2px;">Start a model in Ollama or another local model app, then enter its connection address below. Local generation uses that machine’s hardware; online tools may still use the internet.</div>
+            <div class="settings-local-help">
+              <button type="button" class="admin-btn-sm" id="adm-epOllamaBtn" title="Fill the connection address for Ollama">Use Ollama address</button>
+              <span class="admin-toggle-sub">Fills the address only. Ollama and a model must already be running.</span>
+            </div>
             <div class="adm-add-section">
               <div class="admin-model-form">
                 <div class="admin-model-form-row">
                   <div class="adm-fused-group" style="display:flex;flex:1 1 180px;min-width:0;">
-                    <select id="adm-epLocalType" style="padding:5px;width:66px;flex-shrink:0;border-top-right-radius:0;border-bottom-right-radius:0;border-right:0;">
+                    <select id="adm-epLocalType" aria-label="Local model type" style="padding:5px;width:66px;flex-shrink:0;border-top-right-radius:0;border-bottom-right-radius:0;border-right:0;">
                       <option value="llm" selected>LLM</option>
                       <option value="image">Image</option>
                     </select>
-                    <input id="adm-epLocalUrl" type="text" placeholder="Paste endpoint URL, e.g. http://localhost:11434/v1" style="flex:1;min-width:0;border-top-left-radius:0;border-bottom-left-radius:0;">
+                    <input id="adm-epLocalUrl" type="text" aria-label="Local model address" placeholder="Model app address" style="flex:1;min-width:0;border-top-left-radius:0;border-bottom-left-radius:0;">
                   </div>
                   <button class="admin-btn-add" id="adm-epLocalAddBtn" style="min-width:55px;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add
@@ -2239,8 +2354,8 @@
           </div>
 
           <!-- ── API card ───────────────────────────────────────────── -->
-          <div class="admin-card">
-            <h2 style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><circle cx="11" cy="12" r="8"/><path d="M19 5v6"/><path d="M16 8h6"/><path d="M7 12h8"/></svg>Add API Models <span style="opacity:0.45;font-weight:normal;font-size:0.82em">(Endpoint)</span>
+          <div class="admin-card" data-setup-card="cloud">
+            <h2 style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><circle cx="11" cy="12" r="8"/><path d="M19 5v6"/><path d="M16 8h6"/><path d="M7 12h8"/></svg>Connect a cloud provider
               <span style="flex:1"></span>
               <button class="admin-btn-sm" id="adm-epApiTestBtn" style="font-size:11px;font-weight:normal;display:inline-flex;align-items:center;gap:4px;">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Test
@@ -2265,7 +2380,7 @@
                 </div>
               </div>
             </h2>
-            <div class="admin-toggle-sub" style="margin:0 0 10px 2px;">Connect a cloud provider (OpenAI, Anthropic, DeepSeek, OpenRouter, etc.).</div>
+            <div class="admin-toggle-sub" style="margin:0 0 10px 2px;">Choose your provider and enter your API key—the access key from your provider account. Requests go to that provider, require internet, and may incur usage charges.</div>
             <div class="adm-add-section">
               <div class="admin-model-form">
                 <div class="admin-model-form-row">
@@ -2274,7 +2389,7 @@
                       <span class="adm-provider-current"><span class="adm-provider-logo"></span><span class="adm-provider-name">Provider</span></span>
                       <svg class="adm-provider-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <input id="adm-epUrl" type="text" placeholder="Base URL or pick provider" autocomplete="off" style="border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:6px;border-bottom-right-radius:6px;">
+                    <input id="adm-epUrl" type="text" aria-label="Provider address" placeholder="Base URL or pick provider" autocomplete="off" style="border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:6px;border-bottom-right-radius:6px;">
                     <div class="adm-provider-menu hidden" id="adm-provider-menu"></div>
                   </div>
                 </div>
@@ -2306,7 +2421,7 @@
                 <div class="admin-model-form-row" id="adm-epApiKey-row">
                   <div style="position:relative;flex:1;display:flex;align-items:center;">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:0.55;pointer-events:none;"><path d="M21 2l-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="M15.5 7.5l3 3"/></svg>
-                    <input id="adm-epApiKey" type="password" placeholder="API key, e.g. sk-proj-AbCdEf…" autocomplete="off" style="flex:1;padding-left:28px;height:32px;box-sizing:border-box;">
+                    <input id="adm-epApiKey" type="password" aria-label="Provider API key" placeholder="API key, e.g. sk-proj-AbCdEf…" autocomplete="off" style="flex:1;padding-left:28px;height:32px;box-sizing:border-box;">
                   </div>
                   <button class="admin-btn-add" id="adm-epAddBtn" style="height:32px;min-width:55px;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;box-sizing:border-box;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Add
@@ -2397,7 +2512,7 @@
               </svg>
               Terminal Logs
             </h2>
-            <div class="admin-toggle-sub settings-system-logs-toggle-sub">Live diagnostic logs and system output from the Odysseus process.</div>
+            <div class="admin-toggle-sub settings-system-logs-toggle-sub">Live diagnostic logs and system output from the Exodus process.</div>
 
             <div class="settings-col settings-system-logs-col">
               <!-- Controls row -->
@@ -2539,6 +2654,77 @@
     </div>
   </div>
 
+  <template id="local-services-content">
+        <div class="local-services">
+          <div class="admin-card">
+            <p>The companion tools included in this Docker setup. Open a local page below.</p>
+            <label for="local-service-link-target">Open links in</label>
+            <select id="local-service-link-target" class="settings-select"><option value="_blank">New tab</option><option value="_self">This tab</option></select>
+            <p id="local-service-link-hint" class="local-service-note" aria-live="polite"></p>
+            <p class="local-service-note">Docker and the relevant service must be running. These addresses open this computer: if you visit Exodus from another device, <code>localhost</code> and <code>127.0.0.1</code> refer to that device instead of your Exodus server.</p>
+          </div>
+          <article class="admin-card" data-service-card="searxng" aria-labelledby="local-searxng-title">
+            <h3 id="local-searxng-title">SearXNG</h3>
+            <p>Use SearXNG for privacy-respecting internet search. It combines results from multiple search engines without building a personal search profile.</p>
+            <p class="local-service-note">This is the search service available to Exodus. Web searches still need internet access and send queries to the selected search engines through your server.</p>
+            <div class="local-service-actions">
+              <a class="local-service-open" href="http://127.0.0.1:8080/" referrerpolicy="no-referrer">Open SearXNG</a>
+              <a href="https://docs.searxng.org/user/about.html" target="_blank" rel="noopener noreferrer">About SearXNG</a>
+            </div>
+            <p class="local-service-address">Local address: <code>http://127.0.0.1:8080/</code></p>
+          </article>
+          <article class="admin-card" data-service-card="chroma" aria-labelledby="local-chroma-title">
+            <h3 id="local-chroma-title">ChromaDB</h3>
+            <p>Use ChromaDB to store and find related documents and memories by meaning. It works behind the scenes for AI retrieval features.</p>
+            <p class="local-service-note">The bundled ChromaDB server exposes an API, not a web dashboard at its home address. Opening port 8100 without a path returns “Not Found.” The button below opens its heartbeat: a small JSON response with a changing number means the server is responding. It does not verify every AI or document-search feature.</p>
+            <div class="local-service-actions">
+              <a class="local-service-open" href="http://127.0.0.1:8100/api/v2/heartbeat" referrerpolicy="no-referrer">Open ChromaDB heartbeat</a>
+              <a href="https://docs.trychroma.com/deployment/docker" target="_blank" rel="noopener noreferrer">ChromaDB server guide</a>
+            </div>
+            <p class="local-service-address">Local address: <code>http://127.0.0.1:8100/api/v2/heartbeat</code></p>
+            <p class="local-service-note">If an embedded browser blocks this API page, copy the address into your usual web browser.</p>
+          </article>
+          <article class="admin-card" data-service-card="ntfy" aria-labelledby="local-ntfy-title">
+            <h3 id="local-ntfy-title">ntfy</h3>
+            <p>Use ntfy to send and receive notifications for reminders, alerts, and automations. Its web app lets you subscribe to named channels, called topics, and publish messages.</p>
+            <p class="local-service-note">To send Exodus reminders through ntfy, use the existing Integrations and Reminders settings. Opening this page does not subscribe you or enable notifications. Phone access needs a reachable server address; this local shortcut opens the web app on this computer.</p>
+            <div class="local-service-actions">
+              <a class="local-service-open" href="http://127.0.0.1:8091/" referrerpolicy="no-referrer">Open ntfy</a>
+              <a href="https://docs.ntfy.sh/subscribe/web/" target="_blank" rel="noopener noreferrer">ntfy web app guide</a>
+            </div>
+            <p class="local-service-address">Local address: <code>http://127.0.0.1:8091/</code></p>
+          </article>
+          <article class="admin-card" data-service-card="code" data-service-group="tools" aria-labelledby="local-code-title">
+            <h3 id="local-code-title">Code · DeepSeek Harness</h3>
+            <p>Describe what you want to build, fix, or understand. Harness can edit project files, run commands, and help test your code.</p>
+            <p id="code-status" class="local-service-note" role="status">Checking Code and your Exodus model connections…</p>
+            <ul id="code-models" hidden></ul>
+            <div class="local-service-actions">
+              <a id="code-launch" class="local-service-open" href="http://localhost:8093/" referrerpolicy="no-referrer" hidden>Open Code</a>
+              <button type="button" id="code-model-settings" class="upstream-button">Connect a model</button>
+              <button type="button" id="code-refresh" class="upstream-button">Refresh status</button>
+            </div>
+            <p class="local-service-note">Choose your model under <strong>Exodus</strong> in Harness. Enabled text models are shared automatically; models explicitly marked as not supporting tools are excluded. Coding needs a model that supports tool calls. Provider keys stay in Exodus. With a cloud model, your prompts and the project content it reads go to that provider and may incur charges.</p>
+            <p class="local-service-note">Use <code>/workspace</code> in Harness. It is the <code>data/code-projects</code> folder in Sovereign Hub on this computer. Projects and coding sessions persist across restarts. This first integration is a single-administrator workspace.</p>
+            <p class="local-service-note"><strong>Developer preview · demo only.</strong> Use test projects without private information. Review command approvals and changes before relying on generated code.</p>
+            <div class="local-service-actions"><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">Repository &amp; guide</a></div>
+            <p class="local-service-address">Local address: <code>http://localhost:8093/</code></p>
+          </article>
+          <article class="admin-card" data-service-card="vaultwarden" data-service-group="privacy" aria-labelledby="local-vaultwarden-title">
+            <h3 id="local-vaultwarden-title">Vaultwarden</h3>
+            <p>Use Vaultwarden to manage passwords and secure notes in a self-hosted vault. It is a community-maintained server compatible with Bitwarden apps, with its own web interface.</p>
+            <p class="local-service-note">Your vault has a separate account and master password from Exodus. Its data is stored in a dedicated Docker volume on this computer; Exodus does not read your vault.</p>
+            <p class="local-service-note"><strong>Demo only — do not enter real passwords or private information in this development setup.</strong> Create a separate test account in Vaultwarden to explore it. Email delivery and mobile push notifications are not configured.</p>
+            <div class="local-service-actions">
+              <a class="local-service-open" href="http://localhost:8092/" referrerpolicy="no-referrer">Open Vaultwarden</a>
+              <a href="https://github.com/dani-garcia/vaultwarden" target="_blank" rel="noopener noreferrer">Vaultwarden repository &amp; guide</a>
+            </div>
+            <p class="local-service-address">Local address: <code>http://localhost:8092/</code></p>
+            <p class="local-service-note">Open this address on the computer running Docker. This local setup is not available to other devices; remote access needs a separately configured HTTPS address. Vaultwarden is not affiliated with Bitwarden, Inc.</p>
+          </article>
+        </div>
+  </template>
+
   <!-- Search overlay (Ctrl+K command palette) -->
   <div class="search-overlay hidden" id="search-overlay">
     <div class="search-popup">
@@ -2570,7 +2756,8 @@
 <script type="module" src="/static/js/search.js"></script>
 <script type="module" src="/static/js/spinner.js"></script>
 <script type="module" src="/static/js/tts-ai.js"></script>
-<script type="module" src="/static/js/document.js?v=20260815approvalsave1"></script>
+<script type="module" src="/static/js/document.js?v=20260929workspace1"></script>
+<script type="module" src="/static/js/workshop.js"></script>
 <script type="module" src="/static/js/gallery.js?v=20260708match1"></script>
 <script type="module" src="/static/js/chatRenderer.js?v=20260819approvalcontrol1"></script>
 <script type="module" src="/static/js/codeRunner.js"></script>
@@ -2581,11 +2768,12 @@
 <script type="module" src="/static/js/search-chat.js"></script>
 <script type="module" src="/static/js/theme.js"></script>
 <script type="module" src="/static/js/censor.js"></script>
-<script type="module" src="/static/js/settings.js?v=20260815approvalsave1"></script>
+<script type="module" src="/static/js/settings.js?v=sovereign-essentials1"></script>
 <script type="module" src="/static/js/assistant.js"></script>
 <script type="module" src="/static/app.js?v=20260815toolapproval4"></script>  <!-- app.js must be LAST -->
   <script type="module" src="/static/js/init.js?v=20260715freshroot3"></script>
 <script type="module" src="/static/js/a11y.js"></script>
+<script type="module" src="/static/js/home.js"></script>
 <script nonce="{{CSP_NONCE}}">if('serviceWorker' in navigator){navigator.serviceWorker.register('/static/sw.js').catch(()=>{});}</script>
 </body>
 </html>

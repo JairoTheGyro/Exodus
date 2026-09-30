@@ -210,6 +210,7 @@ _register(
         "mark_email_read",
         "reply_to_email",
         "send_email",
+        "notify_user",
         "unsubscribe_email",
     },
     ToolEffect.EXTERNAL_SIDE_EFFECT,

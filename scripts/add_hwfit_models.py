@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 add_hwfit_models.py — bulk-add Hugging Face models to the hwfit catalog
-(services/hwfit/data/hf_models.json).
+(services/hwfit/catalogs/hf_models.json).
 
 Adds:
   * every model from one or more HF authors (e.g. cyankiwi's AWQ quants)
@@ -28,7 +28,7 @@ from datetime import datetime
 from huggingface_hub import HfApi, hf_hub_download
 from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "services", "hwfit", "data", "hf_models.json")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "services", "hwfit", "catalogs", "hf_models.json")
 DATA_PATH = os.path.abspath(DATA_PATH)
 
 AUTHORS = ["cyankiwi"]

@@ -2735,3 +2735,7 @@ def archive_session(session_id: str):
 
 
 init_db()
+
+# One post-commit hook covers UI, agent, scheduler and shared Note writes.
+from src.note_indexing import install_hooks as _install_note_index_hooks
+_install_note_index_hooks(SessionLocal, Note)

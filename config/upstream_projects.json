@@ -1,0 +1,33 @@
+[
+  {
+    "id": "odysseus",
+    "name": "Odysseus",
+    "repository": "odysseus-dev/odysseus",
+    "branch": "dev",
+    "used_commit": "3b6c169162330cd35c4ce6d14949ef15fd3208a2",
+    "used_date": "2026-09-14",
+    "used_version": "1.0.3",
+    "version_file": "src/constants.py",
+    "used_note": "Exodus is based on this upstream revision, with local modifications. This is not an unmodified Odysseus installation."
+  },
+  {
+    "id": "vaultwarden",
+    "name": "Vaultwarden",
+    "repository": "dani-garcia/vaultwarden",
+    "branch": "main",
+    "used_commit": "eb212e23fad88e6136723f43e5b73543fa7026d3",
+    "used_date": "2026-09-28",
+    "used_version": "1.37.3",
+    "used_note": "Official Vaultwarden 1.37.3 container, pinned by image digest in Docker Compose. Runs separately from Exodus. This baseline records the installed release source; main may include unreleased work."
+  },
+  {
+    "id": "deepseek-harness",
+    "name": "DeepSeek Harness",
+    "repository": "deepseek-ai/deepseek-harness",
+    "branch": "master",
+    "used_commit": "477b4f420553e8a52c2fbccc464d7561b239c443",
+    "used_date": "2026-09-28",
+    "used_version": "0.1.7-rc.2",
+    "used_note": "Published @deepseek-ai/dsh package pinned to 0.1.7-rc.2 (npm latest at installation). Developer preview, with an Exodus model gateway and separate coding workspace. Newer prereleases are not installed automatically."
+  }
+]

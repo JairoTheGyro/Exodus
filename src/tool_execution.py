@@ -1125,11 +1125,11 @@ async def _execute_tool_block_impl(
         desc = f"{tool}: {first_line}" if first_line else tool
         result = await _direct_fallback(tool, content, session_id=session_id, owner=owner) \
             or {"error": f"{tool}: execution failed", "exit_code": 1}
-    elif tool == "manage_bg_jobs":
+    elif tool in ("manage_bg_jobs", "notify_user"):
         # Inspect/kill detached `bash` jobs; needs session_id to scope to chat.
-        desc = f"manage_bg_jobs: {content.split(chr(10))[0][:80]}"
+        desc = tool if tool == "notify_user" else f"manage_bg_jobs: {content.split(chr(10))[0][:80]}"
         result = await _direct_fallback(tool, content, session_id=session_id, owner=owner) \
-            or {"error": "manage_bg_jobs: execution failed", "exit_code": 1}
+            or {"error": f"{tool}: execution failed", "exit_code": 1}
     elif tool in ("create_document", "update_document", "edit_document",
                   "suggest_document", "manage_documents"):
         desc = f"{tool}: {content.split(chr(10))[0][:80]}"

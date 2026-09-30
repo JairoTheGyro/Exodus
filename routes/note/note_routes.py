@@ -365,7 +365,7 @@ async def dispatch_reminder(
                 msg["To"] = recipient
                 _t = title or 'Note'
                 _t = _t[len('Reminder:'):].strip() if _t.lower().startswith('reminder:') else _t
-                msg["Subject"] = f"Reminder (Odysseus): {_t}"
+                msg["Subject"] = f"Reminder (Exodus): {_t}"
                 msg["Date"] = _dt.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
                 msg["X-Odysseus-Origin"] = "odysseus-ui"
                 msg["X-Odysseus-Kind"] = "reminder"
@@ -468,45 +468,15 @@ async def dispatch_reminder(
     ntfy_sent = False
     ntfy_error = ""
     if channel == "ntfy":
-        try:
-            from src.integrations import load_integrations
-            import httpx
-            intg = next(
-                (i for i in load_integrations()
-                 if i.get("preset") == "ntfy" and i.get("enabled", True) and i.get("base_url")),
-                None,
-            )
-            if intg:
-                base = intg["base_url"].rstrip("/")
-                topic = settings.get("reminder_ntfy_topic") or "reminders"
-                ntfy_body = synthesis or note_body or title
-                # ntfy Title is an ASCII HTTP header; sanitize Unicode and cap its length.
-                _clean_title = (title or "Reminder").encode("ascii", "replace").decode("ascii")[:200]
-                hdrs = {"Title": _clean_title, "Priority": "high", "Tags": "bell"}
-                api_key = intg.get("api_key", "")
-                if api_key:
-                    hdrs["Authorization"] = f"Bearer {api_key}"
-                # SSRF guard — same check (and env knob) as the webhook branch
-                # above: link-local / metadata addresses are always rejected;
-                # REMINDER_WEBHOOK_BLOCK_PRIVATE_IPS=true also blocks RFC-1918
-                # so a ntfy base_url can't be pointed at internal services.
-                import os as _os
-                from src.url_safety import check_outbound_url as _chk
-                _block = _os.getenv("REMINDER_WEBHOOK_BLOCK_PRIVATE_IPS", "false").lower() == "true"
-                _ok, _reason = _chk(f"{base}/{topic}", block_private=_block)
-                if not _ok:
-                    ntfy_error = f"ntfy URL rejected: {_reason}"
-                else:
-                    async with httpx.AsyncClient(timeout=10.0) as client:
-                        resp = await client.post(f"{base}/{topic}", content=ntfy_body, headers=hdrs)
-                        ntfy_sent = resp.is_success
-                        if not ntfy_sent:
-                            ntfy_error = f"ntfy returned HTTP {resp.status_code}"
-            else:
-                ntfy_error = "No enabled ntfy integration"
-        except Exception as e:
-            ntfy_error = str(e) or e.__class__.__name__
-            logger.warning(f"Reminder ntfy send failed: {e}")
+        from src.notifications import dispatch_notification
+        delivery = await dispatch_notification(
+            synthesis or note_body or title, title=title or "Reminder",
+            priority=4, tags=["bell"], topic=settings.get("reminder_ntfy_topic") or None,
+            owner=owner, ai=bool(llm_on),
+        )
+        ntfy_sent = delivery["status"] == "sent"
+        if not ntfy_sent:
+            ntfy_error = delivery.get("reason", "Notification not delivered")
 
     # In-app browser notification ALWAYS fires (regardless of channel). The
     # frontend polls `/api/tasks/notifications` and turns any entry with a

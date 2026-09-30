@@ -52,6 +52,7 @@ EMAIL_URGENCY_CACHE_DIR = os.path.join(DATA_DIR, "email_urgency_cache")
 SKILLS_DIR = os.path.join(DATA_DIR, "skills")
 GALLERY_DIR = os.path.join(DATA_DIR, "gallery")
 GALLERY_UPLOADS_DIR = os.path.join(DATA_DIR, "gallery_uploads")
+WORKSHOP_STATE_DIR = os.path.join(DATA_DIR, "workshop_state")
 MEMORY_VECTORS_DIR = os.path.join(DATA_DIR, "memory_vectors")
 
 # The only part of DATA_DIR the agent's file tools and subprocesses may touch.
@@ -99,7 +100,8 @@ WEB_FETCH_USER_AGENT = os.environ.get(
 DEFAULT_HOST = os.getenv("LLM_HOST", "localhost")
 LLM_HOSTS = [h.strip() for h in os.getenv("LLM_HOSTS", "").split(",") if h.strip()]
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-SEARXNG_INSTANCE = os.getenv("SEARXNG_INSTANCE", "http://localhost:8080")
+# New name takes precedence; retain the upstream name for existing installs.
+SEARXNG_INSTANCE = (os.getenv("SEARXNG_BASE_URL") or os.getenv("SEARXNG_INSTANCE") or "http://localhost:8080").rstrip("/")
 
 
 # Cleanup configuration
@@ -115,7 +117,7 @@ DEFAULT_MAX_TOKENS = 0
 
 
 def internal_api_base() -> str:
-    """Base URL for in-process loopback calls to Odysseus's own API.
+    """Base URL for in-process loopback calls to Exodus's own API.
 
     Agent tools and background jobs reach admin-gated routes by calling the
     running server over HTTP. Resolution order:

@@ -633,11 +633,11 @@ def _normalize_openai_chat_url(url: str) -> str:
 
 
 def _ollama_normalize_messages(messages: List[Dict]) -> List[Dict]:
-    """Adapt Odysseus' canonical OpenAI-style messages to native Ollama /api/chat.
+    """Adapt Exodus' canonical OpenAI-style messages to native Ollama /api/chat.
 
     Two shape mismatches silently break requests:
 
-    1. Tool calls: Odysseus carries `function.arguments` as a JSON *string*.
+    1. Tool calls: Exodus carries `function.arguments` as a JSON *string*.
        Native Ollama expects a JSON *object* and rejects the string form with
        HTTP 400 ("Value looks like object, but can't find closing '}' symbol"),
        aborting every follow-up (tool-result) round. Parse the arguments back
@@ -646,7 +646,7 @@ def _ollama_normalize_messages(messages: List[Dict]) -> List[Dict]:
        dropped — it is meaningless to Ollama and only matters when the
        conversation is replayed to Gemini.
 
-    2. Images (issue #4723): Odysseus carries multimodal user content as an
+    2. Images (issue #4723): Exodus carries multimodal user content as an
        OpenAI-style list ``[{type: "text", ...}, {type: "image_url",
        image_url: {url: "data:image/...;base64,XXX"}}, ...]``. Native Ollama
        does not accept a list for ``content`` — it wants ``content`` as a
@@ -1031,7 +1031,7 @@ def _apply_local_cache_affinity(payload: Dict, url: str, session_id: Optional[st
     slots via LRU when no stable identifier is present ("session_id=<empty>
     server-selected (LCP/LRU)"), which means consecutive turns of the same
     chat can land on different slots and lose their cached prefix entirely.
-    Sending a stable ``session_id`` (derived from the Odysseus session) lets
+    Sending a stable ``session_id`` (derived from the Exodus session) lets
     the server keep routing the same conversation to the same slot, and
     ``cache_prompt: true`` asks it to retain/reuse the prefix it already has.
 
@@ -1100,7 +1100,7 @@ def _provider_headers(provider: str, headers: Optional[Dict] = None) -> Dict[str
         h.update(headers)
     if provider == "openrouter":
         h.setdefault("HTTP-Referer", "https://github.com/odysseus-dev/odysseus")
-        h.setdefault("X-OpenRouter-Title", "Odysseus")
+        h.setdefault("X-OpenRouter-Title", "Exodus")
     if provider == "copilot":
         # Ensure the Copilot-required headers are present even when the caller
         # didn't pass pre-built headers (e.g. model listing). build_headers()
@@ -1377,7 +1377,7 @@ def _restricts_temperature(model: str) -> bool:
 
 # The official Moonshot API fixes temperature at 1.0 in thinking mode and 0.6
 # when thinking is explicitly disabled for Kimi K2.5/K2.6. Any other explicit
-# value returns HTTP 400. Odysseus does not currently send the `thinking` mode
+# value returns HTTP 400. Exodus does not currently send the `thinking` mode
 # control, so omit temperature and let Moonshot use its default thinking mode.
 # Keep the gate provider-specific: self-hosted Kimi deployments may accept
 # custom sampling values, and older Moonshot models have different defaults.
@@ -1671,7 +1671,7 @@ _REFERENCE_CONTEXT_BOUNDARY = "Reference context received."
 
 
 def _sanitize_llm_messages(messages: List[Dict]) -> List[Dict]:
-    """Strip Odysseus-only metadata before sending messages to providers.
+    """Strip Exodus-only metadata before sending messages to providers.
 
     Per the OpenAI chat format: user/system messages must have content; a tool
     message needs content + tool_call_id; an assistant message may carry content,
@@ -1970,6 +1970,8 @@ def llm_call(url: str, model: str, messages: List[Dict], temperature: float = LL
              max_tokens: int = LLMConfig.DEFAULT_MAX_TOKENS, headers: Optional[Dict] = None,
              timeout: int = LLMConfig.DEFAULT_TIMEOUT, prompt_type: Optional[str] = None) -> str:
     """Synchronous LLM call with optional prompt type enhancement."""
+    from src.ai_policy import require_ai
+    require_ai()
     h = _provider_headers(_detect_provider(url))
     # Tolerate headers that arrive as a JSON string (some sessions stored them
     # double-encoded) — otherwise h.update() throws "dictionary update sequence
@@ -2259,6 +2261,9 @@ async def llm_call_async_with_route_fallback(
     raise HTTPException(503, "All fallback candidates failed")
 
 
+from src.ai_policy import tracked_ai, tracked_stream
+
+@tracked_ai
 async def llm_call_async(
     url: str,
     model: str,
@@ -2275,6 +2280,8 @@ async def llm_call_async(
     return_model_metadata: bool = False,
 ) -> str | tuple[str, str]:
     """Asynchronous LLM call using httpx with connection pooling, timeout, retry logic, and performance logging."""
+    from src.ai_policy import require_ai
+    require_ai()
     provider = _detect_provider(url)
     messages_copy = _sanitize_llm_messages(messages)
 
@@ -2556,11 +2563,14 @@ def _stream_target_url(url: str) -> str:
     return _normalize_openai_chat_url(url)
 
 
+@tracked_stream
 async def stream_llm(url: str, model: str, messages: List[Dict], temperature: float = LLMConfig.DEFAULT_TEMPERATURE,
                      max_tokens: int = LLMConfig.DEFAULT_MAX_TOKENS, headers: Optional[Dict] = None,
                      timeout: int = LLMConfig.STREAM_TIMEOUT, prompt_type: Optional[str] = None,
                      tools: Optional[List[Dict]] = None, session_id: Optional[str] = None,
                      tool_choice_none: bool = False, workload: str = "foreground"):
+    from src.ai_policy import require_ai
+    require_ai()
     target_url = _stream_target_url(url)
     async with _local_model_slot(target_url, model, workload):
         async for chunk in _stream_llm_inner(
@@ -2592,6 +2602,8 @@ async def _stream_llm_inner(url: str, model: str, messages: List[Dict], temperat
       - event: error                       — errors
       - data: [DONE]                       — end of stream
     """
+    from src.ai_policy import require_ai
+    require_ai()
     provider = _detect_provider(url)
     messages_copy = _sanitize_llm_messages(messages)
 

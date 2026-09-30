@@ -60,6 +60,8 @@ async def task_llm_call_async(
     **kwargs,
 ):
     """Call the shared background-task LLM candidate chain."""
+    from src.ai_policy import require_ai, AI_OWNER
+    require_ai(owner)
     candidates = resolve_task_candidates(
         fallback_url=fallback_url,
         fallback_model=fallback_model,
@@ -70,4 +72,8 @@ async def task_llm_call_async(
         raise RuntimeError("No LLM endpoint available for background task")
     await wait_for_interactive_quiet("background task LLM")
     kwargs.setdefault("workload", "background")
-    return await llm_call_async_with_fallback(candidates, messages=messages, **kwargs)
+    context = AI_OWNER.set(owner)
+    try:
+        return await llm_call_async_with_fallback(candidates, messages=messages, **kwargs)
+    finally:
+        AI_OWNER.reset(context)

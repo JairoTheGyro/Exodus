@@ -8,6 +8,8 @@ Connects to a ChromaDB instance running as a standalone service.
 import os
 import socket
 import logging
+import threading
+from functools import wraps
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,30 @@ _client = None
 
 # A short connect probe so an unreachable ChromaDB fails fast instead of
 # blocking on the OS connection timeout (~30-60s, WinError 10060 on Windows),
-# which otherwise stalls app startup. Tunable via CHROMADB_CONNECT_TIMEOUT.
-_CONNECT_TIMEOUT = float(os.getenv("CHROMADB_CONNECT_TIMEOUT", "2.0"))
+# which otherwise stalls app startup. HTTP transport also uses five seconds.
+_CONNECT_TIMEOUT = 5.0
+_client_lock = threading.Lock()
+
+
+def _install_http_timeout():
+    """Chroma 1.5.9 hardcodes timeout=None, including during HttpClient init.
+
+    Apply the timeout when its transport is constructed, before identity/tenant
+    requests. Keep this compatibility shim isolated and covered by an HTTP test.
+    """
+    import httpx
+    from chromadb.api.fastapi import FastAPI
+    original = FastAPI.__init__
+    if getattr(original, "_exodus_timeout", False):
+        return
+
+    @wraps(original)
+    def bounded_init(self, *args, **kwargs):
+        original(self, *args, **kwargs)
+        self._session.timeout = httpx.Timeout(_CONNECT_TIMEOUT)
+    bounded_init._exodus_timeout = True
+    FastAPI.__init__ = bounded_init
+
 
 
 def _port_open(host: str, port: int, timeout: float = None) -> bool:
@@ -46,25 +70,28 @@ def get_chroma_client():
             "dependency with: pip install chromadb-client"
         ) from e
 
-    host = os.getenv("CHROMADB_HOST", "localhost")
-    port = int(os.getenv("CHROMADB_PORT", "8100"))
+    host = os.getenv("CHROMA_HOST") or os.getenv("CHROMADB_HOST", "localhost")
+    port = int(os.getenv("CHROMA_PORT") or os.getenv("CHROMADB_PORT", "8000"))
 
     if not _port_open(host, port):
         raise RuntimeError(
             f"ChromaDB is not reachable at {host}:{port}. Start the ChromaDB "
-            f"service (e.g. `docker compose up chromadb`) or set CHROMADB_HOST / "
-            f"CHROMADB_PORT to point at a running instance."
+            f"service (e.g. `docker compose up chromadb`) or set CHROMA_HOST / "
+            f"CHROMA_PORT to point at a running instance."
         )
 
-    client = chromadb.HttpClient(host=host, port=port)
+    from chromadb.config import Settings
+    with _client_lock:
+        if _client is not None:
+            return _client
+        _install_http_timeout()
+        client = chromadb.HttpClient(host=host, port=port, settings=Settings(anonymized_telemetry=False))
 
-    # Health check before caching — if the port is open but the service isn't
-    # healthy yet (e.g. still starting), don't poison the singleton with a dead
-    # client; leave _client unset so the next call retries.
-    client.heartbeat()
-    _client = client
-    logger.info(f"ChromaDB connected: {host}:{port}")
-    return _client
+        # Cache only after a successful heartbeat, under the singleton lock.
+        client.heartbeat()
+        _client = client
+        logger.info("ChromaDB connected: %s:%s", host, port)
+        return _client
 
 
 def reset_client():

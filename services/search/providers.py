@@ -132,6 +132,63 @@ _NEWS_HINTS = ("news", "nyheter", "headlines", "breaking", "latest", "today", "i
 _GENERAL_ENGINES = os.environ.get("SEARXNG_GENERAL_ENGINES", "bing,mojeek,presearch")
 
 
+class SearXNGUnavailable(RuntimeError):
+    """Safe, actionable search errors without exposing instance credentials."""
+
+
+def compact_searxng_search(query: str, count: int = 5, categories: Optional[str] = None,
+                           time_filter: Optional[str] = None) -> List[dict]:
+    """One JSON GET for agent grounding; no HTML/page scraping or provider fallback."""
+    if not isinstance(query, str) or not query.strip():
+        raise ValueError("A search query is required.")
+    limit = max(1, min(int(count), 5))
+    params = {"q": query.strip(), "format": "json",
+              "categories": categories or os.getenv("SEARXNG_CATEGORIES", "general") or "general",
+              "safesearch": _safesearch_for("searxng")}
+    # Reuse the existing instance's working general-engine configuration.
+    if params["categories"] == "general" and _GENERAL_ENGINES:
+        params["engines"] = _GENERAL_ENGINES
+    if time_filter in ("day", "week", "month", "year"):
+        params["time_range"] = time_filter
+    try:
+        response = httpx.get(f"{_get_search_instance().rstrip('/')}/search", params=params,
+                             headers={"User-Agent": WEB_FETCH_USER_AGENT}, timeout=5.0,
+                             follow_redirects=False)
+        if response.status_code == 403:
+            raise SearXNGUnavailable("SearXNG rejected JSON search. Enable json in search.formats in its settings.yml.")
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+            raise ValueError("Invalid results payload")
+        results, seen = [], set()
+        for item in payload["results"]:
+            if not isinstance(item, dict): continue
+            url = item.get("url")
+            if not isinstance(url, str) or len(url) > 2048: continue
+            try:
+                parsed = urlparse(url)
+            except ValueError:
+                continue
+            if parsed.scheme not in ("http", "https") or not parsed.netloc or parsed.username or parsed.password or url in seen:
+                continue
+            seen.add(url)
+            title = item.get("title") if isinstance(item.get("title"), str) else ""
+            content = item.get("content") if isinstance(item.get("content"), str) else ""
+            results.append({"title": BeautifulSoup(title[:4000], "html.parser").get_text(" ", strip=True)[:300],
+                            "url": url,
+                            "content": BeautifulSoup(content[:10000], "html.parser").get_text(" ", strip=True)[:1000]})
+            if len(results) >= limit: break
+        return results
+    except SearXNGUnavailable:
+        raise
+    except httpx.TimeoutException:
+        raise SearXNGUnavailable("SearXNG timed out after 5 seconds. Try again shortly.") from None
+    except httpx.HTTPError:
+        raise SearXNGUnavailable("SearXNG is unavailable. Check that it is running and SEARXNG_BASE_URL is reachable from Exodus.") from None
+    except (ValueError, TypeError):
+        raise SearXNGUnavailable("SearXNG returned invalid JSON search results.") from None
+
+
 def searxng_search_api(query: str, count: Optional[int] = None, categories: str = "general",
                        time_filter: Optional[str] = None) -> List[dict]:
     """Search using SearXNG JSON API. Returns list of {title, url, snippet}."""

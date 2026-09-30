@@ -13,6 +13,7 @@ function definePanel(definition) {
   return Object.freeze({
     controller: 'settings',
     adminOnly: false,
+    advanced: false,
     ...definition,
     keywords: Object.freeze([...(definition.keywords || [])]),
   });
@@ -60,12 +61,14 @@ export const SETTINGS_PANELS = Object.freeze([
   }),
   definePanel({
     id: 'ai',
+    advanced: true,
     label: 'AI Defaults',
     group: 'models',
     keywords: ['ai', 'defaults', 'model', 'vision', 'image', 'tts', 'stt'],
   }),
   definePanel({
     id: 'search',
+    advanced: true,
     label: 'Search',
     group: 'models',
     keywords: ['search', 'research', 'provider'],
@@ -86,6 +89,7 @@ export const SETTINGS_PANELS = Object.freeze([
   }),
   definePanel({
     id: 'reminders',
+    advanced: true,
     label: 'Reminders',
     group: 'communications',
     keywords: ['reminders', 'notifications', 'alerts'],
@@ -99,6 +103,7 @@ export const SETTINGS_PANELS = Object.freeze([
   }),
   definePanel({
     id: 'shortcuts',
+    advanced: true,
     label: 'Shortcuts',
     group: 'experience',
     keywords: ['shortcuts', 'keyboard', 'hotkeys'],
@@ -110,9 +115,16 @@ export const SETTINGS_PANELS = Object.freeze([
     group: 'account',
     keywords: ['account', 'password', 'logout'],
   }),
+  definePanel({
+    id: 'licenses',
+    label: 'License Tracker',
+    group: 'account',
+    keywords: ['license', 'licenses', 'tracker', 'open source', 'odysseus', 'agpl', 'attribution', 'repository', 'credits', 'updates', 'version', 'history', 'releases'],
+  }),
 
   definePanel({
     id: 'tools',
+    advanced: true,
     label: 'Agent Tools',
     group: 'administration',
     controller: 'admin',
@@ -121,6 +133,7 @@ export const SETTINGS_PANELS = Object.freeze([
   }),
   definePanel({
     id: 'users',
+    advanced: true,
     label: 'Users',
     group: 'administration',
     controller: 'admin',
@@ -129,6 +142,7 @@ export const SETTINGS_PANELS = Object.freeze([
   }),
   definePanel({
     id: 'system',
+    advanced: true,
     label: 'System',
     group: 'administration',
     controller: 'admin',

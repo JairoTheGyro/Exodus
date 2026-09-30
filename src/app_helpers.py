@@ -46,6 +46,13 @@ def serve_html_with_nonce(request: Request, file_path: str) -> HTMLResponse:
         raise HTTPException(500, "Internal server error")
     nonce = getattr(request.state, "csp_nonce", "")
     html = html.replace("{{CSP_NONCE}}", nonce)
+    if file_path.endswith("index.html"):
+        from src.home_store import profile
+        owner = getattr(request.state, "current_user", None)
+        mode = profile(owner).get("mode", "choose")
+        if mode not in ("full", "ai-free"):
+            mode = "choose"
+        html = html.replace('<html lang="en">', f'<html lang="en" data-workspace-mode="{mode}">')
     return HTMLResponse(html)
 
 

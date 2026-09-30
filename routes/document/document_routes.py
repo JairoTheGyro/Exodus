@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, Form
 
 from sqlalchemy import case, func, or_
+from sqlalchemy.exc import IntegrityError
 from core.database import SessionLocal, Document, DocumentVersion
 from core.database import Session as DbSession
 from src.auth_helpers import get_current_user, _auth_disabled
@@ -174,7 +175,19 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                             db.refresh(existing)
                         return _doc_to_dict(existing)
 
-            doc_id = str(uuid.uuid4())
+            doc_owner = user or (session.owner if session else None)
+            # Optional client request ID makes uncertain network retries safe.
+            # Scope the deterministic ID to the owner; existing callers keep
+            # their original random-ID behavior.
+            doc_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"odysseus-document:{doc_owner!r}:{req.request_id}")) if req.request_id else str(uuid.uuid4())
+            def matching_retry(existing):
+                if existing.owner == doc_owner and existing.title == req.title and existing.language == language and existing.current_content == req.content:
+                    return _doc_to_dict(existing)
+                raise HTTPException(409, "This save request already exists with different content. Check the Library.")
+            if req.request_id:
+                existing = db.query(Document).filter(Document.id == doc_id).first()
+                if existing:
+                    return matching_retry(existing)
             ver_id = str(uuid.uuid4())
 
             doc = Document(
@@ -188,7 +201,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                 # Stamp ownership directly so the doc survives its session
                 # being deleted. Fall back to the session's owner when the
                 # request is unauthenticated (single-user / localhost bypass).
-                owner=user or (session.owner if session else None),
+                owner=doc_owner,
             )
             ver = DocumentVersion(
                 id=ver_id,
@@ -200,7 +213,15 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             )
             db.add(doc)
             db.add(ver)
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                if req.request_id:
+                    existing = db.query(Document).filter(Document.id == doc_id).first()
+                    if existing:
+                        return matching_retry(existing)
+                raise
             db.refresh(doc)
             try:
                 from src.event_bus import fire_event

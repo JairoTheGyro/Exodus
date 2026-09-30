@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill release_date on entries in services/hwfit/data/hf_models.json.
+"""Backfill release_date on entries in services/hwfit/catalogs/hf_models.json.
 
 Why: the `newest` sort in the cookbook ranks rows by release_date. Anything
 missing a date sorts to the bottom. This script pulls `created_at` from the
@@ -30,7 +30,7 @@ except ImportError:
     sys.exit(1)
 
 
-CATALOG_PATH = Path(__file__).resolve().parent.parent / "services" / "hwfit" / "data" / "hf_models.json"
+CATALOG_PATH = Path(__file__).resolve().parent.parent / "services" / "hwfit" / "catalogs" / "hf_models.json"
 
 
 def fetch_release_date(api: HfApi, repo_id: str) -> str | None:

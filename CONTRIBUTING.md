@@ -27,7 +27,7 @@ Docker is the recommended path for normal testing:
 ```bash
 git clone https://github.com/odysseus-dev/odysseus.git
 cd odysseus
-cp .env.example .env
+cp env.example .env
 docker compose up -d --build
 ```
 

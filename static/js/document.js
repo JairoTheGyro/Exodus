@@ -17,6 +17,9 @@ import { openLibrary, closeLibrary, isLibraryOpen, initLibrary } from './documen
 import signatureModule from './signature.js';
 import * as Modals from './modalManager.js';
 import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
+import { isWorkshopSource, mountWorkshopPreview } from './workshopRuntime.js';
+
+  let _workshopPreviewCleanup = null;
 
   let API_BASE = '';
   let isOpen = false;
@@ -144,6 +147,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
 
   /** Switch chat to agent mode if not already */
   function _ensureAgentMode() {
+    if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
     const ab = document.getElementById('mode-agent-btn');
     const cb = document.getElementById('mode-chat-btn');
     if (ab && !ab.classList.contains('active')) {
@@ -3297,8 +3301,8 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
       _afterOdysseusAttachmentsAdded(1, label || data.filename);
       if (!opts.keepOpen) _closeOdysseusAttachMenu();
     } catch (err) {
-      console.error('Failed to attach Odysseus item:', err);
-      if (uiModule) uiModule.showError('Failed to attach from Odysseus');
+      console.error('Failed to attach Exodus item:', err);
+      if (uiModule) uiModule.showError('Failed to attach from Exodus');
     }
   }
 
@@ -3346,8 +3350,8 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
       _afterOdysseusAttachmentsAdded(added, zip ? 'odysseus-attachments.zip' : undefined);
       _closeOdysseusAttachMenu();
     } catch (err) {
-      console.error('Failed to attach selected Odysseus items:', err);
-      if (uiModule) uiModule.showError(added ? `Attached ${added}, then failed` : 'Failed to attach from Odysseus');
+      console.error('Failed to attach selected Exodus items:', err);
+      if (uiModule) uiModule.showError(added ? `Attached ${added}, then failed` : 'Failed to attach from Exodus');
       _renderComposeAttachments();
     } finally {
       if (btn) {
@@ -3421,7 +3425,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
       }
       _syncOdysseusAttachSelection(menu);
     } catch (err) {
-      console.error('Failed to load Odysseus attach items:', err);
+      console.error('Failed to load Exodus attach items:', err);
       list.innerHTML = '<div class="email-odysseus-attach-empty">Could not load</div>';
     }
   }
@@ -3934,7 +3938,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
             leadingIcon: 'check',
             action: 'View Message',
             onAction: () => {
-              import('./emailLibrary.js?v=20260815approvalsave1').then(mod => {
+              import('./emailLibrary.js?v=20260929workspace1').then(mod => {
                 const open = mod.openEmailLibrary || (mod.default && mod.default.openEmailLibrary);
                 if (open) open({
                   account_id: data.account_id || activeAccountId || null,
@@ -6892,6 +6896,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
   }
 
   export function closePanel(direction) {
+    if (_workshopPreviewCleanup) exitHtmlPreview();
     if (!isOpen) {
       if (direction !== 'down' && Modals.isRegistered('doc-panel')) {
         _minimizedDocId = null;
@@ -7012,6 +7017,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
   // auto-creating one. Same flow as the tab-bar "+" — the single entry point
   // the sidebar Library "+" should use too.
   export async function newDocument() {
+    if (document.documentElement.dataset.workspaceMode === 'ai-free') return createDocument(null);
     let sessionId = docs.get(activeDocId)?.sessionId
       || _lastSessionId
       || (sessionModule && sessionModule.getCurrentSessionId());
@@ -7286,6 +7292,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
 
   /** Create a session and sync it with the sessions module */
   async function _autoCreateSession() {
+    if (document.documentElement.dataset.workspaceMode === 'ai-free') return null;
     // Materialize pending chat first if one exists
     if (sessionModule && sessionModule.hasPendingChat && sessionModule.hasPendingChat()) {
       await sessionModule.materializePendingSession();
@@ -10074,7 +10081,12 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
       const mdPreview = document.getElementById('doc-md-preview');
       if (mdPreview) mdPreview.style.display = 'none';
       const code = textarea.value || '';
-      iframe.srcdoc = code;
+      if (isWorkshopSource(code)) {
+        _workshopPreviewCleanup?.();
+        _workshopPreviewCleanup = mountWorkshopPreview(iframe, activeDocId, code);
+      } else {
+        iframe.srcdoc = code;
+      }
       iframe.style.display = '';
       wrap.style.display = 'none';
       _htmlPreviewActive = true;
@@ -10090,6 +10102,8 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
     const wrap = document.getElementById('doc-editor-wrap');
     if (!_htmlPreviewActive) return;
     _htmlPreviewActive = false;
+    _workshopPreviewCleanup?.();
+    _workshopPreviewCleanup = null;
     if (iframe) { iframe.style.display = 'none'; iframe.srcdoc = ''; }
     if (wrap) wrap.style.display = '';
     renderTabs();
@@ -11193,6 +11207,7 @@ const documentModule = {
   exitDiffMode,
   isDiffModeActive,
   getCurrentDocId,
+  showHtmlPreview: () => { if (!_htmlPreviewActive) toggleHtmlPreview(); },
   getActiveEmailComposerContext,
   findEmailDocId,
   getSelectionContext,

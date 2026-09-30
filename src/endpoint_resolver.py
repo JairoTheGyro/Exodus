@@ -150,6 +150,8 @@ def resolve_endpoint_runtime(ep, owner: Optional[str] = None) -> Tuple[str, Opti
     store refreshable credentials in ProviderAuthSession and must resolve a
     current access token at call time.
     """
+    from src.ai_policy import require_ai
+    require_ai(owner)
     base = normalize_base(getattr(ep, "base_url", "") or "")
     api_key = getattr(ep, "api_key", None)
     auth_id = getattr(ep, "provider_auth_id", None)
@@ -334,7 +336,7 @@ def build_headers(api_key: Optional[str], base: str) -> Dict[str, str]:
         headers["Authorization"] = f"Bearer {api_key}"
     if provider == "openrouter":
         headers.setdefault("HTTP-Referer", "https://github.com/odysseus-dev/odysseus")
-        headers.setdefault("X-OpenRouter-Title", "Odysseus")
+        headers.setdefault("X-OpenRouter-Title", "Exodus")
     if _is_kimi_code_url(base):
         headers.setdefault("User-Agent", KIMI_CODE_USER_AGENT)
     return headers
@@ -359,6 +361,8 @@ def resolve_endpoint(
     Returns:
         (endpoint_url, model, headers) — resolved or fallback values.
     """
+    from src.ai_policy import require_ai
+    require_ai(owner)
     try:
         from src.settings import get_user_setting, load_settings
         settings = load_settings()
@@ -511,6 +515,8 @@ def resolve_endpoint_by_id(
     require_exact_model: bool = False,
 ) -> Optional[Tuple[str, str, Dict]]:
     """Resolve a specific endpoint id (+ optional model) to its runtime route."""
+    from src.ai_policy import require_ai
+    require_ai(owner)
 
     resolved = _resolve_endpoint_by_id_with_descriptor(
         ep_id,

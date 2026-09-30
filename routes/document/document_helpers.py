@@ -6,6 +6,7 @@ import logging
 import os
 import re
 from typing import Any, Dict, Optional
+from uuid import UUID
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 # ---- Request schemas ----
 
 class DocumentCreate(BaseModel):
+    request_id: Optional[UUID] = None
     session_id: Optional[str] = None
     title: str = "Untitled"
     language: Optional[str] = None

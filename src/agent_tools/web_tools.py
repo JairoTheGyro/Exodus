@@ -12,12 +12,15 @@ class WebSearchTool:
         raw = content.strip()
         query = raw
         time_filter = None
+        categories = None
         max_pages = 5
         if raw.startswith("{"):
             try:
                 parsed = json.loads(raw)
                 if isinstance(parsed, dict) and "query" in parsed:
                     query = str(parsed.get("query", "")).strip()
+                    category = parsed.get("categories")
+                    if isinstance(category, str) and category.strip(): categories = category.strip()[:100]
                     tf = parsed.get("time_filter") or parsed.get("freshness")
                     if isinstance(tf, str) and tf.lower() in ("day", "week", "month", "year"):
                         time_filter = tf.lower()
@@ -44,6 +47,25 @@ class WebSearchTool:
                 "elapsed_s": 0,
                 "tail": f"Searching web for: {query[:160]}",
             })
+        from services.search.providers import compact_searxng_search, _get_search_settings, SearXNGUnavailable
+        if _get_search_settings().get("search_provider", "searxng") == "searxng":
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.to_thread(compact_searxng_search, query, 5, categories, time_filter), timeout=5.0)
+            except (asyncio.TimeoutError, SearXNGUnavailable) as exc:
+                message = str(exc) if isinstance(exc, SearXNGUnavailable) else "SearXNG timed out after 5 seconds. Try again shortly."
+                return {"error": message, "exit_code": 1, "untrusted_content": True}
+            except ValueError:
+                return {"error": "A search query is required.", "exit_code": 1}
+            # Source text is evidence, never instructions. Preserve citation metadata
+            # expected by the existing chat renderer, without adding full webpages.
+            sources = [{"title": r["title"], "url": r["url"]} for r in results]
+            output = json.dumps({"results": results}, ensure_ascii=False)
+            if not results: output = "SearXNG returned no results for this query."
+            if sources: output += "\n\n<!-- SOURCES:" + json.dumps(sources) + " -->"
+            if progress_cb:
+                await progress_cb({"tail": f"SearXNG returned {len(results)} results."})
+            return {"output": output, "exit_code": 0, "untrusted_content": True}
         try:
             text, sources = await asyncio.wait_for(
                 loop.run_in_executor(

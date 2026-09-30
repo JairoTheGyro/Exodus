@@ -1,5 +1,5 @@
 // ============================================
-// Odysseus UI — Main Application Orchestrator
+// Exodus UI — Main Application Orchestrator
 // ES6 module — entry point, no exports (wires all modules together)
 // ============================================
 import Storage from './js/storage.js';
@@ -12,7 +12,7 @@ import presetsModule from './js/presets.js';
 import searchModule from './js/search.js';
 import chatModule from './js/chat.js?v=20260819approvalcontrol1';
 import compareModule from './js/compare/index.js?v=20260819approvalcontrol1';
-import documentModule from './js/document.js?v=20260815approvalsave1';
+import documentModule from './js/document.js?v=20260929workspace1';
 import searchChatModule from './js/search-chat.js';
 import { makeWindowDraggable } from './js/windowDrag.js';
 import {
@@ -33,7 +33,7 @@ import tasksModule from './js/tasks.js?v=20260723tasksbulkfeedback1';
 import calendarModule from './js/calendar.js';
 import notesModule from './js/notes.js';
 import adminModule from './js/admin.js?v=20260716openrouter3';
-import settingsModule from './js/settings.js?v=20260815approvalsave1';
+import settingsModule from './js/settings.js?v=20260929workspace1';
 // Eagerly bind unified minimize/restore behavior across all tool modals.
 import './js/modalManager.js?v=20260723compareicon2';
 // Desktop window tiling — drag a modal near an edge/corner to snap.
@@ -517,7 +517,7 @@ function initializeEventListeners() {
       e.stopPropagation();
       exportMenu.classList.remove('open');
       const meta = sessionModule.getSessions().find(s => s.id === sessionModule.getCurrentSessionId());
-      const sessionName = meta ? meta.name : 'Odysseus Chat';
+      const sessionName = meta ? meta.name : 'Exodus Chat';
       const originalTitle = document.title;
       document.title = sessionName;
       const chatHistory = document.getElementById('chat-history');
@@ -2411,7 +2411,7 @@ function initializeEventListeners() {
 	        textarea.setAttribute('placeholder', 'Swipe to toggle plan');
 	        return;
 	      }
-	      textarea.setAttribute('placeholder', width < PLACEHOLDER_COMPACT_WIDTH ? 'Message...' : 'Message Odysseus...');
+	      textarea.setAttribute('placeholder', width < PLACEHOLDER_COMPACT_WIDTH ? 'Message...' : 'Message Exodus...');
 	    }
 
 	    if (_isMobile && textarea && !textarea._odysseusPlanPlaceholderHint) {
@@ -3660,7 +3660,7 @@ function initializeEventListeners() {
 // INITIALIZATION ON PAGE LOAD
 // ============================================
 function startOdysseusApp() {
-  tasksModule?.startNotificationPolling?.();
+  if (document.documentElement.dataset.workspaceMode !== 'ai-free') tasksModule?.startNotificationPolling?.();
   if (window.__odysseusAppStarted) return;
   window.__odysseusAppStarted = true;
   const _bumpChatPriority = (ms = 10000) => {
@@ -3712,7 +3712,7 @@ function startOdysseusApp() {
   if (compareModule) {
     compareModule.init(API_BASE);
   }
-  researchPanelModule.init(API_BASE, markdownModule, sessionModule);
+  if (document.documentElement.dataset.workspaceMode !== 'ai-free') researchPanelModule.init(API_BASE, markdownModule, sessionModule);
   // Initialize document editor module
   if (documentModule) {
     documentModule.init(API_BASE);
@@ -4313,6 +4313,7 @@ function startOdysseusApp() {
   }
 
   const runNonCriticalStartup = (fn, delay = 4000) => {
+    if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
     let tries = 0;
     const run = () => {
       const busy = !!window.__odysseusChatBusy

@@ -1,5 +1,5 @@
 # Python
-__pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 *.egg-info/
@@ -11,9 +11,7 @@ venv/
 *.egg
 
 # Environment
-.env
-.env.bak.*
-!.env.example
+.env*
 # Local uv lockfile (optional, per-platform — see "Faster installs with uv" in README)
 requirements.lock
 
@@ -25,9 +23,8 @@ secrets.env.*
 !secrets.env.example
 
 # Data — all user data stays local
-data/
-!services/hwfit/data/
-!services/hwfit/data/hf_models.json
+**/data/
+**/chroma_data/
 logs/
 *.log
 *.db
@@ -120,3 +117,30 @@ compound.config.json
 *.error.log
 _scratch/
 /odysseus/
+
+# Exodus: local credentials, database sidecars and downloaded model weights
+secrets.env
+*.db-*
+*.sqlite-*
+*.sqlite3-*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+credentials.*.json
+auth.json
+*.gguf
+*.ggml
+*.safetensors
+*.onnx
+*.pt
+*.pth
+.huggingface/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+coverage/
+.coverage*
+htmlcov/
+backups/

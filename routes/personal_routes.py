@@ -5,6 +5,8 @@ import os
 import logging
 import shutil
 import uuid
+from io import BytesIO
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Tuple
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, Depends
 from fastapi.concurrency import run_in_threadpool
@@ -126,6 +128,12 @@ def rename_personal_upload_owner(
         "path_map": path_map,
         "rag_result": rag_result,
     }
+
+
+class KnowledgeTextRequest(BaseModel):
+    text: str | None = Field(default=None, min_length=1, max_length=100000)
+    title: str = Field(default="Knowledge note", max_length=100)
+    note_id: str | None = Field(default=None, max_length=100)
 
 
 def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
@@ -318,11 +326,42 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
             logger.error(f"Error removing directory from RAG: {e}")
             raise HTTPException(500, f"Failed to remove directory: {str(e)}")
     
+    @router.post("/text")
+    async def ingest_knowledge_text(request: Request, body: KnowledgeTextRequest):
+        """Index text or synchronize an owned note through the shared ingestion service."""
+        owner = require_privilege(request, "can_use_documents")
+        from src.ai_policy import require_ai
+        require_ai(owner)
+        if bool(body.note_id) == bool(body.text and body.text.strip()):
+            raise HTTPException(400, "Provide text or note_id, but not both.")
+        text, title = body.text, body.title
+        if body.note_id:
+            from src.note_indexing import ingest_note
+            result = await run_in_threadpool(ingest_note, body.note_id, owner, rag=await run_in_threadpool(_rag), require_existing=True)
+            if result["status"] == "not_found":
+                raise HTTPException(404, "Note not found")
+            if result["status"] not in ("indexed", "removed"):
+                raise HTTPException(503, "Note is saved; ChromaDB indexing is pending.")
+            return {"success":True, **result}
+        if not text or not text.strip() or len(text) > 100000:
+            raise HTTPException(400, "Text must contain 1–100000 characters.")
+        # Reuse chunking, metadata, owner scoping, persisted file storage and
+        # existing deletion controls. This is an explicit snapshot, not a sync.
+        upload = UploadFile(filename=(secure_filename(title[:100]) or "knowledge") + ".txt",
+                            file=BytesIO(text.encode("utf-8")))
+        try:
+            result = await upload_files_to_rag(request, [upload])
+            if result.get("failed_count"):
+                raise HTTPException(503, "Text was saved, but indexing is incomplete. Check ChromaDB and retry indexing from Documents.")
+            return result
+        finally:
+            await upload.close()
+
     @router.post("/upload")
     async def upload_files_to_rag(request: Request, files: List[UploadFile] = File(...)):
         """Upload files directly into RAG. Supports text and PDF."""
         user = require_privilege(request, "can_use_documents")
-        rag = _rag()
+        rag = await run_in_threadpool(_rag)
         if not rag:
             raise HTTPException(503, "RAG system is not available — is the embedding service running?")
 

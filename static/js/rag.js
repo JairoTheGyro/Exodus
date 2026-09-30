@@ -24,6 +24,7 @@ function _humanSize(bytes) {
  * Load and display RAG documents with delete buttons
  */
 export async function loadPersonalDocs() {
+  if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
   const box = document.getElementById('docs-view');
   if (!box) return;
 

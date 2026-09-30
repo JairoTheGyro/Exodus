@@ -2,6 +2,7 @@
 // User-facing preferences: AI models, search, appearance
 
 import uiModule from './ui.js';
+import { openLocalServices } from './settings/localServices.js';
 import searchModule from './search.js';
 import { byId } from './settings/dom.js';
 import {
@@ -10,6 +11,8 @@ import {
 } from './settings/registry.js';
 import { bindSettingsSearch } from './settings/search.js';
 import { bindSettingsSidebar } from './settings/sidebar.js';
+import { bindSettingsExperience } from './settings/experience.js';
+import { loadUpstreamUpdates } from './settings/upstream.js';
 import {
   activateSettingsPanel,
   getActiveSettingsTab,
@@ -72,6 +75,7 @@ function onSettingsPanelActivated(tab) {
 
   // AI endpoints are intentionally refreshed only when entering the AI panel.
   if (tab === 'ai') refreshAiModelEndpoints();
+  if (tab === 'licenses') loadUpstreamUpdates();
 }
 
 function openAdminSettingsTab(tab) {
@@ -2141,6 +2145,8 @@ function initAccount() {
 function initAll() {
   modalEl = el('settings-modal');
 
+  bindSettingsExperience(modalEl);
+
   bindSettingsNavigation(modalEl, {
     openAdminTab: openAdminSettingsTab,
     onPanelActivated: onSettingsPanelActivated,
@@ -2427,7 +2433,7 @@ async function initReminderSettings() {
   // regardless of channel). The hint should make that clear so
   // users don't think they have to choose between channels.
   const CHANNEL_HINTS = {
-    browser: 'Reminders appear as browser notifications inside Odysseus.',
+    browser: 'Reminders appear as browser notifications inside Exodus.',
     email: 'Reminders are emailed and shown as a browser notification.',
     ntfy: 'Reminders are pushed via ntfy AND shown as a browser notification.',
     webhook: 'Reminders are POSTed to the selected integration AND shown as a browser notification. Use {{title}} and {{message}} in the payload template.',
@@ -2667,7 +2673,7 @@ async function initEmailAccountsSettings() {
 
   el('set-email-open-library-settings')?.addEventListener('click', async () => {
     try {
-      const mod = await import('./emailLibrary.js?v=20260815approvalsave1');
+      const mod = await import('./emailLibrary.js?v=20260929workspace1');
       if (typeof mod.openEmailLibrarySettings === 'function') {
         await mod.openEmailLibrarySettings();
       }
@@ -2833,7 +2839,7 @@ async function initEmailAccountsSettings() {
     const eafProviderNotes = {
       outlook: {
         title: 'Outlook / Office 365 needs OAuth',
-        body: 'Microsoft disables normal password login for IMAP/SMTP in most Outlook and Microsoft 365 accounts. Odysseus does not support Microsoft OAuth/Graph mail yet, so this preset is only a placeholder for future support.',
+        body: 'Microsoft disables normal password login for IMAP/SMTP in most Outlook and Microsoft 365 accounts. Exodus does not support Microsoft OAuth/Graph mail yet, so this preset is only a placeholder for future support.',
       },
     };
     const eafNoteEl = el('eaf-provider-note');
@@ -3760,7 +3766,7 @@ async function initUnifiedIntegrations() {
       if (ntfyHint) {
         ntfyHint.style.display = isNtfy ? 'block' : 'none';
         if (isNtfy) {
-          ntfyHint.innerHTML = 'Enter the ntfy server URL Odysseus can reach. Examples: <code>http://127.0.0.1:8091</code>, <code>http://100.x.y.z:8091</code>, or <code>https://ntfy.example.com</code>.';
+          ntfyHint.innerHTML = 'Enter the ntfy server URL Exodus can reach. Examples: <code>http://127.0.0.1:8091</code>, <code>http://100.x.y.z:8091</code>, or <code>https://ntfy.example.com</code>.';
         }
       }
       if (url) {
@@ -4360,7 +4366,7 @@ async function initUnifiedIntegrations() {
       },
       outlook: {
         title: 'Outlook / Office 365 needs OAuth',
-        body: 'Microsoft disables normal password login for IMAP/SMTP in most Outlook and Microsoft 365 accounts. Odysseus does not support Microsoft OAuth/Graph mail yet, so this preset is only a placeholder for future support.',
+        body: 'Microsoft disables normal password login for IMAP/SMTP in most Outlook and Microsoft 365 accounts. Exodus does not support Microsoft OAuth/Graph mail yet, so this preset is only a placeholder for future support.',
         url: 'https://learn.microsoft.com/exchange/clients-and-mobile-in-exchange-online/disable-basic-authentication-in-exchange-online',
         linkLabel: 'Read Microsoft note',
       },
@@ -5184,7 +5190,7 @@ async function initUnifiedIntegrations() {
               </button>
             </div>
             <div id="uf-codex-config-body" style="display:none;">
-              <div style="font-size:11px;opacity:0.62;margin:4px 0 6px;">Toggle which Odysseus tools this agent can use. New agents start with chat only.</div>
+              <div style="font-size:11px;opacity:0.62;margin:4px 0 6px;">Toggle which Exodus tools this agent can use. New agents start with chat only.</div>
               <div id="uf-codex-inline-scopes"></div>
             </div>
           </div>
@@ -5586,6 +5592,8 @@ function syncAdminVisibility() {
    PUBLIC API
    ═══════════════════════════════════════════ */
 export function open(tab) {
+  // Keep older direct callers working after moving this view to the sidebar.
+  if (tab === 'local-services') { close(); openLocalServices(); return; }
   if (!initialized) initAll();
 
   syncAppearanceCheckboxes();

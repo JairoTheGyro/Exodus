@@ -359,9 +359,14 @@ class ChatProcessor:
             # agent mode so chat mode and incognito stay clean.)
 
         # RAG: search if enabled and rag_manager available, inject only above threshold
-        if use_rag:
+        if use_rag and not incognito:
             try:
                 rag_manager = getattr(self.personal_docs_manager, 'rag_manager', None)
+                if rag_manager is None or not getattr(rag_manager, "healthy", True):
+                    from src.rag_singleton import get_rag_manager
+                    rag_manager = get_rag_manager()
+                    if rag_manager is not None:
+                        self.personal_docs_manager.rag_manager = rag_manager
                 if rag_manager:
                     results = rag_manager.search(message, k=5, owner=owner)
                     # Filter by similarity threshold

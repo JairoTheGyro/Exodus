@@ -113,7 +113,7 @@ export function bindSettingsSearch(modalEl, options = {}) {
 
       const group = document.createElement('span');
       group.className = 'settings-search-result-group';
-      group.textContent = groupLabelFor(panel);
+      group.textContent = panel.advanced ? `${groupLabelFor(panel)} · Advanced` : groupLabelFor(panel);
 
       button.append(label, group);
       button.addEventListener('click', () => activateResult(button));

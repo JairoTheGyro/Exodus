@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {mergeModelCatalog} from '/opt/exodus/supervisor.mjs';
+const base = '# Preserve my provider\n- id: llm-pi-ai\n  config:\n    providers:\n      personal:\n        api: openai-completions\n        baseURL: http://my-own-server/v1\n- id: unrelated\n  disabled: true\n';
+const models = [{id: 'exodus-fixture', name: 'Local / fixture'}];
+const merged = mergeModelCatalog(base, models);
+assert.match(merged, /exodus-fixture/);
+assert.match(merged, /Preserve my provider/);
+assert.match(merged, /http:\/\/my-own-server\/v1/);
+assert.match(merged, /id: unrelated/);
+assert.equal(mergeModelCatalog(merged, models), merged);
+const removed = mergeModelCatalog(merged, []);
+assert.doesNotMatch(removed, /exodus-fixture/);
+assert.match(removed, /personal:/);
+assert.equal(mergeModelCatalog('[]\n', []), '[]\n');
+assert.throws(()=>mergeModelCatalog('invalid: [', models));
+console.log('Code sync: add, remove, idempotence, and preservation checks passed.');

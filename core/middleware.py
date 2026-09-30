@@ -111,7 +111,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         if is_https:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
-        if is_report:
+        if path == "/static/workshop-frame.html":
+            # Only this trusted wrapper can contain a generated Workshop app.
+            # Inline srcdoc is allowed; frame navigation to any URL is blocked.
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
+            response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                "img-src data:; media-src data: blob:; frame-src 'none'; connect-src 'none'; "
+                "object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; "
+                "sandbox allow-scripts; frame-ancestors 'self'; webrtc 'block'"
+            )
+        elif is_report:
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline'; "

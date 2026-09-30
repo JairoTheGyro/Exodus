@@ -236,9 +236,9 @@ def test_redirect_base_override_is_forwarded_into_the_container():
 def test_redirect_base_override_is_documented():
     import pytest
 
-    env_example = _repo_root() / ".env.example"
+    env_example = _repo_root() / "env.example"
     if not env_example.exists():
-        pytest.skip("this checkout does not include the optional .env.example file")
+        pytest.skip("this checkout does not include the optional env.example file")
     assert "# OAUTH_REDIRECT_BASE_URL=" in env_example.read_text(encoding="utf-8")
 
 

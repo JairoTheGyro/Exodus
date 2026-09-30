@@ -72,6 +72,8 @@ class EmbeddingClient:
         self, texts: List[str], normalize_embeddings: bool = True
     ) -> np.ndarray:
         """Encode texts via the API. Returns (N, dim) float32 array."""
+        from src.ai_policy import require_ai
+        require_ai()
         if not texts:
             return np.array([], dtype="float32")
 
@@ -195,6 +197,8 @@ class FastEmbedClient:
         self, texts: List[str], normalize_embeddings: bool = True
     ) -> np.ndarray:
         """Encode texts locally. Returns (N, dim) float32 array."""
+        from src.ai_policy import require_ai
+        require_ai()
         if not texts:
             return np.array([], dtype="float32")
 

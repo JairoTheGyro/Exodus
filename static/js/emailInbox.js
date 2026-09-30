@@ -5,7 +5,7 @@
 
 import spinnerModule from './spinner.js';
 import sessionModule from './sessions.js';
-import { initEmailLibrary, openEmailLibrary, closeEmailLibrary, isOpen as isLibOpen, prewarmEmailLibrary, prewarmUnreadEmails } from './emailLibrary.js?v=20260815approvalsave1';
+import { initEmailLibrary, openEmailLibrary, closeEmailLibrary, isOpen as isLibOpen, prewarmEmailLibrary, prewarmUnreadEmails } from './emailLibrary.js?v=20260929workspace1';
 import * as Modals from './modalManager.js';
 import { applyEdgeDock } from './modalSnap.js';
 import { buildReplyAllCc, extractEmail } from './emailLibrary/replyRecipients.js';
@@ -282,7 +282,7 @@ function _bindEvents() {
     });
   }
 
-  // Delay the lightweight unread badge check so opening Odysseus doesn't
+  // Delay the lightweight unread badge check so opening Exodus doesn't
   // compete with the initial chat/session paint. The full email list now loads
   // only when the inbox is actually opened.
   setTimeout(_refreshUnreadCount, 8000);

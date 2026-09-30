@@ -16,6 +16,8 @@ const REAL_MODULES = new Set([
   SETTINGS_JS,
   path.join(JS, 'settings/dom.js'),
   path.join(JS, 'settings/registry.js'),
+  path.join(JS, 'settings/experience.js'),
+  path.join(JS, 'settings/upstream.js'),
   path.join(JS, 'settings/search.js'),
   path.join(JS, 'settings/sidebar.js'),
   path.join(JS, 'settings/navigation.js'),
@@ -549,6 +551,7 @@ function buildFixture(document) {
     'appearance',
     'shortcuts',
     'account',
+    'licenses',
     'tools',
     'users',
     'system',
@@ -779,6 +782,7 @@ const searchModule = functionProxy();
 
 
 const STUBS = new Map([
+  [path.join(JS, 'settings/localServices.js'), { openLocalServices() {} }],
   [
     path.join(JS, 'ui.js'),
     { default: uiModule },

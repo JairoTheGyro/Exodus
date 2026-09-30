@@ -1,0 +1,129 @@
+/* TempleOS-style presentation. Original reference: TempleOS 4.05 desktop.
+   All existing controls stay in the DOM and use their existing handlers. */
+@font-face { font-family:'Exodus Temple'; src:url('/static/fonts/temple/Temple8x8.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+.exodus-logo { object-fit:contain; image-rendering:pixelated; flex-shrink:0; }
+.sidebar-exodus-logo { width:32px; height:32px; vertical-align:middle; margin-right:14px; }
+.welcome-name .exodus-logo { width:40px; height:40px; }
+.logo .exodus-logo { width:36px; height:36px; }
+#exodus-logo-card p { font-size:12px; line-height:1.5; }
+#exodus-logo-choices { display:grid; grid-template-columns:repeat(auto-fit,minmax(76px,1fr)); gap:8px; }
+#exodus-logo-choices button { height:auto !important; min-height:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px 4px; border:1px solid var(--border); border-radius:6px; color:var(--fg); background:var(--panel); font:inherit; font-size:11px; cursor:pointer; }
+#exodus-logo-choices button[aria-pressed="true"] { border:2px solid var(--red); padding:7px 3px; background:color-mix(in srgb,var(--red) 12%,var(--panel)); }
+#exodus-logo-choices button:focus-visible { outline:2px solid var(--fg); outline-offset:2px; }
+#exodus-logo-choices img { width:40px; height:40px; image-rendering:pixelated; }
+#exodus-logo-status { margin-bottom:0; }
+
+html.theme-temple {
+  --temple-black:#000000; --temple-blue:#0000aa; --temple-green:#00aa00; --temple-cyan:#00aaaa;
+  --temple-red:#aa0000; --temple-magenta:#aa00aa; --temple-brown:#aa5500; --temple-gray:#aaaaaa;
+  --temple-dark-gray:#555555; --temple-light-blue:#5555ff; --temple-light-green:#55ff55; --temple-light-cyan:#55ffff;
+  --temple-light-red:#ff5555; --temple-light-magenta:#ff55ff; --temple-yellow:#ffff55; --temple-white:#ffffff;
+  --bg:#ffffff !important; --fg:#0000aa !important; --panel:#ffffff !important; --border:#0000aa !important; --red:#aa0000 !important;
+  --font-family:'Exodus Temple',monospace !important;
+  --hl-bg:#ffffff !important; --hl-fg:#000000 !important; --hl-keyword:#0000aa !important; --hl-string:#aa0000 !important;
+  --hl-comment:#555555 !important; --hl-function:#aa00aa !important; --hl-number:#00aa00 !important;
+  --hl-builtin:#0000aa !important; --hl-variable:#000000 !important; --hl-params:#000000 !important;
+  background:#000000 !important; font-size:8px !important; overflow:hidden !important;
+}
+html.theme-temple body {
+  position:fixed !important; left:50% !important; top:50% !important;
+  width:640px !important; height:480px !important; min-width:640px !important; min-height:480px !important;
+  max-width:640px !important; max-height:480px !important; margin:0 !important;
+  transform:translate(-50%,-50%) scale(var(--temple-scale,1)) !important; transform-origin:center !important;
+  padding:16px 0 8px !important; overflow:hidden !important; background:#0000aa !important;
+  font-family:'Exodus Temple',monospace !important; font-size:8px !important; line-height:1.5 !important;
+  color:#0000aa !important; isolation:isolate;
+}
+html.theme-temple body *, html.theme-temple body *::before, html.theme-temple body *::after {
+  border-radius:0 !important; box-shadow:none !important; text-shadow:none !important;
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+  transition:none !important; animation:none !important; font-family:'Exodus Temple',monospace !important;
+  font-size:8px !important; font-weight:400 !important; letter-spacing:0 !important;
+  -webkit-font-smoothing:none !important; font-smooth:never; text-rendering:geometricPrecision;
+}
+html.theme-temple body * { scrollbar-width:thin; scrollbar-color:#0000aa #ffffff; }
+html.theme-temple :is(button,input,textarea,select) { color:#0000aa !important; background:#ffffff !important; border-color:#0000aa !important; }
+html.theme-temple :is(button,[role=button],summary) { min-height:16px !important; padding:4px 8px !important; line-height:8px !important; }
+html.theme-temple :is(input,select) { min-height:24px !important; padding:4px !important; }
+html.theme-temple textarea { min-height:32px !important; padding:4px !important; line-height:12px !important; }
+html.theme-temple a { color:#aa0000 !important; text-decoration:underline !important; }
+html.theme-temple :is(button,[role=button],summary):hover, html.theme-temple .list-item:hover { color:#ffffff !important; background:#0000aa !important; }
+html.theme-temple :is(button:disabled,input:disabled,select:disabled) { color:#555555 !important; background:#aaaaaa !important; }
+html.theme-temple :focus-visible { outline:2px solid #aa0000 !important; outline-offset:1px !important; }
+html.theme-temple ::selection { background:#0000aa; color:#ffff55; }
+html.theme-temple :is(svg) { width:12px; height:12px; opacity:1 !important; }
+html.theme-temple :is(h1,h2,h3,h4,h5,p,label,.memory-desc) { line-height:12px !important; }
+html.theme-temple :is(#sidebar,#chat-container,.doc-editor-pane,.compare-pane) { background:#ffffff !important; color:#0000aa !important; border:3px double #0000aa !important; }
+html.theme-temple #sidebar { width:160px !important; min-width:160px !important; max-width:160px !important; height:456px !important; position:relative !important; top:0 !important; transform:none !important; }
+html.theme-temple #sidebar .sidebar-inner { padding:0 4px !important; overflow:auto !important; }
+html.theme-temple #sidebar :is(button,.list-item,.section-title), html.theme-temple #sidebar :is(button,.list-item,.section-title) * { font-size:8px !important; line-height:12px !important; }
+html.theme-temple .sidebar-header { padding:4px !important; min-height:24px !important; background:#ffffff !important; }
+html.theme-temple .sidebar-brand-title { color:#0000aa !important; -webkit-text-fill-color:#0000aa !important; background:none !important; }
+html.theme-temple .sidebar-exodus-logo { width:24px; height:24px; margin-right:4px; }
+html.theme-temple .list-item { padding:4px !important; min-height:20px !important; gap:4px !important; }
+html.theme-temple .section { margin:4px 0 !important; }
+html.theme-temple .section-title { color:#aa0000 !important; opacity:1 !important; }
+html.theme-temple .sidebar-user-bar { min-height:24px !important; background:#ffffff !important; border-top:1px solid #0000aa !important; padding:4px !important; }
+html.theme-temple #chat-container { height:456px !important; min-height:0 !important; margin:0 !important; padding:0 4px !important; flex:1 !important; min-width:0 !important; }
+html.theme-temple .chat-meta-overlay { background:#0000aa !important; color:#ffffff !important; border:0 !important; min-height:16px !important; padding:4px !important; }
+html.theme-temple .chat-meta-overlay * { color:#ffffff !important; }
+html.theme-temple #welcome-screen { gap:8px !important; padding:8px !important; }
+html.theme-temple .welcome-name { color:#0000aa !important; -webkit-text-fill-color:#0000aa !important; background:none !important; font-size:16px !important; gap:8px !important; }
+html.theme-temple .welcome-name .exodus-logo { width:48px !important; height:48px !important; }
+html.theme-temple .chat-history { padding:8px !important; }
+html.theme-temple :is(.msg,.message,.bubble,.input-container,.input-wrapper,.input-area,.chat-input-container,.admin-card,.memory-card,.doclib-card,.settings-panel,.theme-swatch,.theme-swatch.active) { background:#ffffff !important; color:#0000aa !important; border-color:#0000aa !important; background-image:none !important; }
+html.theme-temple :is(.role,.message-role) { color:#aa0000 !important; }
+html.theme-temple .modal { inset:0 !important; width:640px !important; height:480px !important; padding:16px !important; align-items:center !important; justify-content:center !important; background:transparent !important; }
+html.theme-temple :is(.modal-content,#theme-popup,#settings-modal .modal-content,#workshop-modal .modal-content) {
+  background:#ffffff !important; color:#0000aa !important; border:3px double #0000aa !important;
+  min-width:0 !important; min-height:0 !important; max-width:608px !important; max-height:440px !important;
+  width:min(608px,100%) !important; margin:0 !important;
+}
+html.theme-temple :is(.modal-header,.doc-panel-header,.settings-header) { background:#0000aa !important; color:#ffffff !important; border-bottom:1px solid #0000aa !important; padding:4px !important; min-height:24px !important; }
+html.theme-temple :is(.modal-header,.doc-panel-header) * { color:#ffffff !important; background:#0000aa !important; }
+html.theme-temple .modal-header .close-btn { display:flex !important; }
+html.theme-temple :is(.modal-body,.settings-body,.settings-content,#workshop-modal .ws-body) { min-height:0 !important; overflow:auto !important; padding:8px !important; gap:8px !important; }
+html.theme-temple :is(.settings-sidebar,.admin-tabs,.theme-tabs) { background:#ffffff !important; color:#0000aa !important; }
+html.theme-temple :is(.active,.selected,[aria-selected=true],[aria-pressed=true]):is(button,.settings-nav-item,.lib-tab,.theme-tab) { background:#0000aa !important; color:#ffff55 !important; }
+html.theme-temple :is(.ws-demo,#ws-scope,pre,code,.dropdown-menu,.context-menu,.popover) { background:#ffffff !important; color:#0000aa !important; border-color:#0000aa !important; }
+html.theme-temple .ws-zone[data-zone=red] { background:#aa0000 !important; color:#ffffff !important; }
+html.theme-temple .ws-zone[data-zone=yellow] { background:#ffff55 !important; color:#000000 !important; }
+html.theme-temple .ws-zone[data-zone=green] { background:#00aa00 !important; color:#ffffff !important; }
+html.theme-temple .theme-swatch { min-height:40px !important; border:1px solid #0000aa !important; padding:4px !important; }
+html.theme-temple .theme-swatch.active { outline:2px solid #aa0000 !important; }
+html.theme-temple #theme-popup { position:fixed !important; left:16px !important; top:20px !important; transform:none !important; overflow:auto !important; }
+html.theme-temple :is(#bg-canvas,.bg-canvas,.modal::before,.modal-content::before) { display:none !important; }
+html.theme-temple #temple-menu { display:flex; align-items:center; justify-content:space-between; position:absolute; top:0; left:0; width:640px; height:16px; padding:0 4px; background:#0000aa; color:#ffff55; z-index:2147483647; }
+html.theme-temple #temple-menu button { min-height:16px !important; height:16px !important; padding:0 4px !important; background:#0000aa !important; color:#ffffff !important; border:0 !important; }
+#temple-menu[hidden] { display:none !important; }
+html.theme-temple #welcome-screen { left:0 !important; top:64px !important; width:100% !important; height:auto !important; transform:none !important; }
+html.theme-temple #welcome-screen .welcome-name { margin:0 0 16px !important; }
+html.theme-temple #welcome-screen :is(.welcome-tip,.welcome-sub) { opacity:1 !important; max-width:90% !important; margin:8px auto !important; color:#0000aa !important; }
+html.theme-temple .chat-input-bar { position:absolute !important; left:4px !important; right:4px !important; bottom:4px !important; top:auto !important; transform:none !important; width:auto !important; min-height:64px !important; max-height:160px !important; margin:0 !important; padding:4px !important; background:#ffffff !important; border:1px solid #0000aa !important; }
+html.theme-temple .chat-top-bar { height:24px !important; min-height:24px !important; position:relative !important; padding:0 !important; }
+html.theme-temple .chat-meta-overlay { position:static !important; transform:none !important; height:24px !important; width:100% !important; justify-content:space-between !important; }
+html.theme-temple .chat-meta-overlay button { background:#0000aa !important; color:#ffffff !important; padding:0 4px !important; }
+html.theme-temple .chat-input-top { padding:0 !important; min-height:32px !important; }
+html.theme-temple .chat-input-bar textarea::placeholder { color:#555555 !important; opacity:1 !important; font-size:8px !important; }
+html.theme-temple #chat-history { padding-bottom:112px !important; }
+html.theme-temple .theme-swatch { overflow:hidden !important; min-width:80px !important; }
+html.theme-temple #themeGrid { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+
+/* Keep controls positioned inside the logical desktop instead of the host viewport. */
+.sidebar-brand-title { left:0 !important; }
+html.theme-temple #scroll-bottom-btn { position:absolute !important; left:auto !important; top:auto !important; right:12px !important; bottom:112px !important; width:24px !important; height:24px !important; }
+html.theme-temple .export-dropdown-wrap { position:relative !important; left:auto !important; right:auto !important; top:auto !important; margin:0 !important; }
+html.theme-temple .chat-meta-overlay #export-dl-btn { height:16px !important; width:20px !important; min-height:16px !important; }
+.temple-description { margin:12px 16px; font-size:12px; line-height:1.5; opacity:.8; }
+html.theme-temple .temple-description { opacity:1; color:#0000aa; }
+
+/* The scaled desktop has room for the welcome panel even when the host
+   viewport would normally trigger the mobile keyboard layout. */
+html.theme-temple #welcome-screen:not(.hidden):not(.kb-hidden) { opacity:1 !important; pointer-events:auto !important; }
+html.theme-temple body:has(#authForm) { align-items:center !important; }
+html.theme-temple body:has(#authForm) .card { border:3px double #0000aa !important; padding:16px !important; background:#ffffff !important; }
+html.theme-temple body:has(#authForm) .logo { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:16px; }
+html.theme-temple body:has(#authForm) .logo-boat { width:40px !important; height:40px !important; margin:0; }
+html.theme-temple body:has(#authForm) .logo span { color:#0000aa !important; -webkit-text-fill-color:#0000aa !important; background:none !important; font-size:16px !important; }
+html.theme-temple body:has(#authForm) label { color:#0000aa !important; }
+html.theme-temple .upstream-change, html.theme-temple .upstream-change > summary { background:#ffffff !important; color:#0000aa !important; border-color:#0000aa !important; }

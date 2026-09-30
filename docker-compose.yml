@@ -28,7 +28,16 @@ services:
       - RESEARCH_LLM_ENDPOINT=${RESEARCH_LLM_ENDPOINT:-}
       - HF_TOKEN=${HF_TOKEN:-}
       - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
-      - SEARXNG_INSTANCE=http://searxng:8080
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://searxng:8080}
+      - SEARXNG_INSTANCE=${SEARXNG_INSTANCE:-http://searxng:8080}
+      - SEARXNG_CATEGORIES=${SEARXNG_CATEGORIES:-general}
+      - NTFY_BASE_URL=${NTFY_BASE_URL:-http://ntfy:80}
+      - NTFY_DEFAULT_TOPIC=${NTFY_DEFAULT_TOPIC:-exodus-alerts}
+      - NTFY_ENABLED=${NTFY_ENABLED:-true}
+      - NTFY_CACHE_MESSAGES=${NTFY_CACHE_MESSAGES:-true}
+      - CHROMA_HOST=${CHROMA_HOST:-chromadb}
+      - CHROMA_PORT=${CHROMA_PORT:-8000}
+      - CHROMA_COLLECTION=${CHROMA_COLLECTION:-exodus_knowledge}
       - CHROMADB_HOST=chromadb
       - CHROMADB_PORT=8000
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/app.db}
@@ -92,7 +101,7 @@ services:
     ports:
       - "${CHROMADB_BIND:-127.0.0.1}:8100:8000"
     volumes:
-      - chromadb-data:/chroma/chroma
+      - chromadb-data:/data
     environment:
       - ANONYMIZED_TELEMETRY=FALSE
     restart: unless-stopped
@@ -160,10 +169,57 @@ services:
     volumes:
       - ntfy-cache:/var/cache/ntfy
     environment:
-      - NTFY_BASE_URL=${NTFY_BASE_URL:-http://localhost:8091}
+      - NTFY_BASE_URL=${NTFY_PUBLIC_URL:-http://localhost:8091}
+    restart: unless-stopped
+
+  # Code runs in a dedicated environment; it cannot access the host checkout,
+  # vault, Docker socket, or Exodus database. Only a scoped model token is shared.
+  harness:
+    build: ./integrations/harness
+    image: sovereign-hub-harness:0.1.7-rc.2
+    init: true
+    ports:
+      - "127.0.0.1:8093:3080"
+    volumes:
+      - harness-home:/home/node/.dsh
+      - ./data/code-projects:/workspace
+      - ./data/code-bridge:/run/exodus:ro
+      - ./integrations/harness/supervisor.mjs:/opt/exodus/supervisor.mjs:ro
+      - ./integrations/harness/workshop-runner.mjs:/opt/exodus/workshop-runner.mjs:ro
+      - ./integrations/harness/workshop-tools.mjs:/opt/exodus/workshop-tools.mjs:ro
+    environment:
+      DSH_HOME: /home/node/.dsh
+      DSH_TELEMETRY_DISABLED: "1"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "node", "-e", "const a=Object.values(require('os').networkInterfaces()).flat().find(x=>x.family==='IPv4'&&!x.internal).address;fetch('http://'+a+':3080/').then(r=>process.exit(r.ok||r.status===401?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Privacy Hub: official stable image, pinned so restarts cannot upgrade the vault.
+  vaultwarden:
+    image: vaultwarden/server:1.37.3@sha256:1587c45feaa479f1f5e8af3b00eded36bff77bcf1880cf8dbf0541706dd470e0
+    ports:
+      - "127.0.0.1:8092:80"
+    volumes:
+      - vaultwarden-data:/data
+    environment:
+      DOMAIN: "http://localhost:8092"
+      # Local demo onboarding. Set false after creating your account.
+      SIGNUPS_ALLOWED: "${VAULTWARDEN_SIGNUPS_ALLOWED:-true}"
+      # Do not contact website servers to fetch saved-login icons.
+      DISABLE_ICON_DOWNLOAD: "true"
+      ICON_CACHE_TTL: "0"
+      PUSH_ENABLED: "false"
     restart: unless-stopped
 
 volumes:
   searxng-data:
   chromadb-data:
   ntfy-cache:
+  vaultwarden-data:
+  harness-home:

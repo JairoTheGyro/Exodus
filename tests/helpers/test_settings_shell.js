@@ -265,6 +265,7 @@ function buildFixture(document) {
     'appearance',
     'shortcuts',
     'account',
+    'licenses',
     'tools',
     'users',
     'system',
@@ -353,6 +354,7 @@ function moduleSource(relativePath) {
   };
   vm.createContext(context);
   vm.runInContext(moduleSource('registry.js'), context, { filename: 'registry.js' });
+  vm.runInContext(moduleSource('experience.js'), context, { filename: 'experience.js' });
   vm.runInContext(moduleSource('search.js'), context, { filename: 'search.js' });
   vm.runInContext(moduleSource('sidebar.js'), context, { filename: 'sidebar.js' });
   vm.runInContext(moduleSource('navigation.js'), context, { filename: 'navigation.js' });
@@ -384,6 +386,7 @@ function moduleSource(relativePath) {
       'appearance',
       'shortcuts',
       'account',
+      'licenses',
       'tools',
       'users',
       'system',
@@ -769,6 +772,62 @@ function moduleSource(relativePath) {
     'hideSettingsModal preserves the closing animation fallback semantics',
     fixture.modal.classList.contains('hidden') && !fixture.content.classList.contains('modal-closing'),
   );
+
+  // Exercise the real view controller with existing navigation. Advanced
+  // controls must remain reachable, and view changes must preserve form data.
+  storage.clear();
+  const experience = buildFixture(document);
+  const viewButtons = {};
+  for (const view of ['essentials', 'advanced']) {
+    const button = document.createElement('button');
+    button.setAttribute('data-settings-view', view);
+    experience.content.appendChild(button);
+    viewButtons[view] = button;
+  }
+  context.bindSettingsNavigation(experience.modal);
+  context.bindSettingsExperience(experience.modal);
+  check('Fresh Settings opens in Essentials',
+    experience.modal.classList.contains('settings-essentials')
+      && viewButtons.essentials.getAttribute('aria-pressed') === 'true');
+
+  context.activateSettingsPanel(experience.modal, 'system');
+  check('A direct advanced-panel link reveals its navigation and saves the view',
+    !experience.modal.classList.contains('settings-essentials')
+      && viewButtons.advanced.getAttribute('aria-pressed') === 'true'
+      && storage.get('odysseus-settings-view') === 'advanced');
+
+  const restoredExperience = buildFixture(document);
+  context.bindSettingsExperience(restoredExperience.modal);
+  check('The chosen view survives a fresh Settings initialization',
+    !restoredExperience.modal.classList.contains('settings-essentials'));
+
+  viewButtons.essentials.click();
+  check('Returning to Essentials from an advanced panel opens an available panel',
+    experience.modal.classList.contains('settings-essentials')
+      && context.getActiveSettingsTab(experience.modal) === 'services');
+
+  const address = document.createElement('input');
+  address.value = 'http://my-model:11434/v1';
+  experience.content.appendChild(address);
+  context.setSetupChoice(experience.modal, 'cloud');
+  context.setSetupChoice(experience.modal, 'local');
+  check('Switching setup paths preserves entered connection data',
+    address.value === 'http://my-model:11434/v1'
+      && experience.modal.dataset.setupChoice === 'local');
+
+  storage.set('odysseus-settings-view', 'invalid');
+  const invalidExperience = buildFixture(document);
+  context.bindSettingsExperience(invalidExperience.modal);
+  check('Invalid saved view falls back to Essentials',
+    invalidExperience.modal.classList.contains('settings-essentials'));
+
+  context.localStorage.getItem = () => { throw new Error('Storage unavailable'); };
+  context.localStorage.setItem = () => { throw new Error('Storage unavailable'); };
+  const privateExperience = buildFixture(document);
+  context.bindSettingsExperience(privateExperience.modal);
+  context.setSettingsView(privateExperience.modal, 'advanced');
+  check('View controls still work when browser storage is unavailable',
+    !privateExperience.modal.classList.contains('settings-essentials'));
 
   console.log(JSON.stringify(results));
   if (results.some(result => !result.pass)) process.exitCode = 1;

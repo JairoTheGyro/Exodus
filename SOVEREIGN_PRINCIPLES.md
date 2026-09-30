@@ -1,0 +1,493 @@
+# Sovereign Solutions product principles
+
+## Simple by default, customizable on demand
+
+The first experience should use clear language, sensible defaults, and minimal
+setup. Deeper configuration should be discoverable without overwhelming someone
+who has never managed AI software. Preserve Odysseus as the shared interface and
+foundation.
+
+Reuse existing features and controls before adding new ones. Do not remove
+features. A simpler view may tuck controls away only when users can still reach
+them through a clear advanced path. Presentation choices must never silently
+change permissions, privacy, provider selection, storage, or automation behavior.
+
+AI can run through a local model or a provider connected with the user's own API
+key. Setup must explain what is required, where requests go, and when costs may
+apply. Do not claim that a model is installed, connected, or working until the
+corresponding operation succeeds. Downloads and paid services are deliberate
+user choices.
+
+## Implemented first step
+
+- Settings defaults to Essentials, with Advanced exposing every existing panel.
+- The view is remembered in this browser and follows the existing logout and
+  account-switch storage cleanup.
+- Settings search still finds advanced panels for authorized users; selecting
+  one reveals Advanced. Existing direct links do the same.
+- Model setup introduces local and cloud choices using the existing forms,
+  validation, and connection actions. Switching choices preserves entered values.
+- The existing Docker-aware Ollama address helper is easier to find; it still
+  only fills the form and does not install or connect a model.
+
+This is the first interface improvement, not a completed zero-setup installer.
+Custom agents, extensions, privacy controls, storage options, compute choices,
+workflows, and developer tools remain part of the wider vision. Inspect and reuse
+Odysseus's existing implementation before extending any of them. No placeholder
+features or savings claims should stand in for working functionality.
+
+## Local development
+
+The Compose override reads edited source files directly from this checkout,
+using the installed container image. UI changes need a browser refresh. Mounted
+Python changes need an app restart; dependency changes need a deliberate rebuild.
+Saved data and writable custom fonts keep their original mounts. The standard
+Dockerfile continues to include the complete source for fresh builds.
+
+## AI Workshop
+
+- One guided brief for personal and lightweight business prototypes; green,
+  yellow, and red scope screening. Screening is heuristic, not a safety audit.
+- Generation defaults to headless Harness through the existing Exodus model
+  gateway. The original direct provider builder remains under Advanced options. It is admin-only initially, to avoid bypassing non-admin model-spend
+  limits. No model is installed or selected automatically. The user has chosen
+  to leave model setup for later.
+- Generated HTML goes into existing Documents and Library. The original editor,
+  source export, and version controls remain available. Optional request IDs on
+  document creation prevent duplicate tools when retrying a failed save.
+- Marked Workshop HTML runs inside a separate, sandboxed nested preview. Its
+  runtime blocks ordinary network requests and HTTP frame navigation and does
+  not grant access to the account page. This is a prototype boundary, not a
+  promise of total network isolation or protection from malicious code. Browser
+  support varies; generated code can still be wrong or consume excessive CPU.
+- Entries are separate from source and stored per document under the existing
+  server data directory. Access uses the original document owner checks. Atomic
+  writes, a 100 KB cap, and revision checks protect against common save failures
+  and conflicting windows. This initial file store assumes one app worker.
+- Entry backup/restore and downloadable review briefs work locally. No booking,
+  public hosting, payments, account system, or external API integration is
+  simulated. Source exports that use `window.workshop` need the Workshop host.
+- Demo-only notices prohibit private information. Briefs sent to a cloud model
+  leave the server and can incur provider charges. Saved entries are not sent
+  by Workshop generation. This feature adds no telemetry or automatic updates;
+  the wider Odysseus network behavior has not been audited here.
+
+Validation: `tests/workshop_integration.py` runs isolated route/DB checks with a
+mock provider; `tests/workshop_browser_fixture.py` supplies an explicitly labelled
+disposable browser fixture for real save/reopen and preview restriction checks.
+Neither needs a model or uses the user's database. Live AI output quality and
+latency remain untested until a model is connected.
+
+## Exodus identity and Temple theme
+
+The visible product name is Exodus. The user's supplied sword-and-scales PNG is
+preserved as the source for the welcome/login marks, sidebar and app icons.
+The browser renders color variants without changing or duplicating that asset.
+Match theme is the default; the Themes tab also offers Original and eight fixed
+palettes. This preference stays in this browser across theme changes. The root
+favicon shares the selected rendering; dedicated tool-route icons keep their
+existing glyphs. Sidebar/welcome/login marks are modestly enlarged. Installed
+PWA launcher icons remain the supplied static asset, as OS caches manage them.
+Legacy icon files alias that one asset. Odysseus remains the upstream foundation: preserve
+its license and authorship. Existing storage keys, protocol headers, environment
+variables, Docker service names, and internal identifiers retain their legacy
+names to protect saved preferences and integrations. Do not mass-rename user data.
+
+Temple is an optional preset in the existing theme picker. It uses a 640×480
+logical workspace, integer enlargement where possible, and fit-to-screen scaling
+on smaller displays. It uses the original public-domain TempleOS standard 8×8
+glyph shapes, white/blue windows, square controls, and the 16-color VGA interface
+palette. User images and other theme-preview swatches keep their own colors;
+browser font smoothing can introduce intermediate pixel shades. Unsupported
+Unicode characters fall back to monospace. Switching themes restores normal
+layout; the persistent Themes control keeps the picker reachable.
+
+Reference design: https://commons.wikimedia.org/wiki/File:TempleOS_4.05_session.png
+Original constraints: https://templeos.info/Wb/Doc/Strategy.DD.HTML
+Font provenance and rebuild instructions: `static/fonts/temple/README.md`.
+This presentation does not change networking, account permissions, model routing,
+or any security behavior to match the operating system.
+
+## License Tracker
+
+Settings includes License Tracker in both Essentials and Advanced for all users.
+It currently credits Odysseus and Vaultwarden, with their verified licenses,
+repository, license links, and actual verification date. Extend the existing
+panel and Settings registry when adding projects; preserve original notices.
+This is a manually maintained list, not a complete dependency inventory or an
+automatic license check. Opening it makes no external requests. Do not label a
+license as current without checking upstream or replace the license shipped
+with the version used merely because an upstream project changes its terms.
+
+### Upstream update history
+
+License Tracker also shows upstream revisions and public update history. Its
+shipped manifest, `config/upstream_projects.json`, records each exact baseline
+used by Exodus separately from the latest checked branch revision. Maintain
+that baseline deliberately after an actual integration; checking for updates
+must never change it. Partial backports do not advance the full baseline.
+
+Opening the panel only reads the local server cache. Admin-triggered checks,
+older history, and file-detail requests may query the allowlisted public GitHub
+repository. There is no scheduling, installation, code upload, or model usage.
+Checks show releases and commit messages verbatim as text; file additions and
+removals are not claims about features or compatibility. GitHub comparison
+failure/divergence is shown explicitly. Failed checks retain the previous
+snapshot and its original success date. Review reports include only public
+upstream metadata and our recorded baseline, never application data or secrets.
+
+History pages are anchored to the checked SHA to avoid shifting pagination.
+The server retains up to 30 older pages and 40 commit-detail records per project;
+new successful checks reset the older-page cache for the new snapshot. Full
+release history and file lists beyond the first 100 files link to GitHub.
+This records an upstream base plus Exodus modifications, not the exact version
+of every dependency or proof that a change is already covered locally.
+
+## Local Services
+
+The collapsible Local Services sidebar group opens one description and its direct
+browser shortcuts per service. It reuses the Tools section collapse behavior and
+remembered state. The former Settings entry is moved here; older programmatic
+Settings links still open the service overview. Links default to a new tab, with
+an explicit same-tab option remembered in this browser and shared by the Local Services and Privacy Hub
+services. The browser controls whether new contexts are tabs or windows.
+Shortcuts target this
+Docker setup: SearXNG at 127.0.0.1:8080, ChromaDB's API v2 heartbeat at
+127.0.0.1:8100/api/v2/heartbeat, and ntfy at 127.0.0.1:8091. These are host-facing
+browser links, not Docker service addresses. Update the shortcuts if published
+ports change. Localhost refers to the browsing device; do not silently expose
+services on the network to make remote-device links work.
+
+ChromaDB's root returns 404 in the installed API server. Its heartbeat is a
+connectivity check, not a dashboard or proof that all retrieval features work.
+Descriptions link to the official documentation. Existing search, notification,
+and service-diagnostic controls remain their source of configuration/status;
+this panel adds no probes, subscriptions, installations, or extra containers.
+
+## Privacy Hub
+
+Privacy Hub reuses the Local Services detail dialog, link-opening preference,
+and existing sidebar collapse/persistence. Vaultwarden is the first entry. It
+runs as `vaultwarden` in the `sovereign-hub` Compose project using the official
+1.37.3 image pinned by digest, with a dedicated `vaultwarden-data` volume. Do not
+remove this volume when restarting or upgrading. Exodus has no vault-data mount
+and no credential-reading integration.
+
+The browser shortcut is `http://localhost:8092/`, published on 127.0.0.1 only.
+Localhost permits browser Web Crypto without installing certificates. Remote
+or phone access needs a deliberate HTTPS deployment; do not widen the bind to
+make shortcuts work. Users create their own separate test account and master
+password. This development build remains demo-only: no real passwords or
+private information. Email and mobile push are not configured. Website icon
+fetching is disabled to avoid contacting sites named in saved logins. No admin
+token is configured, so Vaultwarden's server admin panel is disabled.
+
+Local signup is enabled for onboarding. To close registration after setup, set
+`VAULTWARDEN_SIGNUPS_ALLOWED=false` in the existing local `.env`, then recreate
+only this service with `docker compose -p sovereign-hub up -d --no-deps vaultwarden`.
+Start it with that same command; it does not require starting other companions.
+Before any future version change, back up the complete vault data (including
+SQLite, attachments, and keys) consistently using Vaultwarden's backup guide,
+and test restoration. Do not run `docker compose down -v` on valuable data.
+
+License Tracker records AGPL-3.0-only from release 1.37.3's Cargo.toml and license.
+The update manifest records the release's exact source commit. Changes on main
+are not necessarily released versions. Checking history never upgrades the vault.
+Official source and setup: https://github.com/dani-garcia/vaultwarden
+
+## Code / DeepSeek Harness
+
+Tools → Code opens the shared companion dialog and launches Harness with its
+own browser-session exchange. The current image installs the official npm
+`@deepseek-ai/dsh@0.1.7-rc.2` package (npm latest when integrated), a developer
+preview. The MIT license and release-source baseline are in License Tracker.
+Newer prereleases are not installed automatically.
+
+The `harness` service belongs to `sovereign-hub`, publishes only
+127.0.0.1:8093, runs as the unprivileged Node user, and has no Docker socket,
+Exodus source/database, or Vaultwarden volume mount. `data/code-projects` is
+mounted at `/workspace`; `harness-home` persists sessions and settings. The
+container can access the internet for intentional coding tasks. Upstream
+telemetry is disabled through DSH_TELEMETRY_DISABLED. This is a demo environment,
+not a production security boundary or an audited multi-user coding service.
+
+On first opening Code, a signed-in administrator connects this single-operator
+workspace to their own enabled/shared text-model catalog. Models explicitly
+marked as lacking tool support are excluded. No real model is connected during
+setup; the user previously chose to do that later. Model credentials stay in
+Exodus. The container receives a scoped model-only token in a read-only mount;
+that token authorizes only the two exact `/api/code/bridge/v1` routes. It cannot
+access other Exodus APIs. Each generation rechecks administrator status,
+endpoint ownership, enabled state, and hidden-model exclusions. Cloud providers
+receive the coding prompts and file context, and may charge their API account.
+
+The supervisor polls that local model list every five seconds and updates only
+the managed `exodus` provider in Harness's Web profile, using upstream's profile
+write lock and atomic writes. Other providers and plugin settings are preserved.
+Users select the Exodus provider/model inside Harness. Existing sessions keep
+their selected model; disabled/removed models fail rather than silently switching.
+The gateway reuses Exodus's endpoint resolver and streaming provider adapters,
+translating native tool calls and tool results to/from OpenAI Chat Completions.
+This initial bridge exposes text input, with conservative 8K context/2K output
+capacity defaults in Harness. It does not assert that every model supports tools,
+vision, or every provider-specific reasoning control.
+
+Harness's browser authentication and Host/Origin checks stay enabled. Its launch
+token is captured in memory, suppressed from new startup log lines, and handed
+to the signed-in administrator through Code's launcher. Port 3081 is an internal
+control endpoint protected by the scoped bridge token; it is not published.
+The CLI's webserver is configured to listen inside the container; Docker restricts
+the host-facing port to loopback. Do not publish this preview on the network.
+
+Tests: `tests/code_integration.py` checks access, live model catalog changes,
+tool-call streaming, and error redaction using an isolated temporary database.
+`tests/helpers/test_code_sync.mjs` verifies add/remove synchronization preserves
+other provider settings. `tests/code_e2e_fixture.py` is an explicitly labelled
+local fake provider used with the actual Harness runtime and actual Exodus
+provider adapter; it never uses the live model database or a paid provider.
+Live coding quality remains unverified until the user connects a real model.
+
+## Workshop and Harness
+
+Workshop is the guided, nontechnical entrance; Code remains the full direct
+Harness interface. Workshop defaults to Harness and retains its original basic
+one-response builder in Advanced options. The same enabled, owned/shared model
+connections are reused. Models explicitly marked without tool support stay
+available to the basic builder but cannot be selected for Harness builds.
+
+A Workshop build starts one fresh headless profile inside the existing Harness
+container. It does not inherit the Web profile, conversations, workspace files,
+plugins, or provider credentials. Only the brief and, for revision requests, the
+current app source are sent. Saved entries are excluded. The scoped model gateway
+rechecks access on every request; cloud builds may make several billable requests.
+No model is selected, downloaded, or purchased automatically.
+
+The model sees only `submit_workshop_app`. Other coding tools are disabled or
+hidden and independently denied by an execution guard. The runner requires the
+Workshop restriction plugin before it can start. The submission tool checks a
+complete HTML envelope, size, selected unsupported embeds/dependencies, and
+inline JavaScript syntax using Node's parse-only `--check`. It never executes the
+generated app. These checks are deliberately basic; they are not functional,
+accessibility, malicious-code, or security audits. Rejected submissions return
+feedback to the model for repair. A later rejected revision invalidates the
+previous candidate. Completion requires an accepted source and a successful
+Harness exit, followed by Exodus source normalization.
+
+Only one Workshop build runs at a time. Runs are bounded to five minutes,
+12 permitted submission calls, and 4 MB of process output. Cancellation or HTTP
+client disconnection terminates the task; temporary profiles and source are
+removed on completion/failure/cancellation. No prompts or reasoning are printed
+to the supervisor log. The internal control API remains token-protected and
+unpublished. No direct-shell or filesystem capability is added to Workshop.
+These controls do not make the overall shared container an audited isolation
+boundary against malicious administrators using the full Code interface.
+
+Results use existing Documents/Library save, idempotent retry, export, preview,
+entry storage, and ownership controls. No auto-deployment or background work
+continues after the bounded build. The real model output still needs user testing.
+
+Validation adds route tests for default engine, model compatibility, redacted
+failures and the preserved basic builder; `tests/helpers/test_workshop_tools.mjs`
+checks syntax-only behavior and restrictions. The isolated
+`tests/helpers/run_workshop_harness_e2e.mjs` drives actual Harness through the real
+Exodus gateway against the local fixture provider, checking rejection, repair,
+acceptance, cancellation, cleanup, and the model-visible tool allowlist. No paid
+model or live user database is used in these tests.
+
+## Home and account-specific AI-free mode (2026-09-29)
+
+The first visit offers Full Exodus or AI-free workspace. The choice belongs to
+one account, including on installations used by several people. Settings →
+Workspace mode changes it later. Existing chats, model connections, documents,
+and other content are retained. This is an explicit product-mode choice, not a
+role preset or a change in administrative permissions.
+
+Home is available in both modes. Tasks reuse Notes checklists, including the
+same completion state. Calendar uses existing owned calendars and recurring-event
+expansion; meeting links come from actual event descriptions/locations. Files
+come from the existing owned Document store; email reads the local unread cache.
+Search uses ordinary text matching over owned notes/documents, cached email and
+the existing permission-controlled contacts search. It never requests embeddings.
+Home preferences, timers, manually maintained goals and personal shortcuts are
+stored per account in `data/workspace-home.sqlite3`. Back up this file with the
+rest of the data directory. A running timer survives a reload; stopping saves the
+elapsed time, capped at the selected Pomodoro duration. Time tracked is not a
+claim of time or money saved.
+
+Team presence is opt-in. Status is self-reported, and online means a Home
+heartbeat was seen in the last 90 seconds. Announcements are explicitly posted
+to signed-in users of this installation. Private work is not automatically
+broadcast. There are no simulated teammates, messages, files, KPIs or activity.
+Slack, Teams and document-comment providers are not integrated in this release.
+Role presets reorder widgets only; they do not grant access or invent CRM data.
+Widgets can be moved, hidden and collapsed, and load independently.
+
+Weather is disabled by default. Enabling it sends the entered city to Open-Meteo
+and uses a fixed conventional GFS forecast endpoint, with a 15-minute cache.
+No device location is requested. The UI links the provider's terms and explains
+that their free API is for noncommercial use. A business deployment must arrange
+an appropriate weather service plan or leave this optional widget off.
+
+AI-free mode removes the account's AI controls and blocks unreviewed/AI API
+families server-side. Shared inference and embedding boundaries check account
+context; async inference operations are tracked for cancellation. The scheduler
+skips that account's automated jobs, email AI passes are suspended, and its Code
+model gateway is blocked. Saved Workshop tools can still read/write their local
+state without invoking a model. Other users and independently opened external
+services are unaffected. This is not uninstalling shared software or stopping
+all Docker services. A request already sent to an external provider cannot be
+retracted; synchronous calls already in progress may finish. Full mode restores
+access to the existing features.
+
+Verification: `tests/home_integration.py` uses disposable databases for account
+isolation, direct API denial, shared inference guards/cancellation, Notes task
+reuse, stale edits, ownership/privileges, timer persistence, presence sharing,
+layout validation, safe shortcuts, goals and weather opt-out. The disposable
+`tests/home_browser_fixture.py` supports browser CRUD and persistence checks
+without adding test data to the real workspace. Existing Workshop and Code
+integration suites remain part of regression checks. A real connected model is
+still intentionally deferred, following the user's earlier choice.
+
+## Internal SearXNG grounding
+
+The existing agent `web_search` tool uses one SearXNG JSON request when SearXNG
+is the selected search provider. It returns at most five title/URL/snippet results
+with existing citation metadata, without fetching full pages, opening tabs, or
+silently switching providers. Request and agent-wait timeouts are five seconds;
+unavailability and invalid responses return clear errors. Search results remain
+untrusted external content. Existing web-tool permissions and AI-free restrictions
+still apply. Other selected providers and Deep Research retain their existing paths.
+The Local Services shortcut remains available for manual browsing.
+
+`SEARXNG_BASE_URL` is the preferred environment variable; native execution defaults
+to `http://localhost:8080`, and Compose defaults to `http://searxng:8080`.
+A saved nonempty admin Search URL takes precedence. The legacy `SEARXNG_INSTANCE`
+remains supported. `SEARXNG_CATEGORIES` defaults to `general`; individual tool calls
+can override categories. General searches reuse `SEARXNG_GENERAL_ENGINES` (existing
+default: bing,mojeek,presearch), because default engines can be CAPTCHA-blocked.
+The SearXNG template and current active settings both enable html and json formats.
+API reference: https://docs.searxng.org/dev/search_api.html
+
+Standalone live check, without a model:
+`docker exec sovereign-hub-odysseus-1 python scripts/test_searxng.py "Python programming" --count 3`
+The script prints parsed JSON and exits nonzero on failure. An empty successful
+search is reported honestly with count zero. Isolated request, parser, error,
+native-argument and registered-agent tests live in `tests/searxng_integration.py`.
+
+## Chroma HTTP knowledge and memory
+
+Exodus reuses its existing Chroma HttpClient, embedding lanes, document indexing,
+and pre-answer retrieval. `CHROMA_HOST` defaults to localhost natively and chromadb
+in Compose; `CHROMA_PORT` defaults to 8000. The host-facing Docker port remains
+8100. The old CHROMADB_HOST/CHROMADB_PORT variables remain native fallbacks.
+`CHROMA_COLLECTION` defaults to `exodus_knowledge`, the local FastEmbed document
+collection. Existing custom embedding and personal-memory collections remain
+separate to avoid mixing incompatible vector dimensions. Existing old document
+rows are copied only if missing, retaining ownership metadata and the old index.
+No existing memories are deleted or reclassified as shared data.
+
+The installed chromadb-client 1.5.9 transport defaults to unlimited timeouts.
+`src/chroma_client.py` contains a narrow, version-tested compatibility shim that
+sets the HTTP transport timeout before HttpClient makes its initialization
+requests. TCP connection and HTTP operations use five seconds; this is not a
+five-second limit for an entire multi-request indexing job. Client telemetry is
+disabled. Retrieval failures leave chat context usable; startup failures can be
+retried through the existing lazy RAG manager. Local embeddings use the existing
+cached FastEmbed model; configured custom embedding endpoints keep their original
+behavior. No chat model or paid provider was invoked for verification.
+
+`POST /api/personal/text` accepts either `{ "text": "...", "title": "..." }`
+or `{ "note_id": "..." }`, using the signed-in account and its document privilege.
+Plain text reuses document upload, chunking, owner metadata, file storage and
+deletion controls. Owned notes use the shared `src/note_indexing.py` service,
+called by both this endpoint and a database post-commit hook. Creates and updates
+queue background indexing of the latest title, content and checklist with the
+note ID and owner; stable chunk IDs replace prior content without duplicates.
+Deletes remove the indexed chunks. Rolled-back saves never enqueue indexing.
+Retrieval rejects outdated or deleted note fingerprints even during an outage.
+The hook calls the ingestion service directly instead of making a credentialed
+HTTP request back into Exodus. AI-free accounts do not embed notes. Failed jobs
+retry every 30 seconds in memory; a restart loses pending retries, so a note
+saved during an outage may need another save or explicit reindex after restart.
+The API reports incomplete indexing instead of claiming success. Existing file
+uploads continue to work. These routes are blocked in AI-free mode.
+
+Chat retrieves relevant knowledge automatically when document retrieval is enabled,
+using the existing relevance threshold and context limits. Incognito skips knowledge
+retrieval. Results are untrusted context, not new system instructions. No new
+sidebar or duplicate memory UI is introduced.
+
+The existing Chroma database was preserved while correcting the persistent volume
+mount to `/data`, the running server's actual storage location. Back up that named
+volume along with Exodus data. Do not delete volumes during upgrades.
+
+Verification: `tests/chroma_integration.py` uses disposable documents, an isolated
+SQL database and a temporary live Chroma collection. It checks real local semantic
+retrieval, pre-answer context, account separation, note ingestion, AI-free denial,
+incognito, offline chat continuation and a real silent HTTP server timeout.
+Reference: https://docs.trychroma.com/production/chroma-server/client-server-mode
+
+## Internal ntfy notification engine
+
+`src/notifications.py` owns notification delivery. `dispatch_notification(message,
+ title="Exodus", priority=3, tags=None, topic=None, owner=None, ai=False,
+ incognito=False)` returns an honest sent/skipped/failed status. It sends a UTF-8
+POST body with Title, Priority and optional Tags. Delivery has a three-second
+HTTP timeout and overall async deadline, no retry, no redirect, and no cloud
+fallback. `enqueue_notification(message, **kwargs)` is the nonblocking hook for
+background task/search completion and system alerts: true means queued, not sent.
+Its in-memory queue is bounded to 32 pending/running jobs and two workers; full
+queues drop alerts rather than delaying work. Pending alerts do not survive app
+restart. Callers must pass trusted owner, AI-origin and incognito context.
+
+`NTFY_BASE_URL` defaults to http://ntfy:80 in Compose, or http://localhost:8080
+for native use. `NTFY_DEFAULT_TOPIC` defaults to exodus-alerts. A saved enabled
+ntfy integration overrides the environment URL and retains its bearer token.
+An explicitly disabled saved integration prevents environment fallback.
+`NTFY_ENABLED=false` disables all publication through this service. The server's
+browser-facing URL is separately configured with `NTFY_PUBLIC_URL` (default
+http://localhost:8091); its bind remains loopback-only.
+
+Existing ntfy reminders now use the same service and preserve their selected
+reminder topic. Browser/email/webhook choices are unchanged. No notification is
+sent merely because the Local Services description opens, and the optional
+manual browser link remains available. Service diagnostics recognize the
+environment-configured ntfy server.
+
+The `notify_user` agent tool publishes to the configured default topic; models
+cannot choose a destination, topic, headers or credentials. It follows existing
+administrator integration permissions, global tool-disable policy, delegated-token
+restrictions, plan-mode restrictions, external-side-effect approval policy and
+incognito denial. AI-origin calls recheck the owner's AI-free setting. Non-AI
+system notifications can still operate in AI-free workspaces. No chat model was
+connected for setup or tests, and search completions are not automatically spammed.
+
+The default topic is an installation-wide notification destination, not a private
+per-account inbox; keep agent alerts concise and free of private task content.
+Firebase forwarding is disabled. `NTFY_CACHE_MESSAGES=true` preserves ntfy's normal
+local replay behavior; false sends Cache:no for live subscribers only. Notification
+bodies, credentials and server error bodies are not logged by this service.
+Existing outbound private-network restrictions apply, metadata/link-local targets
+are rejected, and validated addresses are pinned to prevent DNS rebinding.
+
+Tests: `tests/ntfy_integration.py` verifies payloads, graceful failure, policy gates,
+timeout, queue behavior, native agent dispatch and actual live subscription delivery
+with a disposable, noncached test message. Existing reminder SSRF and ntfy health
+regressions also pass. Reference: https://docs.ntfy.sh/publish/
+
+
+## Hosted GPT-OSS native tools
+
+Groq/OpenAI-compatible GPT-OSS uses the existing native function-call loop rather
+than the textual fallback. Explicit endpoint tool-disable settings and Ollama
+transport rules still apply. Active schemas are sent in `tools`; streamed
+`tool_calls` are executed by the existing dispatcher and their call IDs/results
+are returned to the model until completion. Notification intent now selects the
+integration tools. Existing permissions, disabled tools and approval gates remain
+in force: web results can require approval before note writes or notifications.
+
+Verification includes `tests/test_exodus_native_notes.py` (controlled HTTP/SSE
+provider, real model adapter and agent loop, actual note dispatcher, save hooks,
+upserts/deletions, owner and AI-free checks), plus live Chroma background indexing
+and ntfy integration tests. Controlled provider tests do not claim a live Groq
+model completed the full workflow.

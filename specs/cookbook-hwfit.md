@@ -13,7 +13,7 @@ This spec covers model setup/serving and hardware fit in:
 - Cookbook package/rebuild/shell integration in `routes/shell_routes.py`;
 - `routes/cookbook_helpers.py`;
 - `routes/hwfit_routes.py`;
-- `services/hwfit/*` and `services/hwfit/data/hf_models.json`;
+- `services/hwfit/*` and `services/hwfit/catalogs/hf_models.json`;
 - durable Cookbook state through `routes.cookbook_helpers.COOKBOOK_STATE_FILE`;
 - helper/CLI scripts `scripts/odysseus-cookbook`, `scripts/add_hwfit_models.py`, `scripts/hf_download.py`, and `scripts/diffusion_server.py`;
 - Docker overlays `docker-compose.gpu-*.yml`, `docker/gpu.*.yml`, `docker/host-docker.yml`, `scripts/check-docker-gpu.sh`, and `scripts/check-docker-amd-gpu.sh`;
@@ -148,8 +148,8 @@ Runtime behavior:
 
 ## Model Catalog And Latest Lookup
 
-HW Fit model scoring depends on bundled `services/hwfit/data/hf_models.json`,
-bundled `services/hwfit/data/mlx_community_models.json`, runtime dynamic caches
+HW Fit model scoring depends on bundled `services/hwfit/catalogs/hf_models.json`,
+bundled `services/hwfit/catalogs/mlx_community_models.json`, runtime dynamic caches
 under `DATA_DIR/hwfit/`, catalog normalization, and assumptions about model
 formats and quantization. `scripts/add_hwfit_models.py` updates the static HF
 catalog.

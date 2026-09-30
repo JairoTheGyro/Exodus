@@ -155,19 +155,19 @@ def create_default_admin():
 
 
 def create_env():
-    """Copy .env.example to .env if it doesn't exist."""
+    """Copy env.example to .env if it doesn't exist."""
     env_path = os.path.join(BASE_DIR, ".env")
-    example_path = os.path.join(BASE_DIR, ".env.example")
+    example_path = os.path.join(BASE_DIR, "env.example")
     if os.path.exists(env_path):
         print("  [skip] .env already exists")
         return
     if os.path.exists(example_path):
         import shutil
         shutil.copy2(example_path, env_path)
-        print("  [ok] .env created from .env.example")
+        print("  [ok] .env created from env.example")
         print("        ** Edit .env with your LLM host and API keys **")
     else:
-        print("  [warn] .env.example not found — create .env manually")
+        print("  [warn] env.example not found — create .env manually")
 
 
 def check_deps():

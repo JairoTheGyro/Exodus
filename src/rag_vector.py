@@ -100,6 +100,12 @@ class VectorRAG:
             )
             self._model = self._lanes[0].client
             migrate_legacy_collection(COLLECTION_NAME, self._lanes)
+            # Preserve previous installations; copy only missing IDs, never
+            # delete the previous index or mix custom-model vector dimensions.
+            migrate_legacy_collection("odysseus_rag_fastembed", [
+                lane for lane in self._lanes if lane.name == LANE_FASTEMBED
+                and lane.collection_name != "odysseus_rag_fastembed"
+            ])
             logger.info(
                 "VectorRAG ready (lanes=%s docs=%s)",
                 [lane.name for lane in self._lanes],
@@ -375,6 +381,9 @@ class VectorRAG:
                     distance = results["distances"][0][idx]
                     doc_text = results["documents"][0][idx]
                     meta = results["metadatas"][0][idx]
+                    from src.note_indexing import current_metadata
+                    if not current_metadata(meta):
+                        continue
 
                     vector_sim = 1.0 - distance
                     doc_words = set(doc_text.lower().split())
@@ -417,6 +426,9 @@ class VectorRAG:
                     continue
                 for i, doc in enumerate(all_docs["documents"]):
                     meta = all_docs["metadatas"][i]
+                    from src.note_indexing import current_metadata
+                    if not current_metadata(meta):
+                        continue
                     if owner and meta.get("owner") != owner:
                         continue
                     doc_lower = doc.lower()

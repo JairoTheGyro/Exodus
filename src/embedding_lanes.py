@@ -68,6 +68,8 @@ def reset_embedding_lane_state() -> None:
 
 
 def collection_name(base_name: str, lane_name: str) -> str:
+    if base_name == "odysseus_rag" and lane_name == LANE_FASTEMBED:
+        return os.getenv("CHROMA_COLLECTION", "exodus_knowledge")
     return f"{base_name}_{lane_name}"
 
 

@@ -43,6 +43,8 @@ def test_port_open_true_for_listening_socket():
 def test_get_chroma_client_does_not_cache_when_unreachable(monkeypatch):
     pytest.importorskip("chromadb")
     cc.reset_client()
+    monkeypatch.delenv("CHROMA_HOST", raising=False)
+    monkeypatch.delenv("CHROMA_PORT", raising=False)
     monkeypatch.setenv("CHROMADB_HOST", "127.0.0.1")
     monkeypatch.setenv("CHROMADB_PORT", str(_free_port()))
     with pytest.raises(RuntimeError):
