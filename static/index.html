@@ -2715,14 +2715,24 @@
           <article class="admin-card" data-service-card="vaultwarden" data-service-group="privacy" aria-labelledby="local-vaultwarden-title">
             <h3 id="local-vaultwarden-title">Vaultwarden</h3>
             <p>Use Vaultwarden to manage passwords and secure notes in a self-hosted vault. It is a community-maintained server compatible with Bitwarden apps, with its own web interface.</p>
-            <p class="local-service-note">Your vault has a separate account and master password from Exodus. Its data is stored in a dedicated Docker volume on this computer; Exodus does not read your vault.</p>
-            <p class="local-service-note"><strong>Demo only — do not enter real passwords or private information in this development setup.</strong> Create a separate test account in Vaultwarden to explore it. Email delivery and mobile push notifications are not configured.</p>
+            <p class="local-service-note">Your vault has a separate account and master password from Exodus. Exodus checks whether the vault service is reachable; it does not read your passwords or verify individual device sync.</p>
+            <p id="vaultwarden-status" class="local-service-note" role="status" aria-live="polite">Checking Vaultwarden…</p>
+            <p id="vaultwarden-sync" class="local-service-note"></p>
+            <p id="vaultwarden-checked" class="local-service-note"></p>
             <div class="local-service-actions">
-              <a class="local-service-open" href="http://localhost:8092/" referrerpolicy="no-referrer">Open Vaultwarden</a>
+              <a id="vaultwarden-launch" class="local-service-open" referrerpolicy="no-referrer" hidden style="display:none">Open Vaultwarden</a>
+              <button type="button" id="vaultwarden-refresh" class="upstream-button">Check again</button>
               <a href="https://github.com/dani-garcia/vaultwarden" target="_blank" rel="noopener noreferrer">Vaultwarden repository &amp; guide</a>
             </div>
-            <p class="local-service-address">Local address: <code>http://localhost:8092/</code></p>
-            <p class="local-service-note">Open this address on the computer running Docker. This local setup is not available to other devices; remote access needs a separately configured HTTPS address. Vaultwarden is not affiliated with Bitwarden, Inc.</p>
+            <div id="vaultwarden-diagnostics" hidden>
+              <p class="local-service-note">On the computer running Exodus, open a terminal in the Sovereign Hub folder and start the vault services with:</p>
+              <p class="local-service-address"><code id="vaultwarden-start-command"></code></p>
+              <p class="local-service-note">Then choose Check again. If it stays unavailable, check the vault and gateway containers in Docker Desktop. Exodus does not have permission to control Docker directly.</p>
+            </div>
+            <p class="local-service-address" id="vaultwarden-address" hidden>Vault address: <code></code></p>
+            <p id="vaultwarden-access" class="local-service-note">The vault opens on its own protected page. This preserves Vaultwarden’s browser security protections.</p>
+            <p id="vaultwarden-registration" class="local-service-note">Open registration is disabled by this deployment’s defaults. An administrator can invite your separate vault account and manage registration policy in Vaultwarden’s admin panel.</p>
+            <p class="local-service-note"><strong>Demo only — do not enter real passwords or private information in this development setup.</strong> Email delivery and mobile push notifications are not configured. Vaultwarden is not affiliated with Bitwarden, Inc.</p>
           </article>
         </div>
   </template>

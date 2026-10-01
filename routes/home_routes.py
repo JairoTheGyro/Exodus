@@ -1,5 +1,6 @@
 """Non-AI Home: owner-scoped views over existing content and real personal state."""
 import json
+import re
 import time
 import uuid
 from datetime import date, datetime
@@ -77,6 +78,21 @@ def task_rows(owner, db):
     return rows
 
 
+def home_document_title(doc):
+    """Resolve an email draft's envelope subject without parsing quoted mail."""
+    if doc.language != 'email':
+        return doc.title
+    header, separator, _ = (doc.current_content or '').replace('\r\n', '\n').partition('\n---\n')
+    if separator:
+        # Match the editor's envelope, including folded header values. Limit
+        # scanning to the header: a Subject: in the quoted body is not ours.
+        header = re.sub(r'\n[ \t]+', ' ', header)
+        match = re.search(r'^Subject:[ \t]*(.*)$', header, re.I | re.M)
+        return (match.group(1).strip() if match else '') or '(No Subject)'
+    title = (doc.title or '').strip()
+    return title if title.lower() not in ('', 'email', 'new email', 'new mail', 'new message') else '(No Subject)'
+
+
 def setup_home_routes():
     router = APIRouter(prefix='/api/home', tags=['home'])
 
@@ -148,7 +164,7 @@ def setup_home_routes():
             rows = query.order_by(Document.updated_at.desc()).limit(12).all()
             pinned = query.filter(Document.id.in_(pins)).all() if pins else []
             by_id = {row.id: row for row in pinned + rows}
-            return {'files': [{'id': r.id, 'title': r.title, 'language': r.language, 'updated': r.updated_at.isoformat()+'Z', 'pinned': r.id in pins} for r in by_id.values()]}
+            return {'files': [{'id': r.id, 'title': home_document_title(r), 'language': r.language, 'updated': r.updated_at.isoformat()+'Z', 'pinned': r.id in pins} for r in by_id.values()]}
 
     @router.get('/search')
     def search(request: Request, q: str = Query(min_length=2, max_length=200)):

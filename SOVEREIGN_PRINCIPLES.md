@@ -166,34 +166,33 @@ this panel adds no probes, subscriptions, installations, or extra containers.
 
 ## Privacy Hub
 
-Privacy Hub reuses the Local Services detail dialog, link-opening preference,
-and existing sidebar collapse/persistence. Vaultwarden is the first entry. It
-runs as `vaultwarden` in the `sovereign-hub` Compose project using the official
-1.37.3 image pinned by digest, with a dedicated `vaultwarden-data` volume. Do not
-remove this volume when restarting or upgrading. Exodus has no vault-data mount
-and no credential-reading integration.
+Privacy Hub and Home reuse the same Vaultwarden service dialog in both workspace
+modes. It checks real vault and gateway health, offers a direct /vault launch,
+and shows an operator start command when offline. No Docker socket is granted
+to Exodus, and no AI or saved vault credentials are needed for management.
 
-The browser shortcut is `http://localhost:8092/`, published on 127.0.0.1 only.
-Localhost permits browser Web Crypto without installing certificates. Remote
-or phone access needs a deliberate HTTPS deployment; do not widen the bind to
-make shortcuts work. Users create their own separate test account and master
-password. This development build remains demo-only: no real passwords or
-private information. Email and mobile push are not configured. Website icon
-fetching is disabled to avoid contacting sites named in saved logins. No admin
-token is configured, so Vaultwarden's server admin panel is disabled.
+Vaultwarden runs as a non-root hardened companion with the official latest tag
+(pull only if missing). The tested image remains server 1.37.3 with the original
+recorded digest. The existing vaultwarden-data named volume is retained at
+/data/vaultwarden; never remove it on restart or upgrade. Admin access uses a
+separate secret volume with an Argon2 hash file, not an environment token or an
+Exodus API response. Open registration is disabled; native admin invitations
+provide onboarding. Native admin settings can override deployment defaults.
 
-Local signup is enabled for onboarding. To close registration after setup, set
-`VAULTWARDEN_SIGNUPS_ALLOWED=false` in the existing local `.env`, then recreate
-only this service with `docker compose -p sovereign-hub up -d --no-deps vaultwarden`.
-Start it with that same command; it does not require starting other companions.
-Before any future version change, back up the complete vault data (including
-SQLite, attachments, and keys) consistently using Vaultwarden's backup guide,
-and test restoration. Do not run `docker compose down -v` on valuable data.
+The local Caddy gateway publishes only 127.0.0.1:8092, at /vault/. The vault has no
+published host port or Internet egress. The launch is on its own browser origin,
+preserving upstream CSP/SAMEORIGIN instead of weakening it to permit embedding.
+Exodus cookies are stripped at the gateway; only the vault admin cookie passes.
+This Mac-only default uses localhost's Web Crypto secure-context exception, not
+HTTPS. A separate tested TLS overlay accepts operator-provided trusted certificates.
+No browser CA or remote exposure is installed implicitly. The demo-only notice
+and no-private-data guidance remain; implementation tests are not certification.
 
-License Tracker records AGPL-3.0-only from release 1.37.3's Cargo.toml and license.
-The update manifest records the release's exact source commit. Changes on main
-are not necessarily released versions. Checking history never upgrades the vault.
-Official source and setup: https://github.com/dani-garcia/vaultwarden
+Health reports server/database and gateway reachability. Device sync is reported
+unknown until checked inside the signed-in vault. Data backups are private and
+excluded from Git and Docker build contexts. The existing License Tracker and
+upstream source record remain in place. Setup, backup, token access, test commands
+and HTTPS details are in docs/VAULTWARDEN.md.
 
 ## Code / DeepSeek Harness
 
@@ -662,3 +661,20 @@ connect; untrusted self-signed, expired and wrong-host certificates fail before
 credentials are sent, for both implicit TLS and STARTTLS. Template tests use
 mock mail delivery and an isolated duplicate-reply database. Both settings forms
 have port-event checks in tests/helpers/test_email_port_security.mjs.
+
+## Home email access
+
+In both workspace modes, Home Inbox rows open the existing Email reader directly
+with the row's account, folder and UID. Direct opens do not depend on the message
+appearing on the first inbox page. An unavailable explicit account never falls
+back to another account. Returning from the reader loads the normal inbox list.
+Home's normal load reads the local unread cache; its Inbox refresh button makes
+an explicit mail-server request through the existing list route and cache-buster.
+Failures show an honest status, and older responses cannot replace newer results.
+
+Recent & pinned keeps the existing owned Document store and pins. For email
+documents it displays the saved envelope Subject, or `(No Subject)` when blank,
+rather than the generic draft title. Quoted-body subjects are not used. No new
+email history database or AI processing is introduced. Verification includes
+Home backend tests in both modes, controlled browser-loader regression tests,
+and a live Home Test-message reader/open and manual Inbox refresh check.

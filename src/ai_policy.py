@@ -64,6 +64,8 @@ def allowed_without_ai(path, method):
         return True
     if path in ('/api/health', '/api/config', '/api/client-info', '/api/version'):
         return method == 'GET'
+    if path in ('/api/vaultwarden/status', '/api/vaultwarden/config'):
+        return method == 'GET'
     if path in ('/api/notes/export/zip', '/api/notes/export/json'):
         return method == 'GET'
     if path == '/api/calendar/quick-parse':

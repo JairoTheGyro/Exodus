@@ -52,3 +52,8 @@ timetree*.png
 *_signin_page.png
 *_calendar_view.png
 .gitignore
+
+# Local secrets and consistent data backups never enter image builds.
+.env*
+**/data/
+backups/

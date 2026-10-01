@@ -81,3 +81,6 @@ html[data-workspace-mode=ai-free] :is([data-doclib-tab="chats"],[data-doclib-tab
 
 html[data-workspace-mode=ai-free] :is(#workshop-modal,#research-overlay,#research-pane,#tasks-modal,#cookbook-modal,#search-overlay,#custom-preset-modal) {display:none!important;}
 html[data-workspace-mode=ai-free] .doc-editor-pane {max-width:100%;}
+
+.home-card-actions { display:flex; align-items:center; gap:4px; }
+.home-list .home-email { display:block; width:100%; }

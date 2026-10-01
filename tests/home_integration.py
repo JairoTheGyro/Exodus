@@ -74,6 +74,28 @@ class HomeChecks(unittest.TestCase):
         self.c.headers['x-test-user']='blocked'
         self.assertEqual(self.c.get('/api/home/files').status_code,403)
         self.assertEqual(self.c.get('/api/home/search?q=Findme').json()['results'],[])
+    def test_recent_email_subjects_in_both_modes(self):
+        with SessionLocal() as db:
+            db.add_all([
+                Document(id='email',owner='admin',title='New Email',language='email',current_content='To: test@example.test\nSubject: Test\n---\nBody'),
+                Document(id='blank',owner='admin',title='Email',language='email',current_content='To: test@example.test\nSubject: \n---\nSubject: NOT the envelope'),
+                Document(id='folded',owner='admin',title='New Email',language='email',current_content='To: test@example.test\r\nSubject: Actual\r\n subject <&>\r\n---\r\nBody'),
+                Document(id='ordinary',owner='admin',title='Email',language='markdown',current_content='Subject: not email metadata'),
+                Document(id='foreign-email',owner='other',title='Private subject',language='email',current_content='Subject: Secret'),
+            ]);db.commit()
+        for mode in ('full','ai-free'):
+            self.c.patch('/api/home/profile',json={'mode':mode,'pins':['email','foreign-email']})
+            rows={r['id']:r for r in self.c.get('/api/home/files').json()['files']}
+            self.assertEqual(rows['email']['title'],'Test')
+            self.assertTrue(rows['email']['pinned'])
+            self.assertEqual(rows['blank']['title'],'(No Subject)')
+            self.assertEqual(rows['folded']['title'],'Actual subject <&>')
+            self.assertEqual(rows['ordinary']['title'],'Email')
+            self.assertNotIn('foreign-email',rows)
+        with SessionLocal() as db:
+            doc=db.get(Document,'email');doc.current_content='To: example@example.test\nSubject: Edited subject\n---\n';db.commit()
+        self.assertEqual(next(r['title'] for r in self.c.get('/api/home/files').json()['files'] if r['id']=='email'),'Edited subject')
+
     def test_timer_conflict_cap_and_persistence(self):
         with patch('routes.home_routes.time.time',return_value=1000):
             self.assertEqual(self.c.post('/api/home/focus',json={'action':'start','minutes':1}).status_code,200)

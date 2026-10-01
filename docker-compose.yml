@@ -41,6 +41,8 @@ services:
       - CHROMA_COLLECTION=${CHROMA_COLLECTION:-exodus_knowledge}
       - CHROMADB_HOST=chromadb
       - CHROMADB_PORT=8000
+      - VAULTWARDEN_INTERNAL_URL=http://vaultwarden:8080/vault/alive
+      - VAULTWARDEN_PUBLIC_URL=${VAULTWARDEN_DOMAIN:-http://localhost:${VAULTWARDEN_PORT:-8092}/vault}
       - EXODUS_DOCUMENTS_DIR=/data/documents
       - EXODUS_DOCUMENT_UPLOAD_MAX_BYTES=${EXODUS_DOCUMENT_UPLOAD_MAX_BYTES:-26214400}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/app.db}
@@ -92,6 +94,7 @@ services:
       # Find yours with:  id -u  /  id -g
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
+    networks: [default, vault_private]
     depends_on:
       searxng:
         condition: service_healthy
@@ -203,21 +206,84 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  # Privacy Hub: official stable image, pinned so restarts cannot upgrade the vault.
+  # Privacy Hub: upgrade deliberately after a consistent backup. Do not pull
+  # latest on every restart. Keep the existing named data volume intact.
   vaultwarden:
-    image: vaultwarden/server:1.37.3@sha256:1587c45feaa479f1f5e8af3b00eded36bff77bcf1880cf8dbf0541706dd470e0
-    ports:
-      - "127.0.0.1:8092:80"
+    image: vaultwarden/server:latest
+    pull_policy: missing
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        if [ ! -r "$${ADMIN_TOKEN_FILE}" ] || [ ! -s "$${ADMIN_TOKEN_FILE}" ]; then
+          echo "Vaultwarden admin secret is missing or unreadable. Run scripts/prepare_vaultwarden.py first." >&2
+          exit 1
+        fi
+        exec /start.sh "$$@"
+      - exodus-vaultwarden
+    user: "1000:1000"
+    expose: ["8080"]
     volumes:
-      - vaultwarden-data:/data
+      - vaultwarden-data:/data/vaultwarden
+      - vaultwarden-secrets:/run/secrets:ro
     environment:
-      DOMAIN: "http://localhost:8092"
-      # Local demo onboarding. Set false after creating your account.
-      SIGNUPS_ALLOWED: "${VAULTWARDEN_SIGNUPS_ALLOWED:-true}"
-      # Do not contact website servers to fetch saved-login icons.
+      DATA_FOLDER: /data/vaultwarden
+      DOMAIN: "${VAULTWARDEN_DOMAIN:-http://localhost:${VAULTWARDEN_PORT:-8092}/vault}"
+      ROCKET_ADDRESS: "0.0.0.0"
+      ROCKET_PORT: "8080"
+      SIGNUPS_ALLOWED: "false"
+      ADMIN_TOKEN_FILE: /run/secrets/vaultwarden_admin_token
+      ENABLE_WEBSOCKET: "true"
       DISABLE_ICON_DOWNLOAD: "true"
       ICON_CACHE_TTL: "0"
       PUSH_ENABLED: "false"
+      # No unsolicited update checks or query-string/access-token logs.
+      LOG_LEVEL: "warn"
+      EXTENDED_LOGGING: "false"
+    networks: [vault_private]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m,uid=1000,gid=1000,mode=1770"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "http://127.0.0.1:8080/vault/alive"]
+      interval: 20s
+      timeout: 4s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Vault credentials stay on their own browser origin. The gateway retains
+  # Vaultwarden's CSP/SAMEORIGIN headers and proxies WebSockets on the same port.
+  vaultwarden-gateway:
+    image: caddy:2-alpine
+    pull_policy: missing
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:${VAULTWARDEN_PORT:-8092}:8080"
+    volumes:
+      - ./config/vaultwarden/Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      XDG_CONFIG_HOME: /tmp/config
+      XDG_DATA_HOME: /tmp/data
+    networks: [default, vault_private]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m,uid=1000,gid=1000,mode=1770"]
+    cap_drop: [ALL]
+    # Official Caddy binary carries this file capability; permit only this one.
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    depends_on:
+      vaultwarden:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/vault/alive"]
+      interval: 20s
+      timeout: 4s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
 volumes:
@@ -225,4 +291,10 @@ volumes:
   chromadb-data:
   ntfy-cache:
   vaultwarden-data:
+  vaultwarden-secrets:
   harness-home:
+
+networks:
+  # No direct host port or Internet egress from the password database service.
+  vault_private:
+    internal: true

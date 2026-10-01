@@ -1,0 +1,34 @@
+{
+    admin off
+    auto_https off
+    # Do not record URL queries; notification URLs can contain access tokens.
+    log {
+        output discard
+    }
+}
+
+# Loopback-only host binding is in Compose. Remote access requires a separate
+# HTTPS deployment with a trusted certificate; never widen this HTTP binding.
+:8080 {
+    route {
+        @untrusted not host localhost 127.0.0.1 [::1]
+        respond @untrusted "Local vault host required" 421
+        header {
+            -Server
+            X-Content-Type-Options nosniff
+            Referrer-Policy no-referrer
+            Cache-Control "no-store"
+        }
+        redir / /vault/ 308
+        redir /vault /vault/ 308
+        handle /vault/* {
+            # Preserve /vault: DOMAIN configures the same base path upstream.
+            reverse_proxy vaultwarden:8080 {
+                # Cookies ignore port boundaries. Forward only the native vault
+                # admin cookie, never the Exodus login cookie.
+                header_up Cookie "VW_ADMIN={http.request.cookie.VW_ADMIN}"
+            }
+        }
+        respond "Not found" 404
+    }
+}

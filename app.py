@@ -823,6 +823,9 @@ app.include_router(setup_shell_routes())
 from routes.cookbook_routes import setup_cookbook_routes
 app.include_router(setup_cookbook_routes())
 
+from routes.vaultwarden_routes import setup_vaultwarden_routes
+app.include_router(setup_vaultwarden_routes())
+
 from routes.home_routes import setup_home_routes
 app.include_router(setup_home_routes())
 

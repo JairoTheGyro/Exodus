@@ -145,3 +145,5 @@ services:
       - ./src/upload_limits.py:/app/src/upload_limits.py:ro
       - ./static/js/documentLibrary.js:/app/static/js/documentLibrary.js:ro
       - ./static/js/libraryFiles.js:/app/static/js/libraryFiles.js:ro
+      - ./routes/vaultwarden_routes.py:/app/routes/vaultwarden_routes.py:ro
+      - ./src/vaultwarden_service.py:/app/src/vaultwarden_service.py:ro

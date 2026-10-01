@@ -2,6 +2,7 @@
 import * as Modals from '../modalManager.js';
 import Storage from '../storage.js';
 import { initCodeDetails } from './code.js';
+import { initVaultwardenDetails } from './vaultwarden.js';
 
 const names = { searxng: 'SearXNG', chroma: 'ChromaDB', ntfy: 'ntfy', vaultwarden: 'Vaultwarden', code: 'Code' };
 const linkTargetKey = 'exodus-local-services-link-target';
@@ -42,7 +43,8 @@ export function openLocalServices(service) {
     }
   });
   document.body.append(modal);
-  const cleanup = service === 'code' ? initCodeDetails(body) : null;
+  const cleanup = service === 'code' ? initCodeDetails(body)
+    : service === 'vaultwarden' ? initVaultwardenDetails(body) : null;
   Modals.register(modal.id, {
     label: names[service] || 'Local Services',
     closeFn: () => {

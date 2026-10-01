@@ -2558,7 +2558,11 @@ export function openEmailLibrary(opts = {}) {
     }
   }
   if (opts.folder) state._libFolder = opts.folder;
-  state._libPendingExpandUid = opts.uid || null;
+  state._libPendingExpandUid = null;
+  state._libDirectRead = false;
+  // Invalidate list requests from the previously opened mailbox.
+  ++_libLoadSeq;
+  const openGeneration = _emailMailboxGeneration;
 
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -3140,7 +3144,7 @@ export function openEmailLibrary(opts = {}) {
     _renderAccountsLoading();
   }
   const fastAccountAtOpen = state._libAccountId || '';
-  if (fastAccountAtOpen) {
+  if (fastAccountAtOpen && !opts.uid) {
     _loadEmails({ useCache: true });
   }
   // If we already know the previous/default account, paint that inbox first
@@ -3148,8 +3152,25 @@ export function openEmailLibrary(opts = {}) {
   // otherwise waited on `/accounts` before even trying the cheap indexed list.
   (async () => {
     await _loadAccounts();
+    if (!state._libOpen || openGeneration !== _emailMailboxGeneration) return;
     _loadFolders();
     _loadEmailReminderBellVisibility();
+    if (opts.uid) {
+      // Open the requested message directly, even if it is outside page one.
+      // Never redirect an explicit account link into the default mailbox.
+      if (opts.account_id && opts.account_id !== state._libAccountId) {
+        grid.innerHTML = '<div class="email-loading">This email account is unavailable.</div>';
+        return;
+      }
+      const message = {...(opts.message || {}), uid:String(opts.uid), folder:opts.folder || 'INBOX', account_id:state._libAccountId};
+      state._libEmails = [message];
+      state._libDirectRead = true;
+      grid.innerHTML = '';
+      const card = _createCard(message);
+      grid.appendChild(card);
+      await _toggleCardPreview(card, message);
+      return;
+    }
     if (!fastAccountAtOpen || fastAccountAtOpen !== (state._libAccountId || '')) {
       _loadEmails({ useCache: true });
     }
@@ -4685,6 +4706,7 @@ async function _refreshUnreadBadge({ unreadCountOverride = null } = {}) {
 }
 
 async function _loadEmails({ force = false, useCache = true } = {}) {
+  state._libDirectRead = false;
   const seq = ++_libLoadSeq;
   state._libLoading = true;
   const accountAtStart = state._libAccountId || '';
@@ -5420,6 +5442,10 @@ async function _toggleCardPreview(card, em) {
     modal?.style.removeProperty('--email-reading-modal-min-h');
     const reader = card.querySelector('.email-card-reader');
     if (reader) reader.remove();
+    if (state._libDirectRead) {
+      state._libEmails = [];
+      await _loadEmails({ useCache:true });
+    }
     return;
   }
 

@@ -22,7 +22,7 @@ async function launch(kind,id){
   if(kind==='note'||kind==='task'){const m=await import('./notes.js');await m.openNote(id);return;}
   const targets={notes:'tool-notes-btn',calendar:'tool-calendar-btn',library:'tool-library-btn',email:'email-section-title',code:'tool-code-btn',workshop:'tool-workshop-btn',vault:'privacy-vaultwarden-btn',search:'local-searxng-btn'};
   if(kind==='library'){const m=await import('./document.js?v=20260929workspace1');m.default.openLibrary();return;}
-  if(kind==='email'){const m=await import('./emailLibrary.js');m.openEmailLibrary(id&&typeof id==='object'?{uid:id.uid,folder:id.folder||'INBOX',account_id:id.account_id}:{});return;}
+  if(kind==='email'){const m=await import('./emailLibrary.js?v=20260929workspace1');m.openEmailLibrary(id&&typeof id==='object'?{uid:id.uid,folder:id.folder||'INBOX',account_id:id.account_id,message:id}:{});return;}
   if(kind==='vault'||kind==='search'){const m=await import('./settings/localServices.js');m.openLocalServices(kind==='vault'?'vaultwarden':'searxng');return;}
   const btn=$(targets[kind]); if(btn){if(kind==='code'||kind==='workshop')hideHome();btn.click();}
 }
@@ -80,7 +80,9 @@ function renderShell(){
 }
 function renderGrid(){
  const order=[...new Set([...(profile.order||[]),...Object.keys(widgetNames)])];
- $('home-grid').innerHTML=order.filter(id=>!(profile.hidden||[]).includes(id)).map(id=>`<section class="home-card" data-widget="${id}" data-collapsed="${(profile.collapsed||[]).includes(id)}"><header><h2>${widgetNames[id]}</h2><button aria-label="Collapse ${widgetNames[id]}" aria-expanded="${!(profile.collapsed||[]).includes(id)}" data-collapse="${id}">−</button></header><div class="home-widget-body">${empty('Loading…')}</div></section>`).join('');
+ $('home-grid').innerHTML=order.filter(id=>!(profile.hidden||[]).includes(id)).map(id=>`<section class="home-card" data-widget="${id}" data-collapsed="${(profile.collapsed||[]).includes(id)}"><header><h2>${widgetNames[id]}</h2><div class="home-card-actions">${id==='inbox'?'<button type="button" data-refresh-inbox aria-label="Refresh inbox" title="Check for new email">↻</button>':''}<button aria-label="Collapse ${widgetNames[id]}" aria-expanded="${!(profile.collapsed||[]).includes(id)}" data-collapse="${id}">−</button></div></header><div class="home-widget-body">${empty('Loading…')}</div></section>`).join('');
+ const refresh=home.querySelector('[data-refresh-inbox]');
+ if(refresh)refresh.onclick=()=>action(refresh,()=>loadInbox(widget('inbox'),{refresh:true}));
  home.querySelectorAll('[data-collapse]').forEach(b=>b.onclick=()=>action(b,async()=>{const id=b.dataset.collapse;const set=new Set(profile.collapsed||[]);set.has(id)?set.delete(id):set.add(id);await patch({collapsed:[...set]});b.closest('section').dataset.collapsed=String(set.has(id));b.setAttribute('aria-expanded',String(!set.has(id)));b.textContent=set.has(id)?'+':'−';}));
 }
 function renderCustomize(){
@@ -101,7 +103,40 @@ let scheduleRevision=0;
 async function loadSchedule(w){const revision=++scheduleRevision;const start=new Date();start.setHours(0,0,0,0);const end=new Date(start);end.setDate(end.getDate()+1);const result=await api('/api/calendar/events?'+new URLSearchParams({start:start.toISOString(),end:end.toISOString()}));if(revision!==scheduleRevision||!w.isConnected)return;const events=result.events||[];w.innerHTML=events.length?`<ul class="home-list">${events.map(e=>{const url=(String(e.location||'')+' '+String(e.description||'')).match(/https?:\/\/[^\s<>"']+/g)?.map(safeUrl).find(u=>u&&/^(meet\.google\.com|([a-z0-9-]+\.)?zoom\.us|teams\.microsoft\.com)$/i.test(new URL(u).hostname));return `<li><strong>${esc(e.summary||'Untitled event')}</strong><small>${e.all_day?'All day':esc(new Date(e.dtstart).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}))} · ${esc(e.location||'')}</small>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Join meeting ↗</a>`:''}</li>`;}).join('')}</ul>`:empty('No events today. Leave space for something good.');w.insertAdjacentHTML('beforeend','<button data-calendar>Open Calendar</button>');w.querySelector('button').onclick=()=>launch('calendar');}
 async function loadFocus(w=widget('focus')){focus=await api('/api/home/focus');if(!w)return;w.innerHTML=`<div class="home-clock" id="home-focus-clock">25:00</div><p class="home-muted" id="home-focus-note"></p><form id="home-focus-form" class="home-form"><input name="project" placeholder="Project or task" aria-label="Timer project" maxlength="100"><div class="home-row"><select name="kind" aria-label="Timer type"><option value="pomodoro">Pomodoro</option><option value="timer">Project timer</option></select><label>Minutes<input name="minutes" type="number" min="1" max="180" value="25" style="width:70px"></label></div><button id="home-focus-button">${focus.active?'Stop & save time':'Start focus'}</button></form>`;if(focus.active){w.querySelectorAll('input,select').forEach(e=>e.disabled=true);}tickFocus();$('home-focus-form').onsubmit=e=>{e.preventDefault();action($('home-focus-button'),async()=>{const b=Object.fromEntries(new FormData(e.target));b.minutes=Number(b.minutes||25);b.action=focus.active?'stop':'start';focus=await post('/api/home/focus',b);await loadFocus();load('metrics',loadMetrics);});};load('metrics',loadMetrics);}
 function tickFocus(){if(!$('home-focus-clock'))return;const active=focus.active;if(!active){$('home-focus-clock').textContent='25:00';$('home-focus-note').textContent='One thing at a time. Time is saved when you stop.';return;}const elapsed=Math.max(0,Date.now()/1000-active.started),seconds=Math.round(active.kind==='pomodoro'?Math.max(0,active.minutes*60-elapsed):elapsed);$('home-focus-clock').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;$('home-focus-note').textContent=seconds===0&&active.kind==='pomodoro'?`${active.project} · Time’s up. Stop to save this session.`:`${active.project} · ${active.kind==='pomodoro'?'Focus session':'Project timer'}`;}
-async function loadInbox(w){const result=await api('/api/email/accounts');const accounts=(result.accounts||[]).filter(a=>a.enabled!==false);w.innerHTML=empty(accounts.length?'Loading unread email…':'No email account connected.');if(accounts.length){const results=await Promise.allSettled(accounts.slice(0,10).map(a=>api('/api/email/list?'+new URLSearchParams({filter:'unread',limit:'5',cached_only:'1',account_id:a.id}))));const emails=results.flatMap((r,i)=>r.status==='fulfilled'?(r.value.emails||[]).map(e=>({...e,account:accounts[i].name})):[]);w.innerHTML=emails.length?`<ul class="home-list">${emails.slice(0,10).map(e=>`<li>${esc(e.subject||'(No subject)')}<small>${esc(e.from_name||e.from||'')} · ${esc(e.account)}</small></li>`).join('')}</ul>`:empty('No unread messages in the local email cache. Open Inbox to synchronize.');if(results.some(r=>r.status==='rejected'))w.insertAdjacentHTML('beforeend',empty('Some accounts could not be loaded.'));}w.insertAdjacentHTML('beforeend','<button data-inbox>Open Inbox</button><p class="home-muted">Email accounts connected to Exodus. Slack, Teams and document-comment integrations are not connected.</p>');w.querySelector('button').onclick=()=>launch('email');}
+let inboxLoadSequence = 0;
+async function loadInbox(w, {refresh = false} = {}) {
+ const sequence = ++inboxLoadSequence;
+ const current = () => sequence === inboxLoadSequence && w.isConnected;
+ w.setAttribute('aria-busy', 'true');
+ try {
+  const result = await api('/api/email/accounts');
+  const accounts = (result.accounts || []).filter(a => a.enabled !== false).slice(0, 10);
+  const results = await Promise.allSettled(accounts.map(a => {
+   const params = new URLSearchParams({filter:'unread', folder:'INBOX', limit:'5', account_id:a.id});
+   if(refresh) params.set('_', String(Date.now()));
+   else params.set('cached_only', '1');
+   return api('/api/email/list?' + params);
+  }));
+  if(!current())return;
+  const emails = results.flatMap((r,i) => r.status === 'fulfilled' && !r.value.error
+   ? (r.value.emails || []).map(e => ({...e, account_id:accounts[i].id, folder:e.folder || 'INBOX', account:accounts[i].name})) : []).slice(0,10);
+  const failed = results.some(r => r.status === 'rejected' || r.value.error);
+  w.innerHTML = emails.length ? `<ul class="home-list">${emails.map((e,i) => `<li><button type="button" class="home-link home-email" data-email="${i}">${esc(String(e.subject || '').trim() || '(No Subject)')}<small>${esc(e.from_name || e.from_address || e.from || '')} · ${esc(e.account)}</small></button></li>`).join('')}</ul>`
+   : empty(!accounts.length ? 'No email account connected.' : failed ? 'Inbox could not be refreshed. Try again.' : refresh ? 'No unread messages.' : 'No unread messages in the local email cache. Refresh to check for new email.');
+  if(failed && emails.length)w.insertAdjacentHTML('beforeend',empty('Some accounts could not be refreshed.'));
+  w.insertAdjacentHTML('beforeend','<button data-inbox>Open Inbox</button><p class="home-muted">Email accounts connected to Exodus. Slack, Teams and document-comment integrations are not connected.</p>');
+  w.querySelector('[data-inbox]').onclick = () => action(null, () => launch('email'));
+  w.querySelectorAll('[data-email]').forEach(b => b.onclick = () => action(b, () => launch('email', emails[Number(b.dataset.email)])));
+  if(refresh)status(failed ? 'Some email accounts could not be refreshed.' : accounts.length ? 'Inbox refreshed.' : 'No email account connected.');
+ } catch(e) {
+  if(current()) {
+   // Keep usable cached rows on a failed refresh.
+   if(refresh)status('Inbox refresh failed. ' + e.message);
+   else {w.innerHTML=empty(e.message)+'<button data-inbox-retry>Retry</button>';w.querySelector('button').onclick=()=>loadInbox(w);}
+  }
+ } finally {if(current())w.setAttribute('aria-busy','false');}
+}
+
 async function loadFiles(w){const {files}=await api('/api/home/files');w.innerHTML=files.length?`<ul class="home-list">${files.map(f=>`<li><div class="home-row"><button class="home-link home-title" data-file="${esc(f.id)}">${esc(f.title||"Untitled document")}<small>${esc(f.language||'Document')} · ${esc(new Date(f.updated).toLocaleDateString())}</small></button><button data-pin="${esc(f.id)}" aria-label="${f.pinned?'Unpin':'Pin'} ${esc(f.title||"Untitled document")}">${f.pinned?'★':'☆'}</button></div></li>`).join('')}</ul>`:empty('Your recent documents will appear here.');w.insertAdjacentHTML('beforeend','<button data-library>Open Library</button>');w.querySelector('[data-library]').onclick=()=>launch('library');w.querySelectorAll('[data-file]').forEach(b=>b.onclick=()=>launch('file',b.dataset.file));w.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>action(b,async()=>{const set=new Set(profile.pins||[]);set.has(b.dataset.pin)?set.delete(b.dataset.pin):set.add(b.dataset.pin);await patch({pins:[...set]});await loadFiles(w);}));}
 let captureDraft='';
 function loadCapture(w){captureDraft=$('home-capture')?.value??captureDraft;w.innerHTML='<p class="home-muted">Catch the thought. Keep your flow.</p><form id="home-capture-form" class="home-form"><textarea id="home-capture" placeholder="An idea, a link, a reminder…" aria-label="Quick note" maxlength="20000" required></textarea><button>Save to Notes</button></form>';$('home-capture').value=captureDraft;$('home-capture').oninput=()=>captureDraft=$('home-capture').value;$('home-capture-form').onsubmit=e=>{e.preventDefault();action(e.target.querySelector('button'),async()=>{await post('/api/home/capture',{text:$('home-capture').value});$('home-capture').value='';captureDraft='';status('Saved to Notes.');});};}
