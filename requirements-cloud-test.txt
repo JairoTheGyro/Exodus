@@ -1,0 +1,18 @@
+# Focused offline development tests only; not the complete app runtime.
+# Validated on Python 3.11 without Docker, models, vector libraries, or npm.
+# Keep requirements.txt as the runtime source of truth.
+fastapi==0.142.2
+httpx==0.28.1
+httpx2==2.13.1
+pydantic==2.13.5
+SQLAlchemy==2.1.1
+cryptography==50.0.2
+python-multipart==0.0.32
+python-dotenv==1.2.4
+pytest==9.1.1
+pytest-asyncio==1.4.0
+bcrypt==5.0.0
+pyotp==2.10.0
+croniter==6.2.4
+icalendar==7.3.0
+python-dateutil==2.9.0.post0

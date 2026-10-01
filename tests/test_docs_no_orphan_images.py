@@ -3,7 +3,8 @@
 Public Markdown and landing-page media belong in website/, while shared
 README/packaging imagery belongs in assets/branding/. Images in either managed
 root must be referenced by tracked text, and every tracked website video must
-be referenced by the site's entry point.
+be referenced by the site's entry point. Explicitly maintained operator guides
+may live in docs/ without becoming part of the public Pages site.
 """
 import re
 import subprocess
@@ -24,6 +25,10 @@ PUBLIC_GUIDES = {
     "security-ci.md",
     "setup.md",
 }
+# Local deployment/development instructions are maintained with the source,
+# not published as Pages guides. Keep exceptions exact: other Markdown and
+# all landing-page videos must still live in website/.
+OPERATIONAL_GUIDES = {"VAULTWARDEN.md", "CLOUD_DEVELOPMENT.md"}
 # Files a referenced image name could legitimately appear in.
 TEXT_EXTS = {".md", ".html", ".htm", ".js", ".ts", ".css", ".py", ".sh",
              ".json", ".yml", ".yaml", ".txt"}
@@ -83,7 +88,15 @@ def test_pages_site_owns_its_entrypoint_and_media():
 
     assert REPO / "website/index.html" in website_files
     assert REPO / "docs/index.html" not in docs_files
-    assert not [p for p in docs_files if p.suffix.lower() in VIDEO_EXTS | {".md"}]
+    unexpected_docs_assets = [
+        p for p in docs_files
+        if p.suffix.lower() in VIDEO_EXTS
+        or (p.suffix.lower() == ".md"
+            and p.relative_to(REPO / "docs").as_posix() not in OPERATIONAL_GUIDES)
+    ]
+    assert not unexpected_docs_assets, unexpected_docs_assets
+    for guide in OPERATIONAL_GUIDES:
+        assert (REPO / "docs" / guide).is_file(), guide
 
     website_paths = {p.relative_to(REPO / "website").as_posix() for p in website_files}
     assert PUBLIC_GUIDES <= website_paths
