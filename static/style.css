@@ -41525,3 +41525,37 @@ body.settings-sidebar-resize-active {
 #local-services-modal .modal-header h2 { margin:0; font-size:17px; }
 
 #code-launch[hidden], #code-models[hidden] { display: none !important; }
+
+/* Notes exports use the same theme and fit narrow/docked panels. */
+.notes-export-options:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.notes-export-link { color: var(--fg); text-decoration: underline; padding: 4px 0; }
+.notes-export-options small { opacity: .75; line-height: 1.4; }
+
+/* Original files live alongside the Library's editable documents. */
+.library-files-panel { flex: 1; min-height: 0; flex-direction: column; gap: 10px; overflow-y: auto; }
+.library-file-drop { padding: 24px 12px; border: 1px dashed var(--border); border-radius: 8px; background: var(--panel); color: var(--fg); font: inherit; cursor: pointer; flex-shrink: 0; }
+.library-file-drop.drag-over { outline: 2px solid var(--fg); background: var(--bg); }
+.library-file-help { opacity: .7; }
+.library-file-toolbar, .library-file-row, .library-file-actions { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.library-file-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.library-file-list { display: flex; flex-direction: column; gap: 8px; }
+.library-file-row { padding: 12px; border: 1px solid var(--border); border-radius: 6px; }
+.library-file-row > div:first-child { min-width: 0; }
+.library-file-row strong { font-size: 13px; overflow-wrap: anywhere; }
+.library-file-row small { display: block; font-size: 11px; opacity: .7; margin-top: 5px; overflow-wrap: anywhere; }
+.library-file-actions { flex-shrink: 0; font-size: 12px; }
+.library-file-actions a { color: var(--fg); }
+@media (max-width: 540px) { .library-file-row { align-items: flex-start; flex-direction: column; } }
+
+/* Quick add always works locally; AI assist is an explicit optional choice. */
+.cal-quickadd-ai { display:flex; align-items:center; gap:6px; padding:0 12px 8px; font-size:12px; color:var(--text-secondary); }

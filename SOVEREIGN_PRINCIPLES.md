@@ -491,3 +491,149 @@ provider, real model adapter and agent loop, actual note dispatcher, save hooks,
 upserts/deletions, owner and AI-free checks), plus live Chroma background indexing
 and ntfy integration tests. Controlled provider tests do not claim a live Groq
 model completed the full workflow.
+
+
+## Offline Notes organization
+
+Notes keeps its existing local label/tag storage and archive flag. The API now
+exposes `tags` as a string array backed by the same space-separated `label`, and
+`is_archived` as an alias of `archived` (default false). Existing clients, notes,
+agent tools and archive routes remain compatible. Tags use single words or
+hyphenated phrases; empty tags are removed and duplicates normalized. Sending
+`tags: []` clears tags. No separate category store is added: Work and Personal
+are custom tags; Default means no reminder date/time and no visible custom tags.
+Reminders includes notes with a reminder date/time, including overdue reminders
+until cleared. A date-only task deadline is not a reminder.
+
+All, Default, Reminders and custom-tag chips filter the current Notes view.
+Counts use the full current active/archived list, independent of a text search.
+Switching between active and archived views resets the chip selection. Archived
+notes can be unarchived from their cards or open editor. These operations use
+local SQLite and work in AI-Free mode. GET /api/notes supports literal,
+case-insensitive title/content searching with q; the UI filters its loaded notes
+and checklist text locally with a 250ms debounce and immediate clear.
+
+Metadata edits trigger the existing database post-commit Chroma hook. Index
+metadata includes tags and is_archived, and revision fingerprints reject stale
+metadata until reindexing succeeds. AI-Free accounts still defer embedding; local
+saves never depend on Chroma availability. Pending sync retains the previously
+documented in-memory retry/restart limitation.
+
+Verification uses disposable AI-Free state in notes_search_integration.py and
+notes_organization_integration.py, plus browser checks for tag editing, chip
+counts/filter changes, archive/unarchive and persistence across reload.
+
+## Local Notes export
+
+Notes → Export offers Markdown ZIP (all active notes) and JSON backup (active
+and archived notes). Both ignore the current search/chip selection and preserve
+existing account ownership rules; signed-in users cannot export other accounts.
+The exact GET routes /api/notes/export/zip and /api/notes/export/json are available
+in both workspace modes and do not invoke AI, Chroma, or external services.
+
+ZIP files contain one UTF-8 Markdown file per note, collision-safe filenames,
+JSON-quoted YAML frontmatter, original body text and readable Markdown checklists.
+Frontmatter retains raw checklist JSON, timestamps, tags, IDs and other metadata.
+Category is derived from existing organization: Reminders for a timed reminder,
+otherwise the first custom tag or Default. All custom tags remain available.
+JSON uses a versioned envelope with a notes array containing every stored Note
+column and convenience tags/category/is_archived fields. Stored JSON columns
+(items and ai_classification) remain their exact raw strings, including malformed
+legacy values, for structural fidelity. Date strings retain stored precision;
+no timezone is invented for database timestamps without one.
+
+These exports include attachment references, not image binaries or other tables
+such as chat sessions. No import/restore UI is added. Downloads use native browser
+attachment handling without a whole-file JavaScript Blob. Generation uses a small
+database batch and a temporary disk file, closed on failure, completion or client
+disconnect. Memory scales with the largest note and ZIP entry directory, not the
+combined note bodies. Disk space proportional to the resulting export is needed.
+
+Verification: tests/notes_export_integration.py checks account isolation, AI-free
+and full modes, raw column fidelity, Unicode/unsafe filenames, checklist nesting,
+empty exports, cleanup and a 1,000-note / 62.5 MiB export. Measured peak additional
+process RSS was 7.71 MiB (Python allocations 2.27 MiB) in the local Docker test;
+these are test measurements, not universal memory limits. Browser downloads were
+opened and checked using disposable notes in an AI-free fixture.
+
+## Original Library files
+
+Library → Files stores original PDF, TXT, MD, CSV and image uploads without
+parsing, conversion, OCR, embeddings or external calls. Existing Documents,
+PDF editing, chat attachments and import-to-editor behavior remain available.
+These are separate records because editable document versions and temporary
+chat uploads have different lifecycles. Existing uploads are not copied or moved.
+
+Compose maps the existing host data/documents directory to /data/documents in
+the app container. EXODUS_DOCUMENTS_DIR overrides the location outside Compose;
+the native default is DATA_DIR/documents. The new document_files table is in the
+existing application database. Back up both that database and the documents
+directory together. No new database service or vector collection is required.
+
+GET /api/documents returns files, total, allowed extensions and max_upload_bytes,
+with offset/limit pagination (50 by default, at most 200). POST
+/api/documents/upload accepts one multipart file. GET /api/documents/{id}/download
+streams the original bytes as an attachment. DELETE /api/documents/{id} removes
+the file and registry entry. All four routes enforce identity, the existing
+can_use_documents privilege, and owner filtering; AI-free mode permits them.
+
+Names reuse the project's sanitizer and get a random ID prefix so equal names
+never overwrite each other. Registry paths are independently validated; symlink
+files cannot be followed. Supported extensions determine the MIME label; this
+is storage, not a file-format or malware scanner. Downloads are attachments with
+nosniff/sandbox headers, so uploaded SVGs or disguised content are not previewed
+as active application pages. The upload limit defaults to 25 MiB via
+EXODUS_DOCUMENT_UPLOAD_MAX_BYTES. Multipart request size is capped before/during
+parsing (file limit plus 64 KiB envelope), and storage copies in 64 KiB chunks.
+Failed saves clean up partial files. Downloads close their handles on disconnect.
+
+Deletion records durable intent before removing bytes. If disk/DB removal fails,
+the pending entry remains visible with Retry delete; downloads are blocked until
+removal completes. User deletion requires a clear permanent-delete confirmation.
+A successful deletion is not reversible. A process crash during an unfinished
+upload can leave an unlisted partial file; no automatic destructive cleanup of
+this directory is introduced. The host file is not touched by deleting the
+uploaded copy.
+
+Verification: tests/library_files_integration.py uses isolated SQLite/disk and
+checks supported extensions, both workspace modes, exact bytes, metadata,
+account/privilege boundaries, path sanitizing, symlink refusal, size limits,
+chunked requests, failed-save cleanup, retryable deletion and original Documents
+behavior. Browser verification uses an isolated AI-free workspace and compares
+a file uploaded and downloaded through the actual controls byte for byte.
+
+
+## Offline Calendar Quick add and Home refresh
+
+Quick add uses a bounded English parser in `src/calendar_quick_add.py` by
+default in both workspace modes. It recognizes today/tomorrow, weekdays,
+ISO and named-month dates, 12/24-hour times, noon/midnight, time ranges, relative
+minutes/hours/days/weeks, and explicit durations. No new dependency, model,
+embedding, or external API is needed; the local Exodus server must be running.
+Ambiguous numeric dates and unsupported recurrence instructions ask for a clearer
+input. Date-free drafts use today with a notice. The existing form remains the
+confirmation step before saving; date-only events are all-day and timed events
+without an end default to one hour. “Next Monday” means the next occurrence,
+strictly a week later when today is already Monday.
+
+Full mode retains explicit, unchecked-by-default AI assist. Only choosing it
+sends the description to the existing configured utility/default provider.
+Inference is capped at five seconds, validated, and falls back to the local draft
+on errors or missing configuration. AI-Free hides the option and independently
+blocks inference even if the client requests it. There is no provider-specific
+or Groq prerequisite. The POST quick-parse route is now allowed in AI-Free.
+
+Confirmed calendar creates, edits and deletes notify Home to reload only its
+schedule. Home also listens to the existing agent calendar-refresh signal; a
+failed save does not announce success. Stale overlapping schedule responses are
+ignored. All-day forms use inclusive displayed dates and exclusive stored ends;
+nonpositive stored durations are normalized on create/update. Timed form saves
+use the selected date's offset rather than today's offset, preserving DST.
+
+Verification: `tests/calendar_quickadd_integration.py` uses isolated SQLite and
+blocked/mock inference for parsing, both modes, persistence, timezone anchoring,
+optional-provider fallback and all-day visibility. Existing calendar/Home tests
+remain in use. `tests/helpers/test_home_calendar_updates.mjs` checks confirmed
+save notifications, failed-save rollback and the agent completion signal.
+The disposable Home browser fixture verifies Quick add and immediate Home updates
+without changing real calendar data.

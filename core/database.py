@@ -9,7 +9,7 @@ from sqlalchemy import DDL, event, create_engine, Column, String, Text, Boolean,
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy.orm import relationship, sessionmaker, backref
+from sqlalchemy.orm import relationship, sessionmaker, backref, synonym
 
 from src.runtime_paths import get_app_root
 from core.platform_compat import safe_chmod, IS_WINDOWS
@@ -311,6 +311,18 @@ class Document(TimestampMixin, Base):
     session  = relationship("Session", backref=backref("documents", cascade="save-update, merge"))
     versions = relationship("DocumentVersion", back_populates="document",
                            cascade="all, delete-orphan", order_by="DocumentVersion.version_number")
+
+
+class DocumentFile(TimestampMixin, Base):
+    """Original local Library files, independent of editable document versions."""
+    __tablename__ = "document_files"
+    id = Column(String, primary_key=True)
+    owner = Column(String, nullable=True, index=True)
+    filename = Column(String, nullable=False)
+    storage_name = Column(String, nullable=False, unique=True)
+    file_size = Column(Integer, nullable=False)
+    mime_type = Column(String, nullable=False)
+    deletion_pending = Column(Boolean, nullable=False, default=False)
 
 
 class DocumentVersion(Base):
@@ -1819,6 +1831,17 @@ class Note(TimestampMixin, Base):
     label      = Column(String, nullable=True)
     pinned     = Column(Boolean, default=False)
     archived   = Column(Boolean, default=False)
+    # Public naming aliases reuse existing columns; no duplicate archive/tag state.
+    is_archived = synonym("archived")
+
+    @property
+    def tags(self):
+        return list(dict.fromkeys(t.lstrip("#") for t in (self.label or "").split() if t.lstrip("#")))
+
+    @tags.setter
+    def tags(self, values):
+        self.label = " ".join(dict.fromkeys(values or [])) or None
+
     due_date   = Column(String, nullable=True)
     source     = Column(String, default="user")     # "user" or "agent"
     session_id = Column(String, nullable=True)

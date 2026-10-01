@@ -1721,7 +1721,7 @@ const SHORTCUT_LABELS = {
   open_library:   'Open Library',
   open_memory:    'Open Memory',
   open_notes:     'Open Notes',
-  open_tasks:     'Open Tasks',
+  open_tasks:     'Open Automations',
   open_theme:     'Open Theme',
 };
 

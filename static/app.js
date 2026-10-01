@@ -178,7 +178,7 @@ function initRailHoverLabels() {
     'rail-archive': 'Library',
     'rail-memory': 'Brain',
     'rail-notes': 'Notes',
-    'rail-tasks': 'Tasks',
+    'rail-tasks': 'Automations',
     'rail-theme': 'Theme',
     'rail-settings': 'Settings',
   };

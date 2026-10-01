@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 
 from core.database import SessionLocal, Note
 from core.middleware import INTERNAL_TOOL_USER
@@ -15,6 +15,7 @@ from src.auth_helpers import require_user
 from src.constants import DATA_DIR
 from src.upload_handler import reserve_upload_references
 from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,40 @@ logger = logging.getLogger(__name__)
 # Request models
 # ---------------------------------------------------------------------------
 
-class NoteCreate(BaseModel):
+class NoteOrganization(BaseModel):
+    tags: Optional[list[str]] = None
+    is_archived: Optional[bool] = None
+    archived: Optional[bool] = None
+
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, values):
+        if values is None:
+            return None
+        normalized = []
+        for value in values:
+            tag = value.strip().lstrip("#")
+            if not tag:
+                continue
+            if any(c.isspace() for c in tag):
+                raise ValueError("Use one word per tag; use a hyphen to join words.")
+            if len(tag) > 100:
+                raise ValueError("Tags must be at most 100 characters.")
+            if tag not in normalized:
+                normalized.append(tag)
+        if len(normalized) > 50:
+            raise ValueError("Use at most 50 tags per note.")
+        return normalized
+
+    @model_validator(mode="after")
+    def consistent_archive_flags(self):
+        if {"archived", "is_archived"} <= self.model_fields_set and self.archived is not None and self.is_archived is not None and self.archived != self.is_archived:
+            raise ValueError("archived and is_archived must agree.")
+        return self
+
+
+class NoteCreate(NoteOrganization):
+    is_archived: bool = False
     title: str = ""
     content: Optional[str] = None
     items: Optional[list] = None
@@ -39,7 +73,7 @@ class NoteCreate(BaseModel):
     sort_order: Optional[int] = None
 
 
-class NoteUpdate(BaseModel):
+class NoteUpdate(NoteOrganization):
     title: Optional[str] = None
     content: Optional[str] = None
     items: Optional[list] = None
@@ -82,8 +116,10 @@ def _note_to_dict(note: Note) -> Dict[str, Any]:
         "note_type": note.note_type,
         "color": note.color,
         "label": note.label,
+        "tags": note.tags,
         "pinned": note.pinned,
-        "archived": note.archived,
+        "archived": bool(note.archived),
+        "is_archived": bool(note.archived),
         "due_date": note.due_date,
         "source": note.source,
         "session_id": note.session_id,
@@ -595,27 +631,53 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
         request: Request,
         archived: Optional[bool] = None,
         label: Optional[str] = None,
+        q: Optional[str] = None,
+        is_archived: Optional[bool] = None,
     ):
         user = _owner(request)
+        if is_archived is not None:
+            if archived is not None and archived != is_archived:
+                raise HTTPException(400, "archived and is_archived must agree.")
+            archived = is_archived
         db = SessionLocal()
         try:
-            q = db.query(Note)
+            query = db.query(Note)
             if user is not None:
-                q = q.filter(Note.owner == user)
+                query = query.filter(Note.owner == user)
             if archived is not None:
-                q = q.filter(Note.archived == archived)
+                query = query.filter(Note.archived == archived)
             else:
-                q = q.filter(Note.archived == False)
+                query = query.filter(Note.archived == False)
             if label:
-                q = q.filter(Note.label == label)
+                query = query.filter(Note.label == label)
+            # Literal case-insensitive text search in the local database only.
+            # Escape LIKE metacharacters so "%" and "_" are ordinary input.
+            if q and q.strip():
+                term = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                pattern = f"%{term}%"
+                query = query.filter(or_(
+                    Note.title.ilike(pattern, escape="\\"),
+                    Note.content.ilike(pattern, escape="\\"),
+                ))
             # Archived view: most recently archived first. Active view: pin + manual order.
             if archived is True:
-                notes = q.order_by(Note.updated_at.desc()).all()
+                notes = query.order_by(Note.updated_at.desc()).all()
             else:
-                notes = q.order_by(Note.pinned.desc(), Note.sort_order.asc(), Note.updated_at.desc()).all()
+                notes = query.order_by(Note.pinned.desc(), Note.sort_order.asc(), Note.updated_at.desc()).all()
             return {"notes": [_note_to_dict(n) for n in notes]}
         finally:
             db.close()
+
+    # --- LOCAL EXPORTS (no AI, vector lookup, or external requests) ---
+    @router.get("/export/zip")
+    def export_notes_zip(request: Request):
+        from src.note_export import build_note_export, NoteExportResponse
+        return NoteExportResponse(build_note_export(_owner(request), "zip"), "zip")
+
+    @router.get("/export/json")
+    def export_notes_json(request: Request):
+        from src.note_export import build_note_export, NoteExportResponse
+        return NoteExportResponse(build_note_export(_owner(request), "json"), "json")
 
     # --- CREATE ---
     @router.post("")
@@ -639,6 +701,7 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 note_type=body.note_type,
                 color=body.color,
                 label=body.label,
+                archived=body.archived if body.archived is not None else body.is_archived,
                 pinned=body.pinned,
                 due_date=body.due_date,
                 source=body.source,
@@ -647,6 +710,8 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 repeat=body.repeat or "none",
                 sort_order=body.sort_order if body.sort_order is not None else 0,
             )
+            if body.tags is not None:
+                note.tags = body.tags
             db.add(note)
             db.commit()
             db.refresh(note)
@@ -705,10 +770,14 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 note.color = body.color
             if body.label is not None:
                 note.label = body.label
+            if body.tags is not None:
+                note.tags = body.tags
             if body.pinned is not None:
                 note.pinned = body.pinned
             if body.archived is not None:
                 note.archived = body.archived
+            if body.is_archived is not None:
+                note.is_archived = body.is_archived
             if body.due_date is not None:
                 note.due_date = body.due_date
             if body.image_url is not None:
@@ -779,7 +848,7 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             note.archived = not note.archived
             db.commit()
-            return {"ok": True, "archived": note.archived}
+            return {"ok": True, "archived": bool(note.archived), "is_archived": bool(note.archived)}
         finally:
             db.close()
 

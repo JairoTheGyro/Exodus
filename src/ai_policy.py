@@ -64,6 +64,18 @@ def allowed_without_ai(path, method):
         return True
     if path in ('/api/health', '/api/config', '/api/client-info', '/api/version'):
         return method == 'GET'
+    if path in ('/api/notes/export/zip', '/api/notes/export/json'):
+        return method == 'GET'
+    if path == '/api/calendar/quick-parse':
+        return method == 'POST'  # Local parser; optional inference has its own AI guard.
+    if path == '/api/documents':
+        return method == 'GET'
+    if path == '/api/documents/upload':
+        return method == 'POST'
+    if re.fullmatch(r'/api/documents/[0-9a-f]{32}/download', path):
+        return method == 'GET'
+    if re.fullmatch(r'/api/documents/[0-9a-f]{32}', path) and method == 'DELETE':
+        return True
     patterns = [
         r'/api/workshop/[^/]+/state',  # Saved tools run without generation/inference.
         r'/api/notes', r'/api/notes/reorder',

@@ -5,6 +5,7 @@ services:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
       - ${APP_DATA_DIR:-./data}:/app/data:z
+      - ${APP_DATA_DIR:-./data}/documents:/data/documents:z
       - ${APP_LOGS_DIR:-./logs}:/app/logs:z
       # Cookbook remote-server SSH identity. Odysseus can generate a key here;
       # add the shown public key to each remote server's authorized_keys.
@@ -40,6 +41,8 @@ services:
       - CHROMA_COLLECTION=${CHROMA_COLLECTION:-exodus_knowledge}
       - CHROMADB_HOST=chromadb
       - CHROMADB_PORT=8000
+      - EXODUS_DOCUMENTS_DIR=/data/documents
+      - EXODUS_DOCUMENT_UPLOAD_MAX_BYTES=${EXODUS_DOCUMENT_UPLOAD_MAX_BYTES:-26214400}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/app.db}
       - AUTH_ENABLED=${AUTH_ENABLED:-true}
       - LOCALHOST_BYPASS=${LOCALHOST_BYPASS:-false}

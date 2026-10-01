@@ -1236,6 +1236,7 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             else:
                 dtend = dtstart + timedelta(hours=1)
 
+            dtend = _ensure_positive_duration(dtstart, dtend, data.all_day)
             ev = CalendarEvent(
                 uid=uid,
                 calendar_id=cal.id,
@@ -1296,6 +1297,7 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
                 ev.all_day = data.all_day
                 if data.all_day:
                     ev.is_utc = False  # all-day stays date-only
+            ev.dtend = _ensure_positive_duration(ev.dtstart, ev.dtend, ev.all_day)
             if data.rrule is not None:
                 ev.rrule = data.rrule
             if data.color is not None:
@@ -1618,6 +1620,45 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
 
     @router.post("/quick-parse")
     async def quick_parse(request: Request):
+        """Always parse locally first; optional AI failure retains the local draft."""
+        owner = _require_user(request)
+        from src.calendar_quick_add import parse_quick_add
+        from src.user_time import (clear_user_time_context, set_user_tz_name,
+                                   set_user_tz_offset, now_user_local)
+        body = await request.json()
+        if not isinstance(body, dict):
+            raise HTTPException(400, "Expected an event description.")
+        clear_user_time_context()
+        set_user_tz_name(body.get("tz"))
+        set_user_tz_offset(body.get("tz_offset"))
+        try:
+            local = parse_quick_add(body.get("text"), now_user_local())
+        except (ValueError, OverflowError) as exc:
+            raise HTTPException(400, str(exc))
+        if body.get("enhance_ai") is True:
+            from src.ai_policy import require_ai
+            import asyncio
+            try:
+                require_ai()  # Also enforce the authenticated middleware context.
+                require_ai(owner)
+                enhanced = await asyncio.wait_for(_quick_parse_ai(request), timeout=5)
+                if enhanced.get("ok"):
+                    event = enhanced["event"]
+                    start = datetime.fromisoformat(event["dtstart"])
+                    end = datetime.fromisoformat(event["dtend"])
+                    if event["all_day"]:
+                        end = _ensure_positive_duration(start, end, True)
+                        event["dtstart"], event["dtend"] = start.date().isoformat(), end.date().isoformat()
+                    elif end <= start:
+                        raise ValueError("Invalid AI event duration")
+                    enhanced["parser"] = "ai"
+                    return enhanced
+            except Exception:
+                pass  # Never make optional inference a prerequisite for creating an event.
+            local["notice"] = "AI assist unavailable; used the local parser. Review before saving."
+        return local
+
+    async def _quick_parse_ai(request: Request):
         """Parse a natural-language event description into structured fields.
 
         Input: {"text": "lunch with sara friday 1pm downtown", "tz": "America/New_York"}

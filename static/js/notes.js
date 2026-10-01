@@ -25,6 +25,7 @@ let _activeFilter = null; // null | 'default' | 'reminders' | 'no-reminders'
 // state the next click should land on after passing through null.
 let _reminderChipNext = 'reminders';
 let _searchQuery = '';
+let _searchTimer = null;
 let _viewMode = (typeof localStorage !== 'undefined' && localStorage.getItem('odysseus-notes-view')) || 'list'; // 'list' or 'grid'
 let _showingArchived = false;
 let _selectMode = false;
@@ -1193,7 +1194,16 @@ export function openPanel() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span class="notes-header-btn-label">Toggle</span>
       </button>
+      <button id="notes-export-toggle" type="button" class="doc-action-icon-btn notes-header-text-btn" title="Export notes" aria-label="Export notes" aria-expanded="false" aria-controls="notes-export-options" style="gap:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>
+        <span class="notes-header-btn-label">Export</span>
+      </button>
       <button id="notes-minimize-btn" class="modal-minimize-btn" title="Minimize" aria-label="Minimize notes" style="position:relative;left:2px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="18" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="notes-export-options" class="notes-export-options" hidden>
+      <a class="notes-export-link" href="${API_BASE}/api/notes/export/zip" download="exodus-notes.zip">Markdown ZIP — all active notes</a>
+      <a class="notes-export-link" href="${API_BASE}/api/notes/export/json" download="exodus-notes.json">JSON backup — active + archived notes</a>
+      <small>Exports your saved notes, regardless of filters. Attachment links are included; image files are not bundled.</small>
     </div>
     <div class="notes-search-bar">
       <input type="text" id="notes-search" class="memory-search-input" placeholder="Search notes…" autocomplete="off" />
@@ -1260,12 +1270,43 @@ export function openPanel() {
     e.stopPropagation();
     closePanel('down');
   });
+  const exportBtn = pane.querySelector('#notes-export-toggle');
+  const exportOptions = pane.querySelector('#notes-export-options');
+  const closeExport = () => {
+    exportOptions.hidden = true;
+    exportBtn.setAttribute('aria-expanded', 'false');
+  };
+  exportBtn.addEventListener('click', () => {
+    exportOptions.hidden = !exportOptions.hidden;
+    exportBtn.setAttribute('aria-expanded', String(!exportOptions.hidden));
+  });
+  exportOptions.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      closeExport();
+      exportBtn.focus();
+    }
+  });
+  // Native attachment downloads stream to the browser without a JS Blob or reload.
+  exportOptions.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+    closeExport();
+    exportBtn.focus();
+  }));
+
   // Search
   const searchEl = document.getElementById('notes-search');
   if (searchEl) {
     searchEl.addEventListener('input', () => {
-      _searchQuery = searchEl.value.trim().toLowerCase();
-      _renderNotes();
+      clearTimeout(_searchTimer);
+      const query = searchEl.value.trim().toLowerCase();
+      const applySearch = () => {
+        _searchTimer = null;
+        _searchQuery = query;
+        _renderNotes();
+      };
+      // Filter the complete loaded list locally; clearing never waits or fetches.
+      if (!query) applySearch();
+      else _searchTimer = setTimeout(applySearch, 250);
     });
   }
 
@@ -1287,6 +1328,8 @@ export function openPanel() {
     syncArchiveBtn();
     archiveBtn.addEventListener('click', async () => {
       _showingArchived = !_showingArchived;
+      _activeLabel = null;
+      _activeFilter = null;
       _selectedIds.clear();
       syncArchiveBtn();
       // Brief fade so the body content swap doesn't snap — the bg-tint
@@ -1494,13 +1537,22 @@ function _updateBulkBar() {
 // A note's label field may hold multiple space-separated tags. Split + dedupe.
 function _noteTags(n) {
   const tags = [];
-  if (n?.label) tags.push(...n.label.trim().split(/\s+/).filter(Boolean));
+  if (Array.isArray(n?.tags)) tags.push(...n.tags);
+  else if (n?.label) tags.push(...n.label.trim().split(/\s+/).filter(Boolean));
   if (n?.due_date && _hasTimeComponent(n.due_date)) tags.push('reminder');
   return [...new Set(tags.map(t => t.replace(/^#+/, '').trim()).filter(Boolean))];
 }
 
 function _visibleNoteTags(n) {
   return _noteTags(n).filter(t => t !== 'reminder');
+}
+
+function _hasNoteReminder(n) {
+  return Boolean(n?.due_date && _hasTimeComponent(n.due_date));
+}
+
+function _isDefaultNote(n) {
+  return !_hasNoteReminder(n) && _visibleNoteTags(n).length === 0;
 }
 
 function _isPastReminder(n) {
@@ -1531,18 +1583,18 @@ function _renderLabels(root = document) {
   const labels = new Set();
   for (const n of _notes) for (const t of _visibleNoteTags(n)) labels.add(t);
   const sortedLabels = [...labels].sort();
-  // Count active reminders (not archived, has datetime due_date)
-  const reminderCount = _notes.filter(n => !n.archived && n.due_date && _hasTimeComponent(n.due_date)).length;
+  // Count within the current active or archived view using the same filters as the list.
+  const reminderCount = _notes.filter(_hasNoteReminder).length;
   const pastReminderCount = _notes.filter(n => !n.archived && _isPastReminder(n)).length;
-  const defaultCount = _notes.filter(n => !n.archived && _visibleNoteTags(n).length === 0).length;
+  const defaultCount = _notes.filter(_isDefaultNote).length;
   // Active goals = non-archived goal notes. Today view lists pending steps
   // from each, so we surface the count next to the chip.
   const goalCount = _notes.filter(n => n.note_type === 'goal' && !n.archived).length;
   const todayCount = _notes.filter(n => n.note_type === 'goal' && !n.archived && _nextGoalStep(n)).length;
   bar.style.display = '';
   const allActive = _activeLabel === null && _activeFilter === null;
-  let html = `<button class="notes-label-chip${allActive ? ' active' : ''}" data-action="all">All</button>`;
-  html += `<button class="notes-label-chip${_activeFilter === 'default' ? ' active' : ''}" data-action="default" title="Show notes without tags">Default <span class="notes-label-chip-count">${defaultCount}</span></button>`;
+  let html = `<button class="notes-label-chip${allActive ? ' active' : ''}" data-action="all">All <span class="notes-label-chip-count">${_notes.length}</span></button>`;
+  html += `<button class="notes-label-chip${_activeFilter === 'default' ? ' active' : ''}" data-action="default" title="Show notes without reminders or custom tags">Default <span class="notes-label-chip-count">${defaultCount}</span></button>`;
   if (todayCount > 0) {
     const isOn = _activeFilter === 'today';
     const icon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
@@ -1566,7 +1618,7 @@ function _renderLabels(root = document) {
     html += `<button class="notes-label-chip notes-label-clear-past" data-action="clear-past-reminders" title="Delete reminders whose time has passed"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear past <span class="notes-label-chip-count">${pastReminderCount}</span></button>`;
   }
   for (const lbl of sortedLabels) {
-    html += `<button class="notes-label-chip${_activeLabel === lbl ? ' active' : ''}" data-label="${_esc(lbl)}">#${_esc(lbl)}</button>`;
+    html += `<button class="notes-label-chip${_activeLabel === lbl ? ' active' : ''}" data-label="${_esc(lbl)}">#${_esc(lbl)} <span class="notes-label-chip-count">${_notes.filter(n => _visibleNoteTags(n).includes(lbl)).length}</span></button>`;
   }
   bar.innerHTML = html;
   bar.querySelectorAll('.notes-label-chip').forEach(chip => {
@@ -1586,8 +1638,8 @@ function _renderLabels(root = document) {
       } else if (chip.dataset.action === 'reminders') {
         _activeLabel = null;
         // Cycle: null → reminders → null → no-reminders → null → reminders → ...
-        if (_activeFilter === null) {
-          _activeFilter = _reminderChipNext;
+        if (_activeFilter !== 'reminders' && _activeFilter !== 'no-reminders') {
+          _activeFilter = _activeFilter === null ? _reminderChipNext : 'reminders';
           _reminderChipNext = (_reminderChipNext === 'reminders') ? 'no-reminders' : 'reminders';
         } else {
           _activeFilter = null;
@@ -1629,6 +1681,8 @@ function _ensureNotesChipRegistered() {
 // dock chip instead of fully closing — tapping the chip reopens it.
 // Any other call (close button, programmatic) is a full close.
 export function closePanel(direction) {
+  clearTimeout(_searchTimer);
+  _searchTimer = null;
   if (!_open) return;
   _open = false;
   _editingId = null;
@@ -1746,11 +1800,11 @@ function _renderNotes() {
 
   let filtered = _activeLabel ? _notes.filter(n => _noteTags(n).includes(_activeLabel)) : _notes;
   if (_activeFilter === 'reminders') {
-    filtered = filtered.filter(n => n.due_date && _hasTimeComponent(n.due_date));
+    filtered = filtered.filter(_hasNoteReminder);
   } else if (_activeFilter === 'no-reminders') {
-    filtered = filtered.filter(n => !(n.due_date && _hasTimeComponent(n.due_date)));
+    filtered = filtered.filter(n => !_hasNoteReminder(n));
   } else if (_activeFilter === 'default') {
-    filtered = filtered.filter(n => _visibleNoteTags(n).length === 0);
+    filtered = filtered.filter(_isDefaultNote);
   } else if (_activeFilter === 'goals') {
     filtered = filtered.filter(n => n.note_type === 'goal' && !n.archived);
   } else if (_activeFilter === 'today') {
@@ -1963,7 +2017,7 @@ function _renderNotes() {
     const next = [...body.children].filter(c => c !== existingForm);
     next.forEach(c => c.remove());
     if (sorted.length === 0) {
-      body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg">No notes <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
+      body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg" role="status">' + (_searchQuery ? 'No matching notes found' : 'No notes') + ' <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
     } else {
       existingForm.insertAdjacentHTML('afterend', html);
     }
@@ -1972,7 +2026,7 @@ function _renderNotes() {
     _renderLabelsInto(body);
     _renderQuickAdd(body);
     if (sorted.length === 0) {
-      body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg">No notes yet <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
+      body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg" role="status">' + (_searchQuery ? 'No matching notes found' : 'No notes yet') + ' <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
     } else {
       body.insertAdjacentHTML('beforeend', html);
     }
@@ -2971,7 +3025,7 @@ function _buildForm(note = null) {
       <div class="note-color-picker">
         ${COLORS.map(c => `<span class="note-color-dot${_dotIsActive(c.value, color) ? ' active' : ''}" data-color="${c.value}" style="background:${_dotBg(c.value, color)}" title="${c.name || 'default'}"></span>`).join('')}
       </div>
-      <input type="text" class="note-form-label" value="${_esc(note?.label || '')}" placeholder="#tag1 #tag2" title="Tag(s) — space-separated" />
+      <input type="text" class="note-form-label" value="${_esc(note?.label || '')}" placeholder="#tag1 #tag2" title="Tags — space-separated, for example Work Personal" aria-label="Tags" />
       <div class="note-form-actions-group">
         ${isEdit ? `
         <button type="button" class="note-form-text-btn note-form-archive-btn note-form-collapsible" title="Archive">
@@ -3642,6 +3696,7 @@ function _buildForm(note = null) {
       note_type: currentType,
       color: currentColor,
       label: labelVal,
+      tags: _tags,
       due_date: form.querySelector('.note-form-due').value || null,
       repeat: form.querySelector('.note-form-repeat')?.value || 'none',
       image_url: currentImageUrl || null,
@@ -3726,7 +3781,7 @@ function _buildForm(note = null) {
   // archive-mode (visually + behaviorally) and flips to Update on the first
   // edit. Lets the user tap a note to skim, then tap ✓ to archive without ever
   // touching a separate Archive button.
-  if (isEdit && window.innerWidth <= 768) {
+  if (isEdit && !note.archived && window.innerWidth <= 768) {
     const _saveLabelEl = _saveBtnEl0.querySelector('.nft-label');
     const _enterArchive = () => {
       _saveBtnEl0.classList.add('archive-mode');
@@ -3748,9 +3803,21 @@ function _buildForm(note = null) {
   form.querySelector('.note-form-cancel').addEventListener('click', () => { _clearDraft(isEdit ? note.id : '__new__'); _editingId = null; _renderNotes(); });
 
   // Archive / Delete — edit-mode-only buttons, mirror the (now-hidden) card actions.
-  form.querySelector('.note-form-archive-btn')?.addEventListener('click', () => {
+  const archiveNoteButton = form.querySelector('.note-form-archive-btn');
+  if (archiveNoteButton && note?.archived) {
+    archiveNoteButton.title = 'Unarchive';
+    archiveNoteButton.querySelector('.nft-label').textContent = 'Unarchive';
+  }
+  archiveNoteButton?.addEventListener('click', async () => {
     if (!isEdit) return;
-    _archiveNoteById(note.id);
+    if (!note.archived) { _archiveNoteById(note.id); return; }
+    try {
+      await _patchNote(note.id, { is_archived: false });
+      _editingId = null;
+      await _fetchNotes();
+      _renderNotes();
+      uiModule.showToast('Unarchived');
+    } catch { uiModule.showError('Failed to unarchive'); }
   });
   form.querySelector('.note-form-delete-btn')?.addEventListener('click', async () => {
     if (!isEdit) return;

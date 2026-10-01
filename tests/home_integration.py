@@ -49,8 +49,9 @@ class HomeChecks(unittest.TestCase):
         self.assertEqual(self.c.patch('/api/home/profile',json={'mode':'full'}).status_code,200)
         self.assertEqual(self.c.post('/api/chat').status_code,200)
     def test_non_ai_surface_and_direct_bypasses(self):
-        for path in ['/api/chat','/api/workshop/generate','/api/code/bridge/v1/chat/completions','/api/tts','/api/stt','/api/image/generate','/api/calendar/quick-parse','/api/email/summarize','/api/email/ai-reply','/api/email/auto-summarize-now','/api/documents/ai-tidy','/api/document/abc/ai-fill-annotations','/api/future-ai','/v1/chat/completions','/ws/agent']:
+        for path in ['/api/chat','/api/workshop/generate','/api/code/bridge/v1/chat/completions','/api/tts','/api/stt','/api/image/generate','/api/email/summarize','/api/email/ai-reply','/api/email/auto-summarize-now','/api/documents/ai-tidy','/api/document/abc/ai-fill-annotations','/api/future-ai','/v1/chat/completions','/ws/agent']:
             self.assertFalse(allowed_without_ai(path,'POST'),path)
+        self.assertTrue(allowed_without_ai('/api/calendar/quick-parse','POST'))
         for path in ['/api/home/profile','/api/notes','/api/notes/123/items/0/toggle','/api/calendar/events','/api/email/send','/api/email/search','/api/document/123','/api/document/123/export-pdf','/api/documents/library']:
             self.assertTrue(allowed_without_ai(path,'GET'),path)
     def test_tasks_reuse_notes_and_reject_stale_or_foreign_edits(self):

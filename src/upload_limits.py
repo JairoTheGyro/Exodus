@@ -70,3 +70,5 @@ async def read_upload_limited(upload: UploadFile, limit: int, label: str = "Uplo
             detail=f"{label} exceeds {format_byte_limit(limit)} limit",
         )
     return data
+
+DOCUMENT_UPLOAD_MAX_BYTES = read_byte_limit_env("EXODUS_DOCUMENT_UPLOAD_MAX_BYTES", 25 * 1024 * 1024)

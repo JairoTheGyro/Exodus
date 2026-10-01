@@ -27,6 +27,16 @@ def fingerprint(text):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
+def note_fingerprint(note):
+    text = note_text(note)
+    tags = note.tags
+    archived = bool(note.archived)
+    # Preserve existing fingerprints for ordinary untagged active notes.
+    if not tags and not archived:
+        return fingerprint(text)
+    return fingerprint(json.dumps({'text': text, 'tags': tags, 'is_archived': archived}, sort_keys=True))
+
+
 def current_metadata(metadata):
     """Fail closed on stale/deleted note hits, even while Chroma is unavailable."""
     if not metadata or metadata.get('kind') != 'note':
@@ -38,7 +48,7 @@ def current_metadata(metadata):
         return False
     with SessionLocal() as db:
         note = db.query(Note).filter(Note.id == metadata.get('note_id'), Note.owner == owner).first()
-        return bool(note and fingerprint(note_text(note)) == metadata.get('note_fingerprint'))
+        return bool(note and note_fingerprint(note) == metadata.get('note_fingerprint'))
 
 
 def ingest_note(note_id, owner, *, rag=None, require_existing=False):
@@ -61,6 +71,9 @@ def ingest_note(note_id, owner, *, rag=None, require_existing=False):
                     return {'status':'not_found'}
                 text = note_text(note) if note is not None else ''
                 title = note.title or 'Note' if note is not None else 'Note'
+                tags = note.tags if note is not None else []
+                archived = bool(note.archived) if note is not None else False
+                revision = note_fingerprint(note) if note is not None else ''
             # Deletions may remove stale indexes even in AI-free mode; they
             # never embed content. Creation/update must pass the AI policy.
             if note is not None:
@@ -77,7 +90,8 @@ def ingest_note(note_id, owner, *, rag=None, require_existing=False):
                 if chunks:
                     metadata = {'kind':'note','note_id':note_id,'owner':owner,
                                 'source':f'note:{note_id}', 'filename':title,
-                                'note_fingerprint':fingerprint(text)}
+                                'note_fingerprint':revision, 'tags':json.dumps(tags),
+                                'is_archived':archived}
                     for offset in range(0,len(chunks),32):
                         batch=chunks[offset:offset+32]
                         lane.collection.upsert(ids=ids[offset:offset+32],documents=batch,

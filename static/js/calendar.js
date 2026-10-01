@@ -251,7 +251,7 @@ function _optimisticEvent(data, uid) {
 async function _createEvent(data) {
   const tempUid = 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
   _allEvents[tempUid] = _optimisticEvent(data, tempUid);
-  fetch(`${API_BASE}/api/calendar/events`, {
+  return fetch(`${API_BASE}/api/calendar/events`, {
     method: 'POST', credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }).then(async r => {
@@ -262,14 +262,16 @@ async function _createEvent(data) {
       delete _allEvents[tempUid];
       _allEvents[d.uid] = _optimisticEvent(data, d.uid);
       _saveCache && _saveCache();
-      if (_open) _render();
+      if (_open && !document.getElementById('cal-f-save')) _render();
+      window.dispatchEvent(new CustomEvent('calendar-changed'));
     }
+    return d;
   }).catch((e) => {
     delete _allEvents[tempUid];
-    if (_open) _render();
+    if (_open && !document.getElementById('cal-f-save')) _render();
     if (window.uiModule) window.uiModule.showError('Failed to create event: ' + (e?.message || 'unknown'));
+    throw e;
   });
-  return { uid: tempUid };
 }
 
 async function _updateEvent(uid, data) {
@@ -281,7 +283,7 @@ async function _updateEvent(uid, data) {
   // other occurrences of the same series are stale. Wipe the cache so
   // a re-fetch picks up fresh data (next render + prefetch handles it).
   const isRecurring = uid.includes('::');
-  fetch(`${API_BASE}/api/calendar/events/${encodeURIComponent(uid)}`, {
+  return fetch(`${API_BASE}/api/calendar/events/${encodeURIComponent(uid)}`, {
     method: 'PUT', credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }).then(r => {
@@ -292,13 +294,15 @@ async function _updateEvent(uid, data) {
     } else {
       _saveCache && _saveCache();
     }
+    window.dispatchEvent(new CustomEvent('calendar-changed'));
+    return { ok: true };
   }).catch((e) => {
     if (_preMergeBackup) _allEvents[uid] = _preMergeBackup;
     else delete _allEvents[uid];
     if (_open) _render();
     if (window.uiModule) window.uiModule.showError('Failed to update event: ' + (e?.message || 'unknown'));
+    throw e;
   });
-  return { ok: true };
 }
 
 async function _deleteEvent(uid, { scope = 'series' } = {}) {
@@ -346,6 +350,7 @@ async function _deleteEvent(uid, { scope = 'series' } = {}) {
     } else {
       _saveCache && _saveCache();
     }
+    window.dispatchEvent(new CustomEvent('calendar-changed'));
   }).catch((e) => {
     // Server rejected — restore every uid we optimistically stripped.
     for (const [k, ev] of Object.entries(backups)) {
@@ -932,10 +937,13 @@ function _headerHTML() {
       class="cal-quickadd-input"
       placeholder=" "
       autocomplete="off"
+      aria-label="Quick add event, for example Meeting tomorrow at 3pm"
+      maxlength="2000"
     />
     <span class="cal-quickadd-hint" id="cal-quickadd-hint" aria-hidden="true"><span class="qa-hint-accent">Quick add</span> — <span class="qa-hint-example" id="qa-hint-example">return home to Ithaca 1pm tmrw</span> <svg class="qa-hint-enter" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></span>
-    <span class="cal-quickadd-status" id="cal-quickadd-status"></span>
-  </div>`;
+    <span class="cal-quickadd-status" id="cal-quickadd-status" role="status"></span>
+  </div>
+  <label class="cal-quickadd-ai home-ai-feature" title="Optional: sends your event text to your configured AI provider; falls back to local parsing if unavailable."><input type="checkbox" id="cal-quickadd-ai"> AI assist (optional)</label>`;
 }
 
 function _filtersData() {
@@ -2034,7 +2042,7 @@ function _wireAll(body) {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, tz, tz_offset: tzOffset }),
+          body: JSON.stringify({ text, tz, tz_offset: tzOffset, enhance_ai: document.getElementById('cal-quickadd-ai')?.checked === true }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
@@ -2045,17 +2053,18 @@ function _wireAll(body) {
         // Open the bespoke event form, then push the parsed fields in.
         const ev = data.event;
         const ds = (ev.dtstart || '').slice(0, 10);
-        const de = (ev.dtend   || '').slice(0, 10) || ds;
+        const parsedEnd = (ev.dtend || '').slice(0, 10) || ds;
+        const de = ev.all_day && parsedEnd > ds ? _addDays(parsedEnd, -1) : parsedEnd;
         _showEventForm(null, ds, de);
+        if (data.notice) uiModule.showToast(data.notice);
         requestAnimationFrame(() => {
           const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
           set('cal-f-sum', ev.summary);
           set('cal-f-loc', ev.location);
           set('cal-f-desc', ev.description);
-          if (ev.all_day) {
-            const ad = document.getElementById('cal-f-allday');
-            if (ad && !ad.checked) { ad.checked = true; ad.dispatchEvent(new Event('change')); }
-          } else {
+          const ad = document.getElementById('cal-f-allday');
+          if (ad) { ad.checked = !!ev.all_day; ad.dispatchEvent(new Event('change')); }
+          if (!ev.all_day) {
             const t1 = _fmtTime(ev.dtstart);
             const t2 = _fmtTime(ev.dtend);
             if (t1) set('cal-f-start', t1);
@@ -2799,7 +2808,8 @@ function _showEventForm(existing, defaultDate, defaultEndDate) {
   if (!body) return;
   const isEdit = !!existing;
   const ds = existing ? _localDateOf(existing.dtstart) : (defaultDate || _today());
-  const de = existing && existing.dtend ? _localDateOf(existing.dtend) : (defaultEndDate || ds);
+  const storedEnd = existing && existing.dtend ? _localDateOf(existing.dtend) : null;
+  const de = storedEnd ? (existing.all_day && storedEnd > ds ? _addDays(storedEnd, -1) : storedEnd) : (defaultEndDate || ds);
   const isMultiDay = ds !== de;
   const st = existing && !existing.all_day ? _fmtTime(existing.dtstart) : '09:00';
   const et = existing && !existing.all_day && existing.dtend ? _fmtTime(existing.dtend) : '10:00';
@@ -3155,10 +3165,7 @@ function _showEventForm(existing, defaultDate, defaultEndDate) {
     }
     const activeDot = document.querySelector('#cal-f-colors .note-color-dot.active');
     const colorVal = activeDot?.dataset.color || '';
-    // Append the user's current UTC offset so the backend stores events as
-    // proper UTC instants (is_utc=True). Without this, naive "10:00" gets
-    // re-interpreted as local elsewhere — the timezone-misfire bug.
-    const _tz = _tzOffset();
+    // Use the offset on the selected date, including future DST changes.
     
     if (!isAD) {
       const startVal = document.getElementById('cal-f-start').value;
@@ -3175,8 +3182,8 @@ function _showEventForm(existing, defaultDate, defaultEndDate) {
 
     const payload = {
       summary,
-      dtstart: isAD ? dv : `${dv}T${document.getElementById('cal-f-start').value}:00${_tz}`,
-      dtend: isAD ? dvEnd : `${dvEnd}T${document.getElementById('cal-f-end').value}:00${_tz}`,
+      dtstart: isAD ? dv : new Date(`${dv}T${document.getElementById('cal-f-start').value}:00`).toISOString(),
+      dtend: isAD ? _addDays(dvEnd, 1) : new Date(`${dvEnd}T${document.getElementById('cal-f-end').value}:00`).toISOString(),
       all_day: isAD,
       description: document.getElementById('cal-f-desc').value,
       location: document.getElementById('cal-f-loc').value,
@@ -3184,6 +3191,9 @@ function _showEventForm(existing, defaultDate, defaultEndDate) {
       calendar_href: document.getElementById('cal-f-cal')?.value || (_calendars[0]?.href || ''),
       color: colorVal || undefined,
     };
+    const saveButton = document.getElementById('cal-f-save');
+    if (saveButton.disabled) return;
+    saveButton.disabled = true;
     try {
       if (isEdit) await _updateEvent(existing.uid, payload);
       else await _createEvent(payload);
@@ -3204,6 +3214,7 @@ function _showEventForm(existing, defaultDate, defaultEndDate) {
       }
       _selectedDay = dv; _render();
     } catch (e) { uiModule.showToast('Failed to save'); }
+    finally { saveButton.disabled = false; }
   });
   document.getElementById('cal-f-del')?.addEventListener('click', async () => {
     await _confirmAndDeleteEvent(existing);

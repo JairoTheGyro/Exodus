@@ -29,6 +29,7 @@ services:
       - ./core/platform_compat.py:/app/core/platform_compat.py:ro
       - ./routes/auth_routes.py:/app/routes/auth_routes.py:ro
       - ./routes/calendar_routes.py:/app/routes/calendar_routes.py:ro
+      - ./src/calendar_quick_add.py:/app/src/calendar_quick_add.py:ro
       - ./routes/codex_routes.py:/app/routes/codex_routes.py:ro
       - ./routes/cookbook_helpers.py:/app/routes/cookbook_helpers.py:ro
       - ./routes/cookbook_routes.py:/app/routes/cookbook_routes.py:ro
@@ -96,6 +97,7 @@ services:
       - ./static/js/slashCommands.js:/app/static/js/slashCommands.js:ro
       - ./static/js/startupShell.js:/app/static/js/startupShell.js:ro
       - ./static/js/tasks.js:/app/static/js/tasks.js:ro
+      - ./static/js/notes.js:/app/static/js/notes.js:ro
       - ./static/js/theme.js:/app/static/js/theme.js:ro
       - ./static/login.html:/app/static/login.html:ro
       - ./static/manifest.json:/app/static/manifest.json:ro
@@ -115,11 +117,13 @@ services:
       - ./src/task_endpoint.py:/app/src/task_endpoint.py:ro
       - ./static/home.css:/app/static/home.css:ro
       - ./static/js/home.js:/app/static/js/home.js:ro
+      - ./static/js/calendar.js:/app/static/js/calendar.js:ro
       - ./static/js/models.js:/app/static/js/models.js:ro
       - ./static/js/memory.js:/app/static/js/memory.js:ro
       - ./static/js/rag.js:/app/static/js/rag.js:ro
       - ./static/js/chatStream.js:/app/static/js/chatStream.js:ro
       - ./src/note_indexing.py:/app/src/note_indexing.py:ro
+      - ./src/note_export.py:/app/src/note_export.py:ro
       - ./core/database.py:/app/core/database.py:ro
       - ./src/service_health.py:/app/src/service_health.py:ro
       - ./src/notifications.py:/app/src/notifications.py:ro
@@ -137,3 +141,7 @@ services:
       - ./services/search/providers.py:/app/services/search/providers.py:ro
       - ./src/agent_tools/web_tools.py:/app/src/agent_tools/web_tools.py:ro
       - ./scripts/test_searxng.py:/app/scripts/test_searxng.py:ro
+      - ./routes/local_document_routes.py:/app/routes/local_document_routes.py:ro
+      - ./src/upload_limits.py:/app/src/upload_limits.py:ro
+      - ./static/js/documentLibrary.js:/app/static/js/documentLibrary.js:ro
+      - ./static/js/libraryFiles.js:/app/static/js/libraryFiles.js:ro

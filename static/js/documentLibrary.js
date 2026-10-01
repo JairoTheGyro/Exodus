@@ -1,3 +1,4 @@
+import { mountLibraryFiles } from './libraryFiles.js';
 // static/js/documentLibrary.js
 /**
  * Document Library — modal with Chats / Documents / Research / Archive tabs.
@@ -1610,10 +1611,12 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
         <div class="lib-tabs" id="doclib-lib-tabs" style="padding:0 10px;">
           <button class="lib-tab" data-doclib-tab="chats"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats</button>
           <button class="lib-tab active" data-doclib-tab="documents"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>Documents</button>
+          <button class="lib-tab" data-doclib-tab="files">Files</button>
           <button class="lib-tab" data-doclib-tab="research"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>Research</button>
           <button class="lib-tab" data-doclib-tab="archive"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>Archive</button>
         </div>
         <div class="modal-body" style="display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+          <div id="doclib-panel-files" data-doclib-panel="files" class="admin-card library-files-panel" style="display:none;"></div>
           <div id="doclib-panel-chats" data-doclib-panel="chats" class="admin-card" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
             <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
               <h2 style="margin:0;padding:0;line-height:1;">Chats <span id="doclib-chats-stats" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
@@ -1815,6 +1818,7 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
     let _activeLibTab = (opts && opts.tab) || 'documents';
     const _tabBtns = modal.querySelectorAll('[data-doclib-tab]');
     const _tabPanels = modal.querySelectorAll('[data-doclib-panel]');
+    const refreshLocalFiles = mountLibraryFiles(modal.querySelector('#doclib-panel-files'));
 
     // Client-side pagination for tabs whose API returns everything at once
     // (chats/archive/research). Render only this many initially; the
@@ -1840,6 +1844,7 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
     // SVG markup + label for each tab — used to keep the modal header
     // in sync with whichever sub-tab the user is on.
     const _TAB_HEADERS = {
+      files: { label: 'Files', svg: '' },
       chats: {
         label: 'Chats',
         svg: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
@@ -1876,7 +1881,8 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
         if (ico) ico.innerHTML = hdr.svg;
         if (txt) txt.textContent = hdr.label;
       }
-      if (tab === 'chats') _renderLibChats();
+      if (tab === 'files') refreshLocalFiles();
+      else if (tab === 'chats') _renderLibChats();
       else if (tab === 'archive') _renderLibArchive();
       else if (tab === 'research') _renderLibResearch();
     }
