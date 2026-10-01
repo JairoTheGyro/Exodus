@@ -105,14 +105,16 @@ class HomeChecks(unittest.TestCase):
     def test_background_email_and_scheduled_jobs_stop_for_owner(self):
         from core.database import ScheduledTask, TaskRun
         from src.task_scheduler import TaskScheduler
-        from routes.email_pollers import _auto_summarize_pass_single
+        from routes.email_pollers import _scan_email_account
         with database() as db:save('admin',{'mode':'ai-free'},db)
         with SessionLocal() as db:
             db.add(ScheduledTask(id='background-qa',owner='admin',status='active',name='QA'))
             db.add(TaskRun(id='run-qa',task_id='background-qa',status='queued'));db.commit()
         async def check():
             with patch('routes.email_pollers._owner_for_email_account',return_value='admin'), patch('routes.email_pollers._load_settings',side_effect=AssertionError('AI pass must stop before reading provider configuration')):
-                self.assertIn('disabled',await _auto_summarize_pass_single(account_id='qa'))
+                # AI scans still stop before configuration access; opted-in template
+                # replies have their own mode-independent regression coverage.
+                self.assertIn('disabled',await _scan_email_account(account_id='qa', away_only=False))
             scheduler=TaskScheduler(None)
             await scheduler._execute_task_locked('background-qa','run-qa')
         asyncio.run(check())

@@ -507,20 +507,31 @@ async def _auto_summarize_pass(days_back: int = 1, account_id: str | None = None
 
 
 async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None = None, max_process: int | None = None, progress_cb=None, away_only: bool = False) -> str:
-    """Single pass of the auto-summarize/reply scan for ONE account.
-    Reads current settings flags."""
+    """Run opted-in templates independently, then optional AI processing."""
     from src.home_store import ai_free
-    if ai_free(_owner_for_email_account(account_id)):
+    kwargs = dict(days_back=days_back, account_id=account_id,
+                  max_process=max_process, progress_cb=progress_cb)
+    template_result = await _scan_email_account(
+        **kwargs, away_only=True, respect_away_start=not away_only)
+    if away_only or ai_free(_owner_for_email_account(account_id)):
+        return template_result
+    ai_result = await _scan_email_account(**kwargs, away_only=False)
+    return "\n".join(r for r in (template_result, ai_result) if r != "Nothing to do") or "Nothing to do"
+
+
+async def _scan_email_account(days_back: int = 1, account_id: str | None = None, max_process: int | None = None, progress_cb=None, away_only: bool = False, respect_away_start: bool = True) -> str:
+    """Shared mailbox scan with mutually exclusive template and AI operations."""
+    from src.home_store import ai_free
+    if not away_only and ai_free(_owner_for_email_account(account_id)):
         return "AI-free workspace: automatic AI email processing is disabled."
     import asyncio
     import sqlite3 as _sql3
-    from src.llm_core import _uses_max_completion_tokens
 
     settings = _effective_settings_for_email_account(_load_settings(), account_id)
     auto_sum = settings.get("email_auto_summarize", False)
     auto_reply = settings.get("email_auto_reply", False)
     auto_reply_draft = bool(auto_reply and settings.get("_email_auto_reply_draft_only", False))
-    auto_reply_away = bool(auto_reply and not auto_reply_draft and _away_reply_active(settings, account_id))
+    auto_reply_away = bool(away_only and auto_reply and not auto_reply_draft and _away_reply_active(settings, account_id))
     auto_tag = settings.get("email_auto_tag", False)
     auto_spam = settings.get("email_auto_spam", False)
     auto_cal = settings.get("email_auto_calendar", False)
@@ -638,6 +649,7 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
 
         needs_llm = bool(auto_sum or auto_reply_draft or auto_tag or auto_spam or auto_cal)
         if needs_llm:
+            from src.llm_core import _uses_max_completion_tokens
             task_candidates = resolve_task_candidates(owner=account_owner)
             if not task_candidates:
                 return "No model configured"
@@ -722,11 +734,11 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
                     auto_reply_away
                     and _folder.upper() == "INBOX"
                     and not _is_self_mail
-                    and (away_only or _message_after_away_enabled(settings, msg))
+                    and (not respect_away_start or _message_after_away_enabled(settings, msg))
                     and not _away_reply_already_sent(settings, account_owner, account_id, message_id, _from_addr_only)
                 )
                 need_class = (auto_tag or auto_spam) and message_id not in _tag_existing
-                need_cal = bool(settings.get("email_auto_calendar", False)) and message_id not in _cal_existing
+                need_cal = auto_cal and message_id not in _cal_existing
                 need_urgent = (auto_urgent and message_id not in _urgent_existing
                                and not _folder.lower().startswith("sent")
                                and "sent" not in _folder.lower()

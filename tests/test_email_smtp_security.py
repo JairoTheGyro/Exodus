@@ -1,4 +1,6 @@
 import os
+import ssl
+import pytest
 import tempfile
 from pathlib import Path
 
@@ -12,7 +14,10 @@ from routes.email_helpers import _send_smtp_message
 class _FakeSMTP:
     calls = []
 
-    def __init__(self, host, port, timeout=None):
+    def __init__(self, host, port, timeout=None, context=None):
+        if isinstance(self, _FakeSMTPSSL):
+            assert context.check_hostname is True
+            assert context.verify_mode == ssl.CERT_REQUIRED
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -25,7 +30,9 @@ class _FakeSMTP:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def starttls(self):
+    def starttls(self, context=None):
+        assert context.check_hostname is True
+        assert context.verify_mode == ssl.CERT_REQUIRED
         self.starttls_called = True
         _FakeSMTP.calls.append(("starttls", self.host, self.port))
 
@@ -50,18 +57,15 @@ def _cfg(security, port=2525):
     }
 
 
-def test_send_smtp_message_supports_plain_smtp(monkeypatch):
+def test_send_smtp_message_rejects_plain_smtp_before_connecting(monkeypatch):
     import routes.email_helpers as helpers
 
     _FakeSMTP.calls = []
     monkeypatch.setattr(helpers.smtplib, "SMTP", _FakeSMTP)
     monkeypatch.setattr(helpers.smtplib, "SMTP_SSL", _FakeSMTPSSL)
-
-    _send_smtp_message(_cfg("none"), "from@example.com", ["to@example.com"], "hello")
-
-    assert _FakeSMTP.calls[0] == ("connect", "_FakeSMTP", "smtp.local", 2525)
-    assert not any(call[0] == "starttls" for call in _FakeSMTP.calls)
-    assert _FakeSMTP.calls[-1] == ("sendmail", "from@example.com", ("to@example.com",), "hello", False)
+    with pytest.raises(ssl.SSLError, match="Unencrypted SMTP"):
+        _send_smtp_message(_cfg("none"), "from@example.com", ["to@example.com"], "hello")
+    assert _FakeSMTP.calls == []
 
 
 def test_send_smtp_message_supports_explicit_starttls(monkeypatch):

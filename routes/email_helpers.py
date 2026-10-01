@@ -17,6 +17,7 @@ import base64
 import time
 import imaplib
 import smtplib
+import ssl
 import email as email_mod
 import email.header
 import email.utils
@@ -160,6 +161,17 @@ def _smtp_security_mode(cfg: dict) -> str:
     return "ssl"
 
 
+def _verified_ssl_context(context=None):
+    """Use system trust roots; never accept a context that disables verification."""
+    if context is None:
+        context = ssl.create_default_context()
+        context.check_hostname = True
+        context.verify_mode = ssl.CERT_REQUIRED
+    if not context.check_hostname or context.verify_mode != ssl.CERT_REQUIRED:
+        raise ssl.SSLError("Email TLS requires certificate and hostname verification")
+    return context
+
+
 def _send_smtp_message(cfg: dict, from_addr: str, recipients: list[str], message: str | bytes, timeout: int = 30) -> None:
     """Send through SMTP using the configured transport security mode."""
     host = cfg["smtp_host"]
@@ -178,16 +190,19 @@ def _send_smtp_message(cfg: dict, from_addr: str, recipients: list[str], message
             smtp.login(user, password)
 
     security = _smtp_security_mode(cfg)
+    if security == "none":
+        raise ssl.SSLError("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
+    context = _verified_ssl_context()
 
     if security == "ssl":
-        with smtplib.SMTP_SSL(host, port, timeout=timeout) as smtp:
+        with smtplib.SMTP_SSL(host, port, timeout=timeout, context=context) as smtp:
             _auth_smtp(smtp)
             smtp.sendmail(from_addr, recipients, message)
         return
 
     with smtplib.SMTP(host, port, timeout=timeout) as smtp:
         if security == "starttls":
-            smtp.starttls()
+            smtp.starttls(context=context)
         _auth_smtp(smtp)
         smtp.sendmail(from_addr, recipients, message)
 
@@ -1113,7 +1128,7 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
         "imap_port": int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993),
         "imap_user": settings.get("imap_user", os.environ.get("IMAP_USER", "")),
         "imap_password": settings.get("imap_password", os.environ.get("IMAP_PASSWORD", "")),
-        "imap_starttls": settings.get("imap_starttls", True),
+        "imap_starttls": settings.get("imap_starttls", int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993) == 143),
         "from_address": settings.get("email_from", os.environ.get("EMAIL_FROM", "")),
     }
     if not (cfg["smtp_host"] and cfg["smtp_user"] and cfg["smtp_password"]):
@@ -1167,13 +1182,11 @@ def _open_imap_connection(
 ):
     """Open an IMAP connection using the configured security mode."""
     port = int(port or 993)
+    ssl_context = _verified_ssl_context(ssl_context)
     if starttls:
         conn = imaplib.IMAP4(host, port, timeout=timeout)
         try:
-            if ssl_context:
-                conn.starttls(ssl_context=ssl_context)
-            else:
-                conn.starttls()
+            conn.starttls(ssl_context=ssl_context)
         except Exception:
             # Don't leak the open plain socket if the STARTTLS upgrade is
             # rejected; close it before propagating. (#3174)
@@ -1182,11 +1195,9 @@ def _open_imap_connection(
             except Exception:
                 pass
             raise
-    elif port == 993:
-        kwargs = {"ssl_context": ssl_context} if ssl_context else {}
-        conn = imaplib.IMAP4_SSL(host, port, timeout=timeout, **kwargs)
     else:
-        conn = imaplib.IMAP4(host, port, timeout=timeout)
+        # STARTTLS off always means implicit TLS, including custom TLS ports.
+        conn = imaplib.IMAP4_SSL(host, port, timeout=timeout, ssl_context=ssl_context)
     try:
         conn.sock.settimeout(timeout)
     except Exception:
@@ -1214,13 +1225,7 @@ def _imap_connect(account_id: str | None = None, owner: str = "",
         raise EmailNotConfiguredError(
             f"IMAP is not configured for account {cfg.get('account_name') or 'default'!r}"
         )
-    # Connection mode:
-    #   STARTTLS on → plain + upgrade
-    #   STARTTLS off + port 993 → implicit SSL (IMAPS)
-    #   STARTTLS off + any other port → plain (local Dovecot, custom ports)
-    # The last branch is critical: previously this fell into IMAP4_SSL
-    # for any non-STARTTLS port, which would fail the TLS handshake on
-    # plain local servers (Dovecot on 31143, etc.).
+    # STARTTLS upgrades before authentication; otherwise require implicit TLS.
     conn = _open_imap_connection(
         cfg["imap_host"],
         cfg["imap_port"],

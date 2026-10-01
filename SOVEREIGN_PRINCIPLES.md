@@ -637,3 +637,28 @@ remain in use. `tests/helpers/test_home_calendar_updates.mjs` checks confirmed
 save notifications, failed-save rollback and the agent completion signal.
 The disposable Home browser fixture verifies Quick add and immediate Home updates
 without changing real calendar data.
+
+
+## Verified mail connections and template replies
+
+Email IMAP and SMTP connections, including the account Test action, require
+certificate-chain and hostname verification using the system trust store.
+STARTTLS failures stop before authentication; no plaintext or unverified retry
+is allowed. STARTTLS off means implicit TLS even on custom IMAP ports. SMTP None
+is blocked. Local mail servers and bridges must provide trusted certificates;
+this change does not alter the system trust store or saved credentials.
+Both account forms pair IMAP 993 with implicit TLS and 143 with STARTTLS, and
+SMTP 465 with SSL/TLS and 587 with STARTTLS. Custom ports retain TLS controls.
+
+Opted-in templated away replies run separately before optional AI processing,
+including in AI-Free mode or without a model. Existing account scopes, date
+windows, automated-sender exclusion and duplicate/cooldown checks remain in use.
+The existing incoming-mail event trigger is retained; this adds no new polling
+service and does not enable replies automatically. AI summaries, draft generation,
+classification and calendar extraction remain blocked in AI-Free mode.
+
+Verification includes disposable loopback IMAP/SMTP servers: trusted certificates
+connect; untrusted self-signed, expired and wrong-host certificates fail before
+credentials are sent, for both implicit TLS and STARTTLS. Template tests use
+mock mail delivery and an isolated duplicate-reply database. Both settings forms
+have port-event checks in tests/helpers/test_email_port_security.mjs.

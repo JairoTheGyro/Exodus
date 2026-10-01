@@ -419,7 +419,7 @@ class EmailAccount(TimestampMixin, Base):
     imap_port      = Column(Integer, default=993)
     imap_user      = Column(String, default="")
     imap_password  = Column(String, default="")
-    imap_starttls  = Column(Boolean, default=True)
+    imap_starttls  = Column(Boolean, default=False)
 
     # SMTP (sending)
     smtp_host      = Column(String, default="")

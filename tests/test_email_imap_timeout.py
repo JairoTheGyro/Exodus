@@ -1,4 +1,5 @@
 import os
+import ssl
 import tempfile
 from pathlib import Path
 
@@ -26,7 +27,10 @@ class _FakeSock:
 class _FakeIMAP:
     calls = []
 
-    def __init__(self, host, port, timeout=None):
+    def __init__(self, host, port, timeout=None, ssl_context=None):
+        if isinstance(self, _FakeIMAPSSL):
+            assert ssl_context.check_hostname is True
+            assert ssl_context.verify_mode == ssl.CERT_REQUIRED
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -34,7 +38,9 @@ class _FakeIMAP:
         self.starttls_called = False
         _FakeIMAP.calls.append(("connect", self.__class__.__name__, host, port, timeout))
 
-    def starttls(self):
+    def starttls(self, ssl_context=None):
+        assert ssl_context.check_hostname is True
+        assert ssl_context.verify_mode == ssl.CERT_REQUIRED
         self.starttls_called = True
         _FakeIMAP.calls.append(("starttls", self.host, self.port))
 
@@ -99,7 +105,9 @@ async def test_account_config_uses_shared_imap_timeout(monkeypatch):
         def logout(self):
             captured["logout"] = True
 
-    def fake_open(host, port, *, starttls, timeout):
+    def fake_open(host, port, *, starttls, timeout, ssl_context):
+        assert ssl_context.check_hostname is True
+        assert ssl_context.verify_mode == ssl.CERT_REQUIRED
         captured["open"] = (host, port, starttls, timeout)
         return _Conn()
 

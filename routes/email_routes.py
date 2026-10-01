@@ -48,7 +48,7 @@ from routes.email_helpers import (
     _account_visible_to_owner,
     _q, _attach_compose_uploads, _cleanup_compose_uploads,
     _load_settings, _save_settings, _get_email_config,
-    _send_smtp_message, _smtp_security_mode,
+    _send_smtp_message, _smtp_security_mode, _verified_ssl_context,
     _IMAP_TIMEOUT_SECONDS, _open_imap_connection,
     _get_valid_google_token, _xoauth2_bytes, _xoauth2_raw,
     make_oauth_state, verify_oauth_state,
@@ -5672,7 +5672,7 @@ def setup_email_routes():
                 imap_port=imap_port,
                 imap_user=(data.get("imap_user") or "").strip(),
                 imap_password=_enc(data.get("imap_password") or ""),
-                imap_starttls=bool(data.get("imap_starttls", True)),
+                imap_starttls=bool(data.get("imap_starttls", int(data.get("imap_port") or 993) == 143)),
                 smtp_host=(data.get("smtp_host") or "").strip(),
                 smtp_port=smtp_port,
                 smtp_security=_smtp_security_mode({"smtp_security": data.get("smtp_security"), "smtp_port": smtp_port}),
@@ -5847,16 +5847,12 @@ def setup_email_routes():
         imap_port, imap_port_err = _coerce_port(body.get("imap_port"), 993)
         imap_user = (body.get("imap_user") or "").strip()
         imap_pass = body.get("imap_password") or ""
-        imap_starttls = bool(body.get("imap_starttls"))
+        imap_starttls = bool(body.get("imap_starttls", imap_port == 143))
         oauth_provider = body.get("oauth_provider") or ""
 
         google_token = None
         google_token_loaded = False
-        google_ssl_context = (
-            ssl.create_default_context()
-            if oauth_provider == "google"
-            else None
-        )
+        mail_ssl_context = _verified_ssl_context()
 
         def _google_token():
             nonlocal google_token, google_token_loaded
@@ -5876,20 +5872,13 @@ def setup_email_routes():
         elif oauth_provider == "google" and not _google_oauth_imap_transport_allowed(imap_port, imap_starttls):
             imap_result = {"ok": False, "error": "Google OAuth IMAP requires TLS on port 993 or STARTTLS on port 143"}
         else:
-            # Connection mode resolution:
-            #   STARTTLS on  → plain IMAP4 + .starttls() (upgrade)
-            #   STARTTLS off + port 993 → IMAP4_SSL (implicit SSL, "IMAPS")
-            #   STARTTLS off + any other port → plain IMAP4 (no encryption)
-            # Without the last branch, local servers exposed on a non-993
-            # port (Dovecot on 31143, etc.) would always fail the SSL
-            # handshake because they're not actually wrapped in TLS.
+            # Test the same verified TLS transport used by normal mail reads.
             try:
                 imap_kwargs = {
                     "starttls": imap_starttls,
                     "timeout": _IMAP_TIMEOUT_SECONDS,
                 }
-                if google_ssl_context:
-                    imap_kwargs["ssl_context"] = google_ssl_context
+                imap_kwargs["ssl_context"] = mail_ssl_context
                 conn = _open_imap_connection(
                     imap_host,
                     imap_port,
@@ -5929,35 +5918,21 @@ def setup_email_routes():
             smtp_pass = body.get("smtp_password") or imap_pass
             smtp = None
             try:
+                if smtp_security == "none":
+                    raise ssl.SSLError("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
                 if smtp_security == "ssl":
-                    smtp_kwargs = (
-                        {"context": google_ssl_context}
-                        if google_ssl_context
-                        else {}
-                    )
-                    smtp = smtplib.SMTP_SSL(
-                        smtp_host,
-                        smtp_port,
-                        timeout=10,
-                        **smtp_kwargs,
-                    )
+                    smtp = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10, context=mail_ssl_context)
                 else:
                     smtp = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
-                    if smtp_security == "starttls":
+                    try:
+                        smtp.starttls(context=mail_ssl_context)
+                    except Exception:
                         try:
-                            if google_ssl_context:
-                                smtp.starttls(context=google_ssl_context)
-                            else:
-                                smtp.starttls()
+                            smtp.close()
                         except Exception:
-                            # STARTTLS failed before the auth cleanup block.
-                            # Close the still-open plaintext socket explicitly.
-                            try:
-                                smtp.close()
-                            except Exception:
-                                pass
-                            smtp = None
-                            raise
+                            pass
+                        smtp = None
+                        raise
                 if oauth_provider == "google":
                     token = _google_token()
                     smtp.ehlo()
