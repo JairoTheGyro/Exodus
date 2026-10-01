@@ -74,9 +74,23 @@ def inspect_containers(runner):
     if not ids:
         return []
     # Inspect only Compose identity, hash and running state, never container env.
-    template = '{"service":{{json (index .Config.Labels "com.docker.compose.service")}},"hash":{{json (index .Config.Labels "com.docker.compose.config-hash")}},"files":{{json (index .Config.Labels "com.docker.compose.project.config_files")}},"directory":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}},"oneoff":{{json (index .Config.Labels "com.docker.compose.oneoff")}},"running":{{json .State.Running}},"mounts":{{json .Mounts}}}'
+    template = '{"service":{{json (index .Config.Labels "com.docker.compose.service")}},"hash":{{json (index .Config.Labels "com.docker.compose.config-hash")}},"files":{{json (index .Config.Labels "com.docker.compose.project.config_files")}},"directory":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}},"oneoff":{{json (index .Config.Labels "com.docker.compose.oneoff")}},"running":{{json .State.Running}},"mounts":{{json .Mounts}},"image":{{json .Image}}}'
     raw = runner.run(['docker', 'inspect', '--format', template, *ids])
-    return [json_value(line, 'container identity') for line in raw.splitlines() if line.strip()]
+    containers = [json_value(line, 'container identity') for line in raw.splitlines() if line.strip()]
+    images = sorted({c['image'] for c in containers if c.get('image')})
+    declared = {}
+    if images:
+        raw = runner.run(['docker', 'image', 'inspect', '--format',
+                          '{"image":{{json .Id}},"volumes":{{json (index .Config "Volumes")}}}', *images])
+        for line in raw.splitlines():
+            if line.strip():
+                value = json_value(line, 'image volume declarations')
+                declared[value['image']] = list(value.get('volumes') or {})
+    desktop = 'docker desktop' in runner.run(['docker', 'info', '--format', '{{.OperatingSystem}}']).lower()
+    for container in containers:
+        container['image_volumes'] = declared.get(container.get('image'), [])
+        container['desktop_host'] = desktop
+    return containers
 
 
 def compose_files(root, containers):
@@ -185,19 +199,41 @@ def check_runtime_storage(config, containers):
             continue
         service = config['services'].get(container.get('service'), {})
         desired = {v['target']: v for v in service.get('volumes', [])}
+        named_sources = {config.get('volumes', {}).get(v.get('source', ''), {}).get('name', PROJECT + '_' + v.get('source', ''))
+                         for v in desired.values() if v.get('type') == 'volume'}
         for actual in container.get('mounts', []):
             if actual.get('Type') != 'volume' and not (actual.get('Type') == 'bind' and actual.get('RW')):
                 continue
             expected = desired.get(actual.get('Destination'), {})
+            if not expected and actual.get('Type') == 'volume' and actual.get('Destination') in container.get('image_volumes', []):
+                # Dockerfile VOLUME entries can add mounts absent from Compose.
+                # Compose preserves anonymous volumes on recreate (we never use
+                # --renew-anon-volumes). An inherited named alias is also safe
+                # when the same volume remains explicitly mounted elsewhere.
+                name = actual.get('Name', '')
+                if re.fullmatch(r'[0-9a-f]{64}', name) or name in named_sources:
+                    continue
             mismatch = expected.get('type') != actual.get('Type')
             if actual.get('Type') == 'volume':
                 source = expected.get('source', '')
                 volume_name = config.get('volumes', {}).get(source, {}).get('name', PROJECT + '_' + source)
                 mismatch |= actual.get('Name') != volume_name
             else:
-                mismatch |= expected.get('source') != actual.get('Source')
+                mismatch |= not same_bind_source(expected.get('source'), actual.get('Source'), container.get('desktop_host', False))
             if mismatch:
                 raise UpdateError('Configured storage differs from the running installation. Review the data path or volume migration before updating.')
+
+
+def same_bind_source(expected, actual, desktop):
+    if actual == expected:
+        return True
+    # Desktop exposes the same host folder through a Linux-VM path. Never apply
+    # this alias on an ordinary Linux daemon, where it may be different data.
+    if desktop and isinstance(actual, str) and isinstance(expected, str):
+        for prefix in ('/host_mnt', '/run/desktop/mnt/host'):
+            if actual.startswith(prefix + '/') and actual[len(prefix):] == expected:
+                return True
+    return False
 
 
 def check_deleted_mounts(root, paths, tracked, config):

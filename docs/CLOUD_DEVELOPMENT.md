@@ -6,6 +6,12 @@ Cloud does not move Docker Desktop, local accounts, databases or uploaded files.
 It also does not migrate this chat's complete history: `AGENTS.md`,
 `SOVEREIGN_PRINCIPLES.md` and the repository docs carry the engineering context.
 
+Verified on 2026-10-01: the real Codex Cloud setup completed all 17 focused suites
+at commit `61e75cab`, as did GitHub's Linux CI. That run covered 109 Python checks
+and four Node harnesses. Subsequent updater fixes add four more unit checks for
+Docker Desktop storage representations. The cloud `command -v docker` probe
+returned no executable; no cloud Docker containers or live browser tests were run.
+
 ## Configured cloud environment
 
 Use **Exodus — development**:

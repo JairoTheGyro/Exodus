@@ -244,6 +244,59 @@ class UpdaterTests(unittest.TestCase):
         with self.assertRaises(updater.UpdateError): self.update()
         self.assertFalse(any(c[:2] == ['git', 'pull'] for c in self.runner.calls))
 
+    def test_desktop_bind_alias_requires_verified_desktop_daemon(self):
+        original = str(self.root / 'data')
+        current = self.runner.containers[0]
+        current['mounts'] = [{'Type': 'bind', 'Source': '/host_mnt' + original, 'Destination': '/app/data', 'RW': True}]
+        with self.assertRaises(updater.UpdateError): self.plan([])
+        current['desktop_host'] = True
+        self.plan([])
+        current['mounts'][0]['Source'] = '/host_mnt' + original + '-different'
+        with self.assertRaises(updater.UpdateError): self.plan([])
+        current['mounts'][0]['Source'] = '/run/desktop/mnt/host' + original
+        self.plan([])
+
+    def test_declared_anonymous_image_volume_is_retained(self):
+        current = next(c for c in self.runner.containers if c['service'] == 'searxng')
+        current['mounts'] = [{'Type': 'volume', 'Name': 'c' * 64, 'Destination': '/var/cache/searxng', 'RW': True}]
+        with self.assertRaises(updater.UpdateError): self.plan([])
+        current['image_volumes'] = ['/var/cache/searxng']
+        self.plan([])
+        current['mounts'][0]['Name'] = 'unexplained-named-data'
+        with self.assertRaises(updater.UpdateError): self.plan([])
+
+    def test_declared_named_alias_must_remain_explicitly_mounted(self):
+        current = next(c for c in self.runner.containers if c['service'] == 'chromadb')
+        current['image_volumes'] = ['/legacy-data']
+        current['mounts'] = [
+            {'Type': 'volume', 'Name': 'sovereign-hub_chroma-data', 'Destination': '/legacy-data', 'RW': True},
+            {'Type': 'volume', 'Name': 'sovereign-hub_chroma-data', 'Destination': '/data', 'RW': True},
+        ]
+        self.plan([])
+        current['mounts'][0]['Name'] = 'sovereign-hub_unexpected-data'
+        with self.assertRaises(updater.UpdateError): self.plan([])
+
+    def test_image_inspection_handles_images_without_volume_declarations(self):
+        class InspectionRunner:
+            def run(self, args):
+                if args[:2] == ['docker', 'ps']: return 'id-1\nid-2\n'
+                if args[:2] == ['docker', 'inspect']:
+                    return '\n'.join(json.dumps(c) for c in [
+                        {'service': 'app', 'image': 'sha256:app'},
+                        {'service': 'search', 'image': 'sha256:search'},
+                    ])
+                if args[:3] == ['docker', 'image', 'inspect']:
+                    return '\n'.join(json.dumps(i) for i in [
+                        {'image': 'sha256:app', 'volumes': None},
+                        {'image': 'sha256:search', 'volumes': {'/cache': {}}},
+                    ])
+                if args[:2] == ['docker', 'info']: return 'Docker Desktop\n'
+                raise AssertionError(args)
+        actual = updater.inspect_containers(InspectionRunner())
+        self.assertEqual(actual[0]['image_volumes'], [])
+        self.assertEqual(actual[1]['image_volumes'], ['/cache'])
+        self.assertTrue(all(c['desktop_host'] for c in actual))
+
     def test_deleted_file_mount_stops_before_pull(self):
         self.runner.paths = ['src/mounted.py']
         self.runner.tracked = ['docker-compose.yml', 'docker-compose.override.yml']
