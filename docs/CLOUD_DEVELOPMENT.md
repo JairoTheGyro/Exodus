@@ -1,5 +1,11 @@
 # Exodus cloud development and local testing
 
+**Status: optional reference, not the active workflow.** On 2026-10-01 the user
+chose fully local development and testing: request a feature, implement it, let
+the user test, then fix or commit on instruction. Do not start cloud work or
+migrate services based on this guide alone. The configuration below is retained
+for a possible future request; it is not an instruction to continue migration.
+
 Source of truth: the private `JairoTheGyro/Exodus` repository, branch `main`.
 The Mac remains the live development installation. Moving code work to Codex
 Cloud does not move Docker Desktop, local accounts, databases or uploaded files.

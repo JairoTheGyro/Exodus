@@ -38,6 +38,12 @@ features or savings claims should stand in for working functionality.
 
 ## Local development
 
+The active workflow, confirmed on 2026-10-01, is fully local: the user requests a
+feature, we implement and verify it, the user tests it, then explicitly asks for
+fixes or a commit. Do not automatically commit or push after implementing a
+feature. Cloud migration has been set aside; the prepared cloud tooling remains
+optional and does not change where Exodus or its Docker services run.
+
 The Compose override reads edited source files directly from this checkout,
 using the installed container image. UI changes need a browser refresh. Mounted
 Python changes need an app restart; dependency changes need a deliberate rebuild.
