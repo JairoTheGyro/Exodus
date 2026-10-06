@@ -90,11 +90,18 @@ The visible product name is Exodus. The user's supplied sword-and-scales PNG is
 preserved as the source for the welcome/login marks, sidebar and app icons.
 The browser renders color variants without changing or duplicating that asset.
 Match theme is the default; the Themes tab also offers Original and eight fixed
-palettes. This preference stays in this browser across theme changes. The root
+palettes. Login and Home reserve logo space until the selected palette is
+decoded; never flash or fall back to the original colors unless Original is
+selected. This preference stays in this browser across theme changes. The root
 favicon shares the selected rendering; dedicated tool-route icons keep their
 existing glyphs. Sidebar/welcome/login marks are modestly enlarged. Installed
 PWA launcher icons remain the supplied static asset, as OS caches manage them.
-Legacy icon files alias that one asset. Odysseus remains the upstream foundation: preserve
+Original icon paths contain correctly sized PNGs and a multi-size Windows ICO,
+converted from the supplied asset. Internal provider identifiers and specialized
+model instructions retain Odysseus; mythological references also stay Odysseus.
+Reminder email recognition accepts both historical and current subject prefixes.
+The setup template retains the upstream `.env.example` filename; only that exact
+non-secret template is exempted from the `.env*` ignore rule. Odysseus remains the upstream foundation: preserve
 its license and authorship. Existing storage keys, protocol headers, environment
 variables, Docker service names, and internal identifiers retain their legacy
 names to protect saved preferences and integrations. Do not mass-rename user data.
@@ -172,33 +179,31 @@ this panel adds no probes, subscriptions, installations, or extra containers.
 
 ## Privacy Hub
 
-Privacy Hub and Home reuse the same Vaultwarden service dialog in both workspace
-modes. It checks real vault and gateway health, offers a direct /vault launch,
-and shows an operator start command when offline. No Docker socket is granted
-to Exodus, and no AI or saved vault credentials are needed for management.
+Privacy Hub and Home reuse the same Vaultwarden dialog in both modes. The
+approved single-container deployment uses the official installed Vaultwarden
+image with native HTTPS, loopback port 8092 and a dedicated bridge. Caddy is
+removed. The public address is https://127.0.0.1:8092/ so native HSTS does not
+upgrade unrelated localhost apps. SearXNG retains port 8080. Native response
+protections stay enabled, and the vault opens on its own browser origin.
 
-Vaultwarden runs as a non-root hardened companion with the official latest tag
-(pull only if missing). The tested image remains server 1.37.3 with the original
-recorded digest. The existing vaultwarden-data named volume is retained at
-/data/vaultwarden; never remove it on restart or upgrade. Admin access uses a
-separate secret volume with an Argon2 hash file, not an environment token or an
-Exodus API response. Open registration is disabled; native admin invitations
-provide onboarding. Native admin settings can override deployment defaults.
+Vault data is persisted in ./data/vaultwarden:/data. Migration stops the vault,
+backs up and verifies the old named volume, and retains that volume for rollback.
+The admin secret is unchanged. Vault data, private TLS keys and admin credentials
+are masked from both Exodus data aliases; Exodus receives only a public
+certificate for strict health-check validation. Git never backs up runtime data.
 
-The local Caddy gateway publishes only 127.0.0.1:8092, at /vault/. The vault has no
-published host port or Internet egress. The launch is on its own browser origin,
-preserving upstream CSP/SAMEORIGIN instead of weakening it to permit embedding.
-Exodus cookies are stripped at the gateway; only the vault admin cookie passes.
-This Mac-only default uses localhost's Web Crypto secure-context exception, not
-HTTPS. A separate tested TLS overlay accepts operator-provided trusted certificates.
-No browser CA or remote exposure is installed implicitly. The demo-only notice
-and no-private-data guidance remain; implementation tests are not certification.
+Registration is invitation-only. Invite the first owner and subsequent members
+through Vaultwarden administration; each sets their own master password. Native admin policy may override
+these values. Ordinary vault signup does not grant admin-console access. The
+operator completes certificate trust and enters their own master password; no
+browser warnings or certificate validation are bypassed. The current web vault
+requires HTTPS even on localhost, beyond Web Crypto's secure-context exception.
 
-Health reports server/database and gateway reachability. Device sync is reported
-unknown until checked inside the signed-in vault. Data backups are private and
-excluded from Git and Docker build contexts. The existing License Tracker and
-upstream source record remain in place. Setup, backup, token access, test commands
-and HTTPS details are in docs/VAULTWARDEN.md.
+The normal bridge permits egress; icon fetching, push providers and unsolicited
+update checks remain disabled. The former proxy cookie filter no longer exists;
+localhost and 127.0.0.1 should be used as separate browser hosts for Exodus and
+the vault. Health checks confirm only server/database reachability, not device
+sync. Setup, backups, trust, onboarding and tests are in docs/VAULTWARDEN.md.
 
 ## Code / DeepSeek Harness
 
@@ -319,8 +324,8 @@ rest of the data directory. A running timer survives a reload; stopping saves th
 elapsed time, capped at the selected Pomodoro duration. Time tracked is not a
 claim of time or money saved.
 
-Team presence is opt-in. Status is self-reported, and online means a Home
-heartbeat was seen in the last 90 seconds. Announcements are explicitly posted
+Team presence is opt-in. Status is self-reported, and recent presence reflects
+explicit activity rather than an interval-based Home heartbeat. Announcements are explicitly posted
 to signed-in users of this installation. Private work is not automatically
 broadcast. There are no simulated teammates, messages, files, KPIs or activity.
 Slack, Teams and document-comment providers are not integrated in this release.
@@ -684,3 +689,68 @@ rather than the generic draft title. Quoted-body subjects are not used. No new
 email history database or AI processing is introduced. Verification includes
 Home backend tests in both modes, controlled browser-loader regression tests,
 and a live Home Test-message reader/open and manual Inbox refresh check.
+
+## Reactive Home, scratchpad and local diagnostics
+
+Home uses one authenticated, owner-scoped event stream and a shared client event
+bus. Successful Notes, Calendar, Library, mail-cache and Home preference writes
+invalidate the relevant widgets after commit. Failed or rolled-back writes do
+not announce success. Reconnecting or returning to the page refreshes current
+state through the existing permission-checked APIs. Events contain only topic
+names, not private content or account identities. The initial implementation
+assumes one application worker, matching this Docker setup; it is not a durable
+or multi-server event broker. The automation event bus remains separate.
+
+Quick capture is one autosaving scratchpad with a 500 ms debounce. The primary
+account's plain Markdown lives at `/data/scratchpad.md` in Docker, with private
+per-account directories for additional accounts. `/data` aliases the existing
+host data directory rather than copying it. Native installations use DATA_DIR,
+or EXODUS_SCRATCHPAD_DIR when explicitly configured. Save to Notes creates an
+ordinary owned note tagged `quick-capture`; it clears only the saved draft after
+the note commit succeeds. Revision checks and retry receipts protect competing
+windows and interrupted conversions. Back up the Markdown, ownership/revision
+metadata and conversion receipts together with app.db. No existing database
+schema or saved content is migrated.
+
+System diagnostics reports current Exodus-process RSS, available space on the
+data filesystem, real local Notes/Calendar/mail-cache read probes, and the
+existing Vaultwarden health probe. A readable mail cache does not establish a
+working IMAP/SMTP connection, and Vaultwarden health does not prove device sync.
+Measurements refresh on demand and dashboard activity; no widget data-polling
+interval is added. Team sharing and announcements remain available in details.
+All of these features work in both workspace modes without a model or embedding
+requirement. Remote email arrival still requires the existing mail sync path;
+the event bus reacts immediately once that path updates the local cache.
+
+Verification uses disposable local databases and an isolated full-UI fixture.
+The focused Python suites cover committed CRUD events, rollback and owner
+isolation, scratchpad persistence/conflicts/retries, local telemetry and existing
+Notes, Library, Calendar and Home behavior (61 passing tests). JavaScript tests
+cover event coalescing, reconnects, autosave/recovery, live form preservation and
+the existing email/calendar handlers (19 passing tests). Browser checks in both
+workspace modes cover capture, reload persistence, Save to Notes and reactive
+widget updates without a page reload. Email cache events are tested locally;
+this dashboard change does not constitute a live IMAP delivery test.
+
+
+## Invitation-only ecosystem (2026-10-01)
+
+The first Exodus account is administrator; subsequent people join with expiring,
+revocable single-use invitations and choose their own passwords. Settings → Team
+& invitations extends existing user/role controls. Invitation-only mode enforces
+authentication, closes legacy public signup, and retains existing accounts/data.
+Non-AI personal features work in both modes. Preferences and logo selection are
+saved per account; container addresses and server policy stay administrator-owned.
+Never copy another member's credentials, settings, private content, or vault CLI
+session as new-user defaults. Keep service access/invitation/exit guidance visible.
+
+Vaultwarden keeps its separate account/master password per user, as explicitly
+approved. Its public signup is disabled and native invitations remain available;
+Exodus links to native vault administration without receiving the admin secret.
+Optional CLI sessions/config and CLI app data are owner-scoped; old shared CLI
+state is preserved but never inherited by named users. Logout/removal in Exodus
+is not logout/removal in Vaultwarden. Users must be told to revoke both services.
+The current Mac-only deployment is not a production multi-tenant deployment:
+shared ntfy topics, admin-only Harness, and other shared infrastructure are not
+private per-account services. Every future integration needs explicit ownership,
+settings, onboarding/offboarding, and cross-user tests. See docs/TEAM_ACCOUNTS.md.

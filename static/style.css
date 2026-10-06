@@ -41559,3 +41559,15 @@ body.settings-sidebar-resize-active {
 
 /* Quick add always works locally; AI assist is an explicit optional choice. */
 .cal-quickadd-ai { display:flex; align-items:center; gap:6px; padding:0 12px 8px; font-size:12px; color:var(--text-secondary); }
+
+/* Keep the horizontal Settings buttons clear of the scrollbar on narrow views. */
+@media (max-width: 600px) {
+  .settings-sidebar-content { min-height: 42px; align-items: center; scrollbar-width: thin; }
+  .settings-sidebar-content .settings-nav-item { flex: 0 0 auto; white-space: nowrap; }
+}
+@container settings-modal (max-width: 620px) {
+  .settings-sidebar-content { min-height: 42px; align-items: center; scrollbar-width: thin; }
+}
+
+/* Reserve logo space until the selected palette is decoded; no original-color flash. */
+.exodus-logo[data-logo-pending] { visibility: hidden; }

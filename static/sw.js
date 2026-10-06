@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'exodus-v397-workspace-home';
+const CACHE_NAME = 'exodus-v402-themed-logo-startup';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -39,6 +39,9 @@ const KATEX_FONTS = [
 const PRECACHE = [
   '/static/home.css',
   '/static/js/home.js',
+  '/static/js/homeUpdates.js',
+  '/static/js/homeScratchpad.js',
+  '/static/js/workspaceEvents.js',
   '/static/js/settings/upstream.js',
   '/static/temple.css',
   '/static/js/temple.js',

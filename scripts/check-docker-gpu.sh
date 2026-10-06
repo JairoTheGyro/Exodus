@@ -59,7 +59,7 @@ Informational:
                                 Inspect these before deciding to install.
   --help                        Show this help.
 
-Opt-in .env update (requires .env or env.example in the repo root):
+Opt-in .env update (requires .env or .env.example in the repo root):
   --enable-nvidia-overlay       Write COMPOSE_FILE=docker-compose.yml:docker/gpu.nvidia.yml
                                 into .env. Creates a timestamped backup first.
                                 Blocked if GPU passthrough is not working — fix
@@ -323,7 +323,7 @@ _enable_nvidia_overlay() {
     echo
 
     local _env_file="${REPO_ROOT}/.env"
-    local _env_example="${REPO_ROOT}/env.example"
+    local _env_example="${REPO_ROOT}/.env.example"
     local _overlay_fragment="docker/gpu.nvidia.yml"
     local _backup_ts
     _backup_ts="$(date +%Y%m%d-%H%M%S)"
@@ -331,25 +331,25 @@ _enable_nvidia_overlay() {
     # Ensure .env exists
     if [ ! -f "${_env_file}" ]; then
         if [ -f "${_env_example}" ]; then
-            _info ".env not found. env.example is available."
+            _info ".env not found. .env.example is available."
             local _do_copy=0
             if [ "${OPT_YES}" -eq 1 ]; then
                 _do_copy=1
-            elif _confirm "Copy env.example to .env?"; then
+            elif _confirm "Copy .env.example to .env?"; then
                 _do_copy=1
             fi
             if [ "${_do_copy}" -eq 1 ]; then
                 if ! cp "${_env_example}" "${_env_file}"; then
-                    _fail "Failed to copy env.example to .env."
+                    _fail "Failed to copy .env.example to .env."
                     return 1
                 fi
-                _pass "Copied env.example to .env."
+                _pass "Copied .env.example to .env."
             else
                 _fail ".env is required to set COMPOSE_FILE — aborted."
                 return 1
             fi
         else
-            _fail ".env not found and env.example is missing."
+            _fail ".env not found and .env.example is missing."
             _info "Create a .env file in the repo root, then re-run."
             return 1
         fi

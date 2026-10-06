@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
 <link rel="stylesheet" href="/static/temple.css">
 <title>Exodus — Login</title>
-<link rel="icon" type="image/png" href="/static/icons/exodus.png">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==">
 <link rel="manifest" href="static/manifest.json">
 <link rel="apple-touch-icon" href="static/icons/icon-192.png">
 <script nonce="{{CSP_NONCE}}">
@@ -106,6 +106,7 @@
 })();
 </script>
 <style>
+  .exodus-logo[data-logo-pending] { visibility: hidden; }
   @font-face { font-family: 'Fira Code'; font-weight: 400; font-style: normal; font-display: swap; src: url('static/fonts/FiraCode-Regular.woff2') format('woff2'); }
   @font-face { font-family: 'Fira Code'; font-weight: 600; font-style: normal; font-display: swap; src: url('static/fonts/FiraCode-SemiBold.woff2') format('woff2'); }
   /* Mirror the main app's :root defaults (static/style.css ~line 18) so an
@@ -274,7 +275,7 @@
 <body>
 <main class="card">
   <h1 class="logo">
-    <img class="logo-boat exodus-logo" src="/static/icons/exodus.png" alt="" width="32" height="32"><span>Exodus</span>
+    <img class="logo-boat exodus-logo" data-logo-pending alt="" width="32" height="32"><span>Exodus</span>
   </h1>
   <p class="setup-note" id="setupNote" style="display:none"></p>
 
@@ -350,6 +351,14 @@
 
   let mode = 'login'; // 'login' | 'signup' | 'setup'
   let signupAllowed = false;
+  const invitation = new URLSearchParams(window.location.hash.slice(1));
+  const invitationToken = invitation.get('invite') || '';
+  const invitedUsername = invitation.get('username') || '';
+  if (invitationToken) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    usernameInput.value = invitedUsername;
+    usernameInput.readOnly = true;
+  }
   let policy = { password_min_length: 8, reserved_usernames: [] };
 
   const rememberToggle = document.getElementById('rememberToggle');
@@ -357,7 +366,14 @@
   function setMode(m) {
     mode = m;
     errEl.style.display = 'none';
-    if (m === 'setup') {
+    if (m === 'invite') {
+      setupNote.textContent = 'You are invited to Exodus. Choose your own password. Your vault uses a separate login.';
+      setupNote.style.display = 'block';
+      confirmGroup.style.display = 'block';
+      submitBtn.textContent = 'Accept invitation';
+      toggleArea.style.display = 'none';
+      rememberToggle.style.display = 'none';
+    } else if (m === 'setup') {
       setupNote.textContent = 'First-time setup — create your admin account';
       setupNote.style.display = 'block';
       confirmGroup.style.display = 'block';
@@ -389,12 +405,14 @@
   try {
     const statusRes = await fetch(appUrl('/api/auth/status'), { credentials: 'same-origin' });
     const data = await statusRes.json();
-    if (data.authenticated) {
+    if (data.authenticated && !invitationToken) {
       window.location.replace(appUrl('/'));
       return;
     }
     signupAllowed = !!data.signup_enabled;
-    if (!data.configured) {
+    if (invitationToken) {
+      setMode('invite');
+    } else if (!data.configured) {
       setMode('setup');
     } else {
       setMode('login');
@@ -447,7 +465,7 @@
     }
 
     // Validate confirm password for setup/signup
-    if (mode === 'setup' || mode === 'signup') {
+    if (mode === 'setup' || mode === 'signup' || mode === 'invite') {
       const confirm = document.getElementById('confirmPassword').value;
       if (password !== confirm) {
         errEl.textContent = 'Passwords do not match';
@@ -470,14 +488,14 @@
     }
 
     // Setup or signup first
-    if (mode === 'setup' || mode === 'signup') {
-      const endpoint = mode === 'setup' ? appUrl('/api/auth/setup') : appUrl('/api/auth/signup');
+    if (mode === 'setup' || mode === 'signup' || mode === 'invite') {
+      const endpoint = appUrl(mode === 'setup' ? '/api/auth/setup' : mode === 'invite' ? '/api/auth/accept-invitation' : '/api/auth/signup');
       try {
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username, password, ...(mode === 'invite' ? {token: invitationToken} : {}) })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Account creation failed');
@@ -492,6 +510,9 @@
     // Login (auto-login after setup/signup too)
     const remember = document.getElementById('remember').checked;
     function finishLogin() {
+      const previous = localStorage.getItem('odysseus-auth-user');
+      if (previous !== username.toLowerCase()) { localStorage.clear(); sessionStorage.clear(); }
+      localStorage.setItem('odysseus-auth-user', username.toLowerCase());
       const _rem = document.getElementById('remember').checked;
       if (_rem) localStorage.setItem('odysseus-last-user', username);
       else localStorage.removeItem('odysseus-last-user');
@@ -596,6 +617,7 @@ if (window.visualViewport) {
   });
 }
 </script>
+<script type="module" src="/static/js/settings/brand.js"></script>
 <script type="module" nonce="{{CSP_NONCE}}">
 // Drive the login page's bg effect off the user's saved theme. The
 // sync bootstrap above already set the body class + effect CSS vars so

@@ -12,6 +12,8 @@ venv/
 
 # Environment
 .env*
+# Only the reviewed, non-secret setup template is tracked.
+!/.env.example
 # Local uv lockfile (optional, per-platform — see "Faster installs with uv" in README)
 requirements.lock
 

@@ -84,3 +84,15 @@ html[data-workspace-mode=ai-free] .doc-editor-pane {max-width:100%;}
 
 .home-card-actions { display:flex; align-items:center; gap:4px; }
 .home-list .home-email { display:block; width:100%; }
+
+/* Updates keep forms mounted so typing, selection and open details survive. */
+#workspace-home [hidden] { display:none!important; }
+#home-capture { min-height:130px; line-height:1.6; }
+#home-capture-status { min-height:1.6em; margin:0; }
+#home-capture-conflict { border:1px solid var(--border); padding:12px; border-radius:8px; }
+#home-capture-remote { white-space:pre-wrap; overflow-wrap:anywhere; max-height:160px; overflow:auto; font:inherit; font-size:12px; }
+.home-team-details { border-top:1px solid var(--border); margin-top:18px; padding-top:14px; }
+.home-team-details summary { cursor:pointer; font-size:12px; }
+.home-diagnostics-list { max-height:none; }
+.home-diagnostics-list .home-row { justify-content:space-between; flex-wrap:wrap; font-size:12px; }
+.home-load-error { font-size:12px; border-top:1px solid var(--border); padding-top:10px; }

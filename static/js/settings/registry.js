@@ -133,12 +133,12 @@ export const SETTINGS_PANELS = Object.freeze([
   }),
   definePanel({
     id: 'users',
-    advanced: true,
-    label: 'Users',
+    advanced: false,
+    label: 'Team & invitations',
     group: 'administration',
     controller: 'admin',
     adminOnly: true,
-    keywords: ['users', 'accounts', 'admin'],
+    keywords: ['users', 'accounts', 'admin', 'team', 'invitations', 'members'],
   }),
   definePanel({
     id: 'system',

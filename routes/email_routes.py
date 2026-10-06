@@ -1102,6 +1102,8 @@ def _email_index_upsert(owner: str, account_id: str | None, folder: str, emails:
                 rows,
             )
             conn.commit()
+            from src.workspace_events import publish_workspace_event
+            publish_workspace_event(owner, 'inbox')
         finally:
             conn.close()
     except Exception as e:
@@ -1128,6 +1130,8 @@ def _email_index_update_flags(owner: str, account_id: str | None, folder: str, u
                 (" ".join(sorted(parts)), datetime.utcnow().isoformat() + "Z", owner or "", _account_cache_key(account_id, owner), folder, str(uid)),
             )
             conn.commit()
+            from src.workspace_events import publish_workspace_event
+            publish_workspace_event(owner, 'inbox')
         finally:
             conn.close()
     except Exception:
@@ -1149,6 +1153,8 @@ def _email_index_delete(owner: str, account_id: str | None, folder: str | None, 
                     (owner or "", _account_cache_key(account_id, owner), str(uid)),
                 )
             conn.commit()
+            from src.workspace_events import publish_workspace_event
+            publish_workspace_event(owner, 'inbox')
         finally:
             conn.close()
     except Exception:
@@ -1879,12 +1885,13 @@ def setup_email_routes():
                 # All emails NOT marked as answered/done (read or unread).
                 status, data = _imap_uid_search(conn, f"(UNANSWERED{from_clause})")
             elif filter_ == "reminders":
-                # Prefer the Exodus marker header, but include the subject
-                # fallback too. The fallback uses a distinct Exodus prefix
+                # Keep the stable Odysseus marker; accept either branding in
+                # the subject fallback for mail with stripped custom headers.
+                # Both subjects use a distinct reminder prefix
                 # so ordinary emails containing "Reminder" don't get mixed in.
                 status, data = _imap_uid_search(
                     conn,
-                    f'(OR HEADER X-Odysseus-Kind "reminder" SUBJECT "Reminder (Exodus):"{from_clause})',
+                    f'(OR HEADER X-Odysseus-Kind "reminder" (OR SUBJECT "Reminder (Odysseus):" SUBJECT "Reminder (Exodus):"){from_clause})',
                 )
             elif filter_ == "pending_30d":
                 # "What's pending in the last month" — UNANSWERED + delivered
@@ -3869,10 +3876,12 @@ def setup_email_routes():
                         # explicit kind header, and subject fallback catches
                         # clients/providers that stripped custom headers.
                         uids.update(_search_uids(conn, f'(HEADER X-Odysseus-Kind {_search_quote("reminder")})'))
-                        uids.update(_search_uids(conn, f'(SUBJECT {_search_quote("Reminder (Exodus):")})'))
+                        for prefix in ("Reminder (Odysseus):", "Reminder (Exodus):"):
+                            uids.update(_search_uids(conn, f'(SUBJECT {_search_quote(prefix)})'))
                         for addr in own_addrs:
                             addr_q = _search_quote(addr)
-                            uids.update(_search_uids(conn, f'(FROM {addr_q} SUBJECT {_search_quote("Reminder (Exodus):")})'))
+                            for prefix in ("Reminder (Odysseus):", "Reminder (Exodus):"):
+                                uids.update(_search_uids(conn, f'(FROM {addr_q} SUBJECT {_search_quote(prefix)})'))
                             # Legacy reminders created before the Exodus
                             # prefix still came from this mailbox as
                             # "Reminder: ..."; include them in Clear without

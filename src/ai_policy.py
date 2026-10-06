@@ -56,6 +56,8 @@ def allowed_without_ai(path, method):
     if not path.startswith('/api/'):
         return not path.startswith(('/v1/', '/ws', '/socket'))
     # Match complete route shapes, not open-ended content API prefixes.
+    if path == '/api/workspace/events':
+        return method == 'GET'
     if path.startswith('/api/home/'):
         return True
     if path.startswith('/api/auth/'):
@@ -64,6 +66,8 @@ def allowed_without_ai(path, method):
         return True
     if path in ('/api/health', '/api/config', '/api/client-info', '/api/version'):
         return method == 'GET'
+    if path in ('/api/vault/config', '/api/vault/login', '/api/vault/unlock', '/api/vault/lock', '/api/vault/logout'):
+        return method in ('GET', 'POST')
     if path in ('/api/vaultwarden/status', '/api/vaultwarden/config'):
         return method == 'GET'
     if path in ('/api/notes/export/zip', '/api/notes/export/json'):

@@ -5,6 +5,8 @@ Config stored in data/auth.json. Uses bcrypt directly.
 
 import enum
 import json
+import copy
+import hashlib
 import os
 import secrets
 import threading
@@ -130,8 +132,8 @@ class AuthManager:
                 self._config = {}
                 logger.info("No auth config found — first-run setup required")
         except Exception as e:
-            logger.error(f"Failed to load auth config: {e}")
-            self._config = {}
+            logger.error("Failed to load auth config; refusing to reopen first-run setup")
+            raise RuntimeError("Cannot read existing account configuration. Restore or repair auth.json before starting Exodus.") from e
 
     def _load_sessions(self):
         """Load persisted session tokens from disk, pruning expired ones."""
@@ -226,11 +228,17 @@ class AuthManager:
         return self._config.get("users", {})
 
     @property
+    def invite_only(self) -> bool:
+        return os.getenv("EXODUS_INVITE_ONLY", "true").strip().lower() != "false"
+
+    @property
     def signup_enabled(self) -> bool:
-        return self._config.get("signup_enabled", False)
+        return not self.invite_only and self._config.get("signup_enabled", False)
 
     @signup_enabled.setter
     def signup_enabled(self, value: bool):
+        if value and self.invite_only:
+            raise ValueError("This installation uses invitations. Public signup is disabled.")
         with self._config_lock:
             self._config["signup_enabled"] = value
             self._save()
@@ -245,6 +253,7 @@ class AuthManager:
             "password_min_length": PASSWORD_MIN_LENGTH,
             "reserved_usernames": sorted(RESERVED_USERNAMES),
             "signup_enabled": self.signup_enabled,
+            "invite_only": self.invite_only,
             "session_days": TOKEN_TTL // 86400,
         }
 
@@ -268,7 +277,7 @@ class AuthManager:
             logger.warning("Refused to create reserved username '%s'", username)
             return False
         with self._config_lock:
-            if username in self.users:
+            if username in self.users or username in self._config.get("retired_usernames", []):
                 return False
             if "users" not in self._config:
                 self._config["users"] = {}
@@ -281,6 +290,78 @@ class AuthManager:
             self._save()
         logger.info(f"Created user '{username}' (admin={is_admin})")
         return True
+
+    def create_invitation(self, username: str, requesting_user: str) -> dict:
+        username = username.strip().lower()
+        import re
+        if not re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,63}", username) or username in RESERVED_USERNAMES:
+            raise ValueError("Use 1–64 letters, numbers, dots, dashes or underscores for the username.")
+        with self._config_lock:
+            if not self.is_admin(requesting_user):
+                raise PermissionError("Admin only")
+            if username in self.users or username in self._config.get("retired_usernames", []):
+                raise ValueError("That username is already used or retired. Choose a new username.")
+            now = time.time()
+            snapshot = copy.deepcopy(self._config)
+            invites = {key: value for key, value in snapshot.get("invitations", {}).items()
+                       if value.get("expires", 0) > now}
+            if any(value["username"] == username for value in invites.values()):
+                raise ValueError("An invitation is already pending for this username. Revoke it first.")
+            if len(invites) >= 100:
+                raise ValueError("Revoke unused invitations before creating more.")
+            token = secrets.token_urlsafe(32)
+            identifier = secrets.token_hex(16)
+            record = {"username": username, "created_by": requesting_user,
+                      "created": now, "expires": now + 7 * 86400,
+                      "token_hash": hashlib.sha256(token.encode()).hexdigest()}
+            invites[identifier] = record
+            snapshot["invitations"] = invites
+            # Publish to memory only after the whole durable transaction succeeds.
+            _atomic_write_json(self.auth_path, snapshot, indent=2)
+            self._config = snapshot
+            return {"id": identifier, "username": username, "expires": record["expires"], "token": token}
+
+    def list_invitations(self) -> list:
+        with self._config_lock:
+            return [{"id": key, **{k: value[k] for k in ("username", "created", "expires")}}
+                    for key, value in self._config.get("invitations", {}).items()
+                    if value.get("expires", 0) > time.time()]
+
+    def revoke_invitation(self, identifier: str, requesting_user: str) -> bool:
+        with self._config_lock:
+            if not self.is_admin(requesting_user):
+                raise PermissionError("Admin only")
+            snapshot = copy.deepcopy(self._config)
+            if not snapshot.get("invitations", {}).pop(identifier, None):
+                return False
+            _atomic_write_json(self.auth_path, snapshot, indent=2)
+            self._config = snapshot
+            return True
+
+    def accept_invitation(self, token: str, username: str, password: str) -> bool:
+        username = username.strip().lower()
+        if not token or len(token) > 128 or len(password) < PASSWORD_MIN_LENGTH or len(password.encode("utf-8")) > 72:
+            return False
+        digest = hashlib.sha256(token.encode()).hexdigest()
+        with self._config_lock:
+            match = next(((key, value) for key, value in self._config.get("invitations", {}).items()
+                          if secrets.compare_digest(value.get("token_hash", ""), digest)), None)
+            if not match:
+                return False
+            key, invite = match
+            if (invite["expires"] <= time.time() or invite["username"] != username
+                    or not self.is_admin(invite["created_by"]) or username in self.users
+                    or username in self._config.get("retired_usernames", [])):
+                return False
+            snapshot = copy.deepcopy(self._config)
+            snapshot.setdefault("users", {})[username] = {
+                "password_hash": _hash_password(password), "created": time.time(),
+                "is_admin": False, "privileges": dict(DEFAULT_PRIVILEGES),
+            }
+            del snapshot["invitations"][key]
+            _atomic_write_json(self.auth_path, snapshot, indent=2)
+            self._config = snapshot
+            return True
 
     def delete_user(self, username: str, requesting_user: str) -> bool:
         """Delete a user. Only admins can delete, and can't delete themselves.
@@ -314,6 +395,7 @@ class AuthManager:
             except Exception:
                 logger.warning(f"Failed to revoke API tokens for deleted user '{username}'")
                 return False
+            self._config.setdefault("retired_usernames", []).append(username)
             del self._config["users"][username]
             self._save()
         # Purge all sessions belonging to this user. validate_token doesn't
@@ -344,10 +426,11 @@ class AuthManager:
         with self._config_lock:
             if old_username not in self.users:
                 return False
-            if new_username in self.users:
+            if new_username in self.users or new_username in self._config.get("retired_usernames", []):
                 return False
             if not self.users.get(requesting_user, {}).get("is_admin"):
                 return False
+            self._config.setdefault("retired_usernames", []).append(old_username)
             self._config.setdefault("users", {})[new_username] = self._config["users"].pop(old_username)
             self._save()
 

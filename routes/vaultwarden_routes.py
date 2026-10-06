@@ -47,6 +47,18 @@ def setup_vaultwarden_routes(service=None):
         except VaultwardenConfigError:
             raise configuration_error() from None
 
+    @router.get("/vault/admin", include_in_schema=False)
+    async def administration(request: Request):
+        user = require_user(request)
+        manager = getattr(request.app.state, "auth_manager", None)
+        if not user or not manager or not manager.is_admin(user):
+            raise HTTPException(403, "Admin only", headers=_PRIVATE_HEADERS)
+        try:
+            url = service.client_config()["vault_url"].rstrip("/") + "/admin"
+        except VaultwardenConfigError:
+            raise configuration_error() from None
+        return RedirectResponse(url, status_code=303, headers=_PRIVATE_HEADERS)
+
     @router.get("/vault", include_in_schema=False)
     @router.get("/vault/", include_in_schema=False)
     async def launch(request: Request):

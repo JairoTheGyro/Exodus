@@ -55,5 +55,6 @@ timetree*.png
 
 # Local secrets and consistent data backups never enter image builds.
 .env*
+!/.env.example
 **/data/
 backups/

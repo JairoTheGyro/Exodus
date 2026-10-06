@@ -257,6 +257,8 @@ auth_manager = AuthManager()
 app.state.auth_manager = auth_manager
 AUTH_ENABLED = not auth_disabled()
 LOCALHOST_BYPASS = os.getenv("LOCALHOST_BYPASS", "false").lower() == "true"
+if auth_manager.invite_only and (not AUTH_ENABLED or LOCALHOST_BYPASS):
+    raise RuntimeError("Invitation-only teams require AUTH_ENABLED=true and LOCALHOST_BYPASS=false")
 if LOCALHOST_BYPASS:
     logger.warning("LOCALHOST_BYPASS is enabled, loopback requests bypass authentication. Do not expose this instance to a network.")
 
@@ -267,6 +269,8 @@ if AUTH_ENABLED:
     AUTH_EXEMPT_EXACT = {
         "/api/auth/setup",
         "/api/auth/signup",
+        "/api/auth/accept-invitation",
+        "/api/auth/policy",
         "/api/auth/login",
         "/api/auth/logout",
         "/api/auth/status",
@@ -828,6 +832,9 @@ app.include_router(setup_vaultwarden_routes())
 
 from routes.home_routes import setup_home_routes
 app.include_router(setup_home_routes())
+
+from routes.workspace_event_routes import setup_workspace_event_routes
+app.include_router(setup_workspace_event_routes())
 
 from routes.workspace_routes import setup_workspace_routes
 app.include_router(setup_workspace_routes())

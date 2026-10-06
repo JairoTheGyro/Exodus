@@ -68,7 +68,9 @@ class HomeChecks(unittest.TestCase):
         self.c.post('/api/home/capture',json={'text':'Findme <script>never executed</script>'})
         with SessionLocal() as db:
             db.add_all([Document(id='mine',owner='admin',title='Findme mine',current_content=''),Document(id='foreign',owner='other',title='Findme foreign',current_content='')]);db.commit()
-        self.assertEqual([f['id'] for f in self.c.get('/api/home/files').json()['files']],['mine'])
+        recent=self.c.get('/api/home/files').json()['files']
+        self.assertEqual([f['id'] for f in recent if f['kind']=='document'],['mine'])
+        self.assertEqual(len([f for f in recent if f['kind']=='note']),1)
         self.assertEqual(len(self.c.get('/api/home/search?q=Findme').json()['results']),2)
         self.assertEqual(self.c.get('/api/home/search?q=%25%25').json()['results'],[])
         self.c.headers['x-test-user']='blocked'

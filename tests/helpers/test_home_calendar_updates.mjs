@@ -4,7 +4,8 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
 const calendar = readFileSync('static/js/calendar.js', 'utf8');
-const home = readFileSync('static/js/home.js', 'utf8');
+const bus = await import('../../static/js/workspaceEvents.js');
+const {createHomeUpdates} = await import('../../static/js/homeUpdates.js');
 const events = new EventTarget();
 const refreshes = [];
 let respond;
@@ -18,17 +19,21 @@ const context = vm.createContext({
   fetch: () => new Promise(resolve => { respond = resolve; }),
 });
 vm.runInContext(calendar.slice(calendar.indexOf('async function _createEvent('), calendar.indexOf('// ── Date helpers')), context);
-vm.runInContext(home.slice(home.indexOf('// Local saves and the existing agent completion signal')), context);
+globalThis.window=events;
+globalThis.document=Object.assign(new EventTarget(),{hidden:false});
+const updates=createHomeUpdates({subscribe:bus.subscribe,refresh:kind=>{if(kind==='schedule')refreshes.push(kind);},refreshProfile:async()=>{},allWidgets:['schedule'],schedule:()=>0,cancel:()=>{}});
+bus.start();
 
 let pending = vm.runInContext('_createEvent({summary:"Saved event"})', context);
 assert.deepEqual(refreshes, [], 'Do not refresh before persistence succeeds');
 respond({ok:true, json:async () => ({uid:'saved'})});
 assert.equal((await pending).uid, 'saved');
+await updates.flush();
 assert.deepEqual(refreshes, ['schedule']);
 
 pending = vm.runInContext('_updateEvent("saved", {summary:"Edited"})', context);
 respond({ok:true});
-await pending;
+await pending;await updates.flush();
 assert.equal(refreshes.length, 2);
 
 pending = vm.runInContext('_createEvent({summary:"Failed event"})', context);
@@ -39,5 +44,7 @@ assert.deepEqual(Object.keys(context._allEvents), ['saved'], 'Failed optimistic 
 
 // The agent stream already emits this event on manage_calendar completion.
 events.dispatchEvent(new CustomEvent('calendar-refresh'));
+await updates.flush();
 assert.deepEqual(refreshes, ['schedule','schedule','schedule']);
+updates.stop();bus.stop();
 console.log('Calendar confirmed saves, failure rollback, and agent → Home signals passed.');

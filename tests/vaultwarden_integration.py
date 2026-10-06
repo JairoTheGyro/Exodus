@@ -1,10 +1,18 @@
 """Isolated Vaultwarden companion routes; no real vault or credentials touched.
 
 Run: docker exec -i sovereign-hub-odysseus-1 python - < tests/vaultwarden_integration.py
-Container/gateway checks are covered separately by the deployment smoke suite.
+Container launch checks are covered separately by the deployment smoke suite.
+This suite also verifies actual disposable loopback TLS handshakes.
 """
 import asyncio
 import os
+import json
+import ssl
+import threading
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 import tempfile
 import time
 import unittest
@@ -31,8 +39,10 @@ from src.vaultwarden_service import VaultwardenService
 class VaultwardenChecks(unittest.TestCase):
     def setUp(self):
         self.settings = patch.dict(os.environ, {
-            "VAULTWARDEN_INTERNAL_URL": "http://vaultwarden:8080/vault/alive",
-            "VAULTWARDEN_PUBLIC_URL": "http://localhost:8092/vault/",
+            "VAULTWARDEN_INTERNAL_URL": "https://vaultwarden:80/alive",
+            "VAULTWARDEN_PUBLIC_URL": "https://localhost:8092/",
+            "VAULTWARDEN_CA_FILE": "",
+            "VAULTWARDEN_SIGNUPS_ALLOWED": "true",
             "VAULTWARDEN_ADMIN_TOKEN": "synthetic-secret-never-exposed",
         })
         self.settings.start()
@@ -72,9 +82,10 @@ class VaultwardenChecks(unittest.TestCase):
             config = self.client.get("/api/vaultwarden/config")
             self.assertEqual(config.status_code, 200, config.text)
             self.assertEqual(config.json(), {
-                "vault_url": "http://localhost:8092/vault/", "launch_path": "/vault",
-                "access_mode": "local", "registration_allowed": False, "embedded": False,
-                "start_command": "docker compose -p sovereign-hub up -d --no-deps vaultwarden vaultwarden-gateway",
+                "vault_url": "https://localhost:8092/", "launch_path": "/vault",
+                "access_mode": "https", "registration_allowed": True,
+                "registration_policy_source": "deployment", "embedded": False,
+                "start_command": "docker compose -p sovereign-hub up -d --no-deps vaultwarden",
                 "admin_enabled": True,
             })
             status = self.client.get("/api/vaultwarden/status")
@@ -118,15 +129,13 @@ class VaultwardenChecks(unittest.TestCase):
         self.client.headers.update({"Authorization": "Bearer synthetic-browser-secret", "Cookie": "session=synthetic-cookie"})
         response = self.client.get("/api/vaultwarden/status?url=http://169.254.169.254/secret&topic=private")
         self.assertEqual(response.json()["status"], "running")
-        self.assertEqual(len(self.requests), 2)
+        self.assertEqual(len(self.requests), 1)
         self.assertEqual({str(request.url) for request in self.requests}, {
-            "http://vaultwarden:8080/vault/alive", "http://vaultwarden-gateway:8080/vault/alive",
+            "https://vaultwarden:80/alive",
         })
         for request in self.requests:
             for name in ("authorization", "cookie", "x-test-user", "x-test-owner"):
                 self.assertNotIn(name, request.headers)
-            if request.url.host == "vaultwarden-gateway":
-                self.assertEqual(request.headers["host"], "localhost")
         self.assertNotIn("synthetic-browser-secret", response.text)
 
     def test_offline_and_ssl_failures_are_generic_and_do_not_block_routes(self):
@@ -157,25 +166,19 @@ class VaultwardenChecks(unittest.TestCase):
             self.requests.clear()
             result = self.client.get("/api/vaultwarden/status")
             self.assertEqual(result.json()["status"], "degraded")
-            self.assertEqual(len(self.requests), 2)
+            self.assertEqual(len(self.requests), 1)
             self.assertNotIn("private server log", result.text)
             self.assertNotIn("synthetic-secret", result.text)
 
-    def test_gateway_probe_cannot_be_retargeted(self):
-        for target in ('http://169.254.169.254/vault/alive',
-                       'http://vaultwarden-gateway:8081/admin',
-                       'http://vaultwarden-gateway:8081/vault/alive?secret=x'):
-            with patch.dict(os.environ, {'VAULTWARDEN_GATEWAY_HEALTH_URL': target}):
-                response = self.client.get('/api/vaultwarden/status')
-                self.assertEqual(response.status_code, 503)
-                self.assertNotIn(target, response.text)
-        self.requests.clear()
-        with patch.dict(os.environ, {'VAULTWARDEN_GATEWAY_HEALTH_URL': 'http://vaultwarden-gateway:8081/vault/alive'}):
+    def test_legacy_gateway_setting_is_unused_and_only_one_vault_is_probed(self):
+        with patch.dict(os.environ, {'VAULTWARDEN_GATEWAY_HEALTH_URL':'http://169.254.169.254/private'}):
             response = self.client.get('/api/vaultwarden/status')
             self.assertEqual(response.json()['status'], 'running')
-            self.assertTrue(response.json()['reachable'])
-            self.assertIn('docker-compose.vaultwarden-tls.yml', self.client.get('/api/vaultwarden/config').json()['start_command'])
-            self.assertTrue(any(r.url.port == 8081 for r in self.requests))
+            self.assertEqual(response.json()['checks'], {'vault':'running'})
+            self.assertEqual(len(self.requests), 1)
+            self.assertEqual(str(self.requests[0].url), 'https://vaultwarden:80/alive')
+            self.assertNotIn('gateway', response.text)
+            self.assertNotIn('gateway', self.client.get('/api/vaultwarden/config').text)
 
     def test_health_uses_strict_defaults_and_ignores_environment_proxy(self):
         original = httpx.AsyncClient
@@ -185,7 +188,10 @@ class VaultwardenChecks(unittest.TestCase):
         kwargs = client.call_args.kwargs
         self.assertFalse(kwargs["trust_env"])
         self.assertFalse(kwargs["follow_redirects"])
-        self.assertTrue(kwargs.get("verify", True))
+        self.assertIsInstance(kwargs["verify"], ssl.SSLContext)
+        self.assertTrue(kwargs["verify"].check_hostname)
+        self.assertEqual(kwargs["verify"].verify_mode, ssl.CERT_REQUIRED)
+        self.assertGreater(kwargs["verify"].cert_store_stats()["x509_ca"], 0)
         self.assertEqual(kwargs["timeout"].connect, 3.0)
         self.assertEqual(kwargs["timeout"].read, 3.0)
 
@@ -205,22 +211,30 @@ class VaultwardenChecks(unittest.TestCase):
             response = self.client.get("/api/vaultwarden/status")
         self.assertEqual(response.json()["status"], "offline")
         self.assertLess(time.monotonic() - started, 0.75)
-        self.assertEqual(cancelled, [True, True])
+        self.assertEqual(cancelled, [True])
 
-    def test_gateway_outage_is_not_reported_as_a_working_vault_launch(self):
-        def transport(request):
-            if request.url.host == "vaultwarden-gateway":
-                raise httpx.ConnectError("gateway unavailable")
-            return httpx.Response(200, json="2026-10-01T14:12:00Z")
+    def test_defaults_and_registration_flag_describe_deployment_only(self):
+        with patch.dict(os.environ):
+            for name in ('VAULTWARDEN_INTERNAL_URL','VAULTWARDEN_PUBLIC_URL','VAULTWARDEN_SIGNUPS_ALLOWED'):
+                os.environ.pop(name, None)
+            self.assertEqual(self.service.connection_urls(), ('https://vaultwarden:80/alive','https://localhost:8092/'))
+            config = self.client.get('/api/vaultwarden/config').json()
+            self.assertFalse(config['registration_allowed'])
+            self.assertEqual(config['registration_policy_source'], 'deployment')
+        for flag, expected in [('true',True),('1',True),('false',False),('0',False)]:
+            with patch.dict(os.environ, {'VAULTWARDEN_SIGNUPS_ALLOWED':flag}):
+                self.assertEqual(self.client.get('/api/vaultwarden/config').json()['registration_allowed'],expected)
+        with patch.dict(os.environ, {'VAULTWARDEN_SIGNUPS_ALLOWED':'synthetic-invalid-setting'}):
+            response = self.client.get('/api/vaultwarden/config')
+            self.assertEqual(response.status_code, 503)
+            self.assertNotIn('synthetic-invalid-setting', response.text)
+        self.assertEqual(self.requests, [])
 
-        self.service.transport = httpx.MockTransport(transport)
-        response = self.client.get("/api/vaultwarden/status")
-        self.assertEqual(response.json()["status"], "degraded")
-        self.assertEqual(response.json()["checks"], {"vault": "running", "gateway": "offline"})
-        self.assertIn("gateway", response.json()["detail"])
-
-    def test_public_url_requires_loopback_http_or_https_and_exact_vault_path(self):
+    def test_public_url_requires_loopback_http_or_https_and_root_or_legacy_vault_path(self):
         valid = {
+            "https://localhost:8092/": "https",
+            "https://localhost:8092": "https",
+            "https://vault.example.test/": "https",
             "http://localhost:8092/vault": "local",
             "http://127.0.0.1:8092/vault/": "local",
             "http://[::1]:8092/vault/": "local",
@@ -231,11 +245,11 @@ class VaultwardenChecks(unittest.TestCase):
                 response = self.client.get("/api/vaultwarden/config")
                 self.assertEqual(response.status_code, 200, response.text)
                 self.assertEqual(response.json()["access_mode"], access_mode)
-                self.assertTrue(response.json()["vault_url"].endswith("/vault/"))
+                self.assertEqual(response.json()["vault_url"], url.rstrip("/") + "/")
         invalid = (
             "http://vault.example.test/vault/", "http://localhost.evil.test/vault/",
             "https://user:synthetic-secret@example.test/vault/", "//example.test/vault/",
-            "javascript:alert(1)", "https://example.test/", "https://example.test/vault/../admin",
+            "javascript:alert(1)", "https://example.test/admin", "https://example.test/vault/../admin",
             "https://example.test/vault?token=synthetic-secret", "https://example.test/vault/#private",
             "https://example.test/vault/?", "https://example.test/vault/#",
             "https://example.test/%76ault/", "https://example.test/vault\\admin",
@@ -255,7 +269,7 @@ class VaultwardenChecks(unittest.TestCase):
 
     def test_internal_url_cannot_be_retargeted_to_arbitrary_host_or_path(self):
         for url in (
-            "http://169.254.169.254/vault/alive", "https://example.test/vault/alive",
+            "https://169.254.169.254/alive", "https://example.test/alive",
             "http://vaultwarden:8080/admin", "http://vaultwarden:8080/vault/alive?token=secret",
             "http://vaultwarden.evil.test/vault/alive", "http://secret@vaultwarden:8080/vault/alive",
         ):
@@ -264,6 +278,88 @@ class VaultwardenChecks(unittest.TestCase):
                 self.assertEqual(response.status_code, 503, url)
                 self.assertNotIn(url, response.text)
         self.assertEqual(self.requests, [])
+
+    def test_local_ca_file_extends_default_trust_and_invalid_file_is_redacted(self):
+        with temporary_tls_server() as (server_url, cert_file, _):
+            original = httpx.AsyncClient
+            with patch.dict(os.environ, {'VAULTWARDEN_CA_FILE':str(cert_file)}):
+                with patch('src.vaultwarden_service.httpx.AsyncClient', wraps=original) as client:
+                    self.assertEqual(self.client.get('/api/vaultwarden/status').json()['status'], 'running')
+                context = client.call_args.kwargs['verify']
+                self.assertTrue(context.check_hostname)
+                self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+                pem = cert_file.read_text()
+                self.assertIn(ssl.PEM_cert_to_DER_cert(pem), context.get_ca_certs(binary_form=True))
+                self.assertGreater(len(context.get_ca_certs()), 1, 'Default trust remains available')
+        for cafile in (str(Path(_temp.name)/'synthetic-private-missing.pem'), str(Path(_temp.name)/'invalid.pem')):
+            if cafile.endswith('invalid.pem'): Path(cafile).write_text('synthetic-private-invalid-cert')
+            with patch.dict(os.environ, {'VAULTWARDEN_CA_FILE':cafile}):
+                response = self.client.get('/api/vaultwarden/status')
+                self.assertEqual(response.status_code,503)
+                self.assertNotIn('synthetic-private',response.text)
+                self.assertNotIn(cafile,response.text)
+
+    def test_real_tls_trusted_local_cert_passes_untrusted_and_wrong_host_fail(self):
+        with temporary_tls_server() as (server_url, cert_file, hits):
+            self.service.transport = None
+            with patch.dict(os.environ, {'VAULTWARDEN_INTERNAL_URL':server_url,'VAULTWARDEN_CA_FILE':str(cert_file)}):
+                response = self.client.get('/api/vaultwarden/status')
+                self.assertEqual(response.json()['status'],'running',response.text)
+                self.assertEqual(len(hits),1)
+            with patch.dict(os.environ, {'VAULTWARDEN_INTERNAL_URL':server_url,'VAULTWARDEN_CA_FILE':''}):
+                response = self.client.get('/api/vaultwarden/status')
+                self.assertEqual(response.json()['status'],'offline')
+                self.assertEqual(len(hits),1,'Untrusted TLS fails before an HTTP request')
+            with patch.dict(os.environ, {'VAULTWARDEN_INTERNAL_URL':server_url.replace('localhost','127.0.0.1'),'VAULTWARDEN_CA_FILE':str(cert_file)}):
+                response = self.client.get('/api/vaultwarden/status')
+                self.assertEqual(response.json()['status'],'offline')
+                self.assertEqual(len(hits),1,'Wrong hostname fails before an HTTP request')
+                self.assertNotIn(str(cert_file),response.text)
+
+
+@contextmanager
+def temporary_tls_server():
+    """A disposable certificate/loopback server; never alter machine trust."""
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+    key = rsa.generate_private_key(public_exponent=65537,key_size=2048)
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,'localhost')])
+    now = datetime.now(timezone.utc)
+    cert = (x509.CertificateBuilder().subject_name(subject).issuer_name(subject)
+            .public_key(key.public_key()).serial_number(x509.random_serial_number())
+            .not_valid_before(now-timedelta(days=1)).not_valid_after(now+timedelta(days=1))
+            .add_extension(x509.SubjectAlternativeName([x509.DNSName('localhost')]),critical=False)
+            .add_extension(x509.BasicConstraints(ca=True,path_length=0),critical=True)
+            .add_extension(x509.KeyUsage(digital_signature=True,key_encipherment=True,key_cert_sign=True,
+                                        crl_sign=True,content_commitment=False,data_encipherment=False,
+                                        key_agreement=False,encipher_only=False,decipher_only=False),critical=True)
+            .add_extension(x509.SubjectKeyIdentifier.from_public_key(key.public_key()),critical=False)
+            .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()),critical=False)
+            .sign(key,hashes.SHA256()))
+    with tempfile.TemporaryDirectory(prefix='vault-tls-',dir=_temp.name) as directory:
+        cert_file=Path(directory)/'cert.pem';key_file=Path(directory)/'key.pem'
+        cert_file.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+        key_file.write_bytes(key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()))
+        key_file.chmod(0o600)
+        hits=[]
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                hits.append(self.path)
+                body=json.dumps('2026-10-01T14:12:00Z').encode()
+                self.send_response(200);self.send_header('Content-Type','application/json')
+                self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
+            def log_message(self,*args): pass
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(cert_file,key_file)
+        server.socket=context.wrap_socket(server.socket,server_side=True)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            yield f'https://localhost:{server.server_port}/alive',cert_file,hits
+        finally:
+            server.shutdown();server.server_close();thread.join(timeout=2)
 
 
 if __name__ == "__main__":

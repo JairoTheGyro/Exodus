@@ -41,9 +41,9 @@ class TestAppStructure:
         assert ".env" in ignored, ".env should stay local and ignored"
 
     def test_env_example_exists(self):
-        """Test that env.example exists"""
-        env_example_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "env.example")
-        assert os.path.exists(env_example_path), "env.example file should exist"
+        """Test that .env.example exists"""
+        env_example_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env.example")
+        assert os.path.exists(env_example_path), ".env.example file should exist"
 
 
 class TestImports:

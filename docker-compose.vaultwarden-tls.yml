@@ -1,30 +1,7 @@
-# Optional LOCAL HTTPS overlay. Supply a certificate trusted by your browser,
-# with localhost in its Subject Alternative Names. Nothing installs trust or
-# generates/accepts an untrusted certificate automatically.
-#
-# docker compose -f docker-compose.yml -f docker-compose.override.yml \
-#   -f docker-compose.vaultwarden-tls.yml -p sovereign-hub up -d \
-#   --no-deps odysseus vaultwarden vaultwarden-gateway
-#
-# Keep data/vaultwarden-tls private (directory mode 0700). Docker mounts only
-# cert.pem and key.pem, read-only; uid 1000 inside the gateway must be able to
-# read them. This overlay retains the base Compose loopback-only port binding.
+# Compatibility overlay: the base Compose now serves HTTPS directly from
+# Vaultwarden. Existing operator commands may continue including this file.
+# A prepared, trusted localhost certificate is required; no proxy is created.
 services:
-  odysseus:
-    environment:
-      VAULTWARDEN_PUBLIC_URL: "${VAULTWARDEN_DOMAIN:-https://localhost:${VAULTWARDEN_PORT:-8092}/vault}"
-      VAULTWARDEN_GATEWAY_HEALTH_URL: "http://vaultwarden-gateway:8081/vault/alive"
-
   vaultwarden:
     environment:
-      DOMAIN: "${VAULTWARDEN_DOMAIN:-https://localhost:${VAULTWARDEN_PORT:-8092}/vault}"
-
-  vaultwarden-gateway:
-    volumes:
-      - ./config/vaultwarden/Caddyfile.tls:/etc/caddy/Caddyfile:ro
-      - ${VAULTWARDEN_TLS_DIR:-./data/vaultwarden-tls}/cert.pem:/run/tls/cert.pem:ro
-      - ${VAULTWARDEN_TLS_DIR:-./data/vaultwarden-tls}/key.pem:/run/tls/key.pem:ro
-    healthcheck:
-      # Health traffic stays on the unpublished, health-only listener. It does
-      # not require disabling validation for the browser's separate TLS route.
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/vault/alive"]
+      ROCKET_TLS: '{certs="/run/tls/cert.pem",key="/run/tls/key.pem"}'

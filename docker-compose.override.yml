@@ -110,6 +110,13 @@ services:
       - ./static/icons:/app/static/icons:ro
       - ./static/js/templeLogin.js:/app/static/js/templeLogin.js:ro
       - ./src/home_store.py:/app/src/home_store.py:ro
+      - ./src/workspace_events.py:/app/src/workspace_events.py:ro
+      - ./src/scratchpad.py:/app/src/scratchpad.py:ro
+      - ./src/home_diagnostics.py:/app/src/home_diagnostics.py:ro
+      - ./routes/workspace_event_routes.py:/app/routes/workspace_event_routes.py:ro
+      - ./static/js/workspaceEvents.js:/app/static/js/workspaceEvents.js:ro
+      - ./static/js/homeUpdates.js:/app/static/js/homeUpdates.js:ro
+      - ./static/js/homeScratchpad.js:/app/static/js/homeScratchpad.js:ro
       - ./src/ai_policy.py:/app/src/ai_policy.py:ro
       - ./routes/home_routes.py:/app/routes/home_routes.py:ro
       - ./src/app_helpers.py:/app/src/app_helpers.py:ro
@@ -147,3 +154,9 @@ services:
       - ./static/js/libraryFiles.js:/app/static/js/libraryFiles.js:ro
       - ./routes/vaultwarden_routes.py:/app/routes/vaultwarden_routes.py:ro
       - ./src/vaultwarden_service.py:/app/src/vaultwarden_service.py:ro
+      - ./src/vault_accounts.py:/app/src/vault_accounts.py:ro
+      - ./routes/prefs_routes.py:/app/routes/prefs_routes.py:ro
+      - ./routes/vault/vault_routes.py:/app/routes/vault/vault_routes.py:ro
+      - ./src/tools/vault.py:/app/src/tools/vault.py:ro
+      - ./static/js/admin.js:/app/static/js/admin.js:ro
+      - ./static/js/teamInvitations.js:/app/static/js/teamInvitations.js:ro

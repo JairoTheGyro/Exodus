@@ -18,6 +18,7 @@ const variants = [
 ];
 let colors = Storage.getJSON('odysseus-theme', null)?.colors || DEFAULT_COLORS;
 let choice = readChoice();
+let choiceEdited = false;
 let revision = 0;
 let sourcePixels;
 const cache = new Map();
@@ -110,10 +111,15 @@ export async function applyExodusLogo(nextColors = colors) {
   const selected = choice;
   try {
     const url = await logoURL(selected);
+    // Decode off-screen so the first visible frame already has the saved colors.
+    const decoded = new Image();
+    decoded.src = url;
+    await decoded.decode();
     if (current !== revision) return;
     document.querySelectorAll('img.exodus-logo').forEach(img => {
       img.src = url;
       img.dataset.logoVariant = selected;
+      img.removeAttribute('data-logo-pending');
     });
     const favicon = document.querySelector('link[rel="icon"]');
     // Dedicated tool routes retain their existing, theme-colored glyphs.
@@ -135,11 +141,11 @@ export async function applyExodusLogo(nextColors = colors) {
       button.querySelector('img').src = preview;
     }
   } catch (error) {
-    // Keep the shipped logo usable if browser canvas/image loading fails.
+    // Keep the existing themed image (or reserved blank space) on failure.
+    // Never substitute the original colors unless the user selected Original.
     if (current !== revision) return;
-    document.querySelectorAll('img.exodus-logo').forEach(img => { img.src = SOURCE; });
     const status = document.getElementById('exodus-logo-status');
-    if (status) status.textContent = 'Logo colors could not load. Showing the original; reload to retry.';
+    if (status) status.textContent = 'Logo colors could not load. Reload to retry.';
     console.warn('[Exodus logo]', error.message);
   }
 }
@@ -155,13 +161,19 @@ export function initLogoChoices() {
     button.setAttribute('aria-label', `${name} logo`);
     button.setAttribute('aria-pressed', String(key === choice));
     const img = document.createElement('img');
-    img.src = SOURCE; img.alt = ''; img.width = img.height = 40;
+    img.alt = ''; img.width = img.height = 40;
     const label = document.createElement('span');
     label.textContent = name;
     button.append(img, label);
     button.addEventListener('click', () => {
+      choiceEdited = true;
       choice = key;
       Storage.set(KEY, choice);
+      fetch('/api/prefs/logo-variant', {method:'PUT', credentials:'same-origin',
+        headers:{'Content-Type':'application/json'}, body:JSON.stringify({value:choice})})
+        .then(response => { if (!response.ok) throw new Error('save'); })
+        .catch(() => { const status = document.getElementById('exodus-logo-status');
+          if (status) status.textContent = 'Logo changed on this browser, but could not save to your account. Try again.'; });
       applyExodusLogo();
     });
     grid.append(button);
@@ -176,3 +188,14 @@ window.addEventListener('storage', event => {
 });
 // Login has no theme picker, but should use the same saved logo choice.
 applyExodusLogo();
+
+// Load the signed-in account's choice; never fetch personal settings on login.
+if (document.getElementById('settings-modal')) {
+  fetch('/api/prefs/logo-variant', {credentials:'same-origin', cache:'no-store'})
+    .then(response => response.ok ? response.json() : null)
+    .then(data => {
+      if (data && !choiceEdited && variants.some(([key]) => key === data.value)) {
+        choice = data.value; Storage.set(KEY, choice); applyExodusLogo();
+      }
+    }).catch(() => {});
+}

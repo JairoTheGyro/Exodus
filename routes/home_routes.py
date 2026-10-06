@@ -7,9 +7,11 @@ from datetime import date, datetime
 from typing import Literal
 from urllib.parse import urlsplit
 import httpx
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi import APIRouter, Request, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from core.database import SessionLocal, Note, Document
+from core.database import SessionLocal, Note, Document, DocumentFile
 from src.auth_helpers import require_user, require_privilege
 from src.home_store import database, profile, save
 from src.ai_policy import cancel_ai
@@ -42,6 +44,14 @@ class Toggle(BaseModel):
 
 class Capture(BaseModel):
     text: str = Field(min_length=1, max_length=20000)
+
+class ScratchpadSave(BaseModel):
+    text: str = Field(max_length=20000)
+    revision: str = Field(pattern=r'^[a-f0-9]{64}$')
+
+class ScratchpadNote(BaseModel):
+    revision: str = Field(pattern=r'^[a-f0-9]{64}$')
+    request_id: uuid.UUID
 
 class Timer(BaseModel):
     action: Literal['start', 'stop']
@@ -155,16 +165,75 @@ def setup_home_routes():
             db.add(note); db.commit()
             return {'id': note.id}
 
+    @router.get('/scratchpad')
+    def get_scratchpad(request: Request):
+        return scratchpad_response(request, 'read')
+
+    @router.put('/scratchpad')
+    def save_scratchpad(request: Request, body: ScratchpadSave):
+        return scratchpad_response(request, 'write', body)
+
+    @router.post('/scratchpad/to-note')
+    def save_scratchpad_note(request: Request, body: ScratchpadNote):
+        return scratchpad_response(request, 'to_note', body)
+
+    def scratchpad_response(request, action, body=None):
+        from src.scratchpad import ScratchpadStore, ScratchpadConflict, ScratchpadEmpty, ScratchpadDeleted
+        from src.workspace_events import publish_workspace_event
+        owner = require_user(request)
+        headers = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'}
+        try:
+            store = ScratchpadStore()
+            if action == 'read':
+                result = store.read(owner)
+            elif action == 'write':
+                result = store.write(owner, body.text, body.revision)
+            else:
+                result = store.to_note(owner, body.revision, body.request_id, SessionLocal, Note)
+            if action != 'read':
+                publish_workspace_event(owner, 'scratchpad')
+            return JSONResponse(result, headers=headers)
+        except ScratchpadConflict as exc:
+            raise HTTPException(409, {'message': exc.message, 'current': exc.current}, headers=headers) from None
+        except ScratchpadDeleted as exc:
+            raise HTTPException(410, str(exc), headers=headers) from None
+        except ScratchpadEmpty as exc:
+            raise HTTPException(422, str(exc), headers=headers) from None
+        except (OSError, ValueError, SQLAlchemyError):
+            raise HTTPException(503, 'Scratchpad storage is unavailable. Your text has not been discarded.', headers=headers) from None
+
+    @router.get('/diagnostics')
+    async def system_diagnostics(request: Request):
+        from src.home_diagnostics import diagnostics
+        require_user(request)
+        return JSONResponse(await diagnostics(), headers={'Cache-Control': 'no-store'})
+
     @router.get('/files')
     def files(request: Request):
         owner = require_privilege(request, 'can_use_documents')
         pins = profile(owner).get('pins', [])
         with SessionLocal() as db:
-            query = db.query(Document).filter(Document.owner == (owner or None), Document.archived == False)
-            rows = query.order_by(Document.updated_at.desc()).limit(12).all()
+            query = db.query(Document).filter(Document.owner == (owner or None), Document.archived == False, Document.is_active == True)
+            documents = query.order_by(Document.updated_at.desc()).limit(12).all()
             pinned = query.filter(Document.id.in_(pins)).all() if pins else []
-            by_id = {row.id: row for row in pinned + rows}
-            return {'files': [{'id': r.id, 'title': home_document_title(r), 'language': r.language, 'updated': r.updated_at.isoformat()+'Z', 'pinned': r.id in pins} for r in by_id.values()]}
+            rows = [{'id': row.id, 'source_id': row.id, 'kind': 'document',
+                     'title': home_document_title(row), 'language': row.language,
+                     'updated': row.updated_at.isoformat()+'Z', 'pinned': row.id in pins}
+                    for row in {item.id: item for item in pinned + documents}.values()]
+            for model, kind, prefix in ((DocumentFile, 'upload', 'upload:'), (Note, 'note', 'note:')):
+                query = db.query(model).filter(model.owner == (owner or None))
+                query = query.filter(model.deletion_pending == False) if kind == 'upload' else query.filter(model.archived == False)
+                records = query.order_by(model.updated_at.desc()).limit(12).all()
+                ids = [value[len(prefix):] for value in pins if value.startswith(prefix)]
+                pinned = query.filter(model.id.in_(ids)).all() if ids else []
+                for row in {item.id: item for item in pinned + records}.values():
+                    item_id = prefix + row.id
+                    rows.append({'id': item_id, 'source_id': row.id, 'kind': kind,
+                                 'title': row.filename if kind == 'upload' else (row.title or 'Untitled note'),
+                                 'language': 'file' if kind == 'upload' else row.note_type,
+                                 'updated': row.updated_at.isoformat()+'Z', 'pinned': item_id in pins})
+            rows.sort(key=lambda row: row['updated'], reverse=True)
+            return {'files': [row for index, row in enumerate(rows) if index < 12 or row['pinned']]}
 
     @router.get('/search')
     def search(request: Request, q: str = Query(min_length=2, max_length=200)):
@@ -175,7 +244,7 @@ def setup_home_routes():
             try: require_privilege(request, 'can_use_documents'); docs_allowed = True
             except HTTPException: docs_allowed = False
             if docs_allowed:
-                for doc in db.query(Document).filter(Document.owner == (owner or None), Document.archived == False,
+                for doc in db.query(Document).filter(Document.owner == (owner or None), Document.archived == False, Document.is_active == True,
                     (Document.title.ilike(needle, escape='\\')) | (Document.current_content.ilike(needle, escape='\\'))).limit(15):
                     results.append({'kind': 'file', 'id': doc.id, 'title': doc.title})
             for note in db.query(Note).filter(Note.owner == (owner or None), Note.archived == False,
@@ -235,6 +304,7 @@ def setup_home_routes():
         if not body.body.strip(): raise HTTPException(422, 'Write an announcement first')
         with database() as conn:
             conn.execute('INSERT INTO activity VALUES (?,?,?,?)', (str(uuid.uuid4()), owner, body.body.strip(), time.time()))
+            conn.workspace_events.add((owner, 'team'))
         return {'ok': True}
 
     @router.post('/goals')

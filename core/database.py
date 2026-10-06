@@ -2762,3 +2762,10 @@ init_db()
 # One post-commit hook covers UI, agent, scheduler and shared Note writes.
 from src.note_indexing import install_hooks as _install_note_index_hooks
 _install_note_index_hooks(SessionLocal, Note)
+
+# Owner-scoped browser invalidations for UI, tools, imports and bulk mutations.
+from src.workspace_events import install_database_hooks as _install_workspace_hooks
+_install_workspace_hooks(SessionLocal, {
+    Note: 'notes', Document: 'documents', DocumentFile: 'documents',
+    CalendarCal: 'calendar', EmailAccount: 'inbox',
+}, CalendarEvent, CalendarCal)

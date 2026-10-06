@@ -12,40 +12,20 @@ from src.constants import VAULT_FILE
 from src.tools._common import _parse_tool_args
 
 
-def _load_vault_config() -> Dict:
-    """Load Vaultwarden config from data/vault.json."""
-    from pathlib import Path
-    p = Path(VAULT_FILE)
-    if p.exists():
-        try:
-            return json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    return {}
+def _load_vault_config(owner=None) -> Dict:
+    from src.vault_accounts import load_config
+    return load_config(owner)
 
 
-async def _run_bw(args: list, session: Optional[str] = None, input_text: Optional[str] = None) -> tuple:
-    """Run a bw CLI command with optional session + stdin. Returns (stdout, stderr, returncode)."""
-    import asyncio
-    env = {}
-    import os as _os
-    env.update(_os.environ)
-    if session:
-        env["BW_SESSION"] = session
-
-    proc = await asyncio.create_subprocess_exec(
-        "bw", *args,
-        stdin=asyncio.subprocess.PIPE if input_text else None,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-        env=env,
-    )
-    stdout, stderr = await proc.communicate(input=input_text.encode() if input_text else None)
-    return stdout.decode(errors="replace").strip(), stderr.decode(errors="replace").strip(), proc.returncode
+async def _run_bw(args: list, session=None, input_text=None, owner=None) -> tuple:
+    from routes.vault.vault_routes import _run_bw as run
+    return await run(args, session=session, input_text=input_text, owner=owner)
 
 
 async def do_vault_search(content: str, owner: Optional[str] = None) -> Dict:
     """Search the vault by keyword. Returns matching item names + URLs, NO passwords."""
+    if not owner or owner in {"api", "internal-tool"}:
+        return {"error": "A named Exodus account is required for vault access", "exit_code": 1}
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -54,12 +34,12 @@ async def do_vault_search(content: str, owner: Optional[str] = None) -> Dict:
     if not query:
         return {"error": "query is required", "exit_code": 1}
 
-    cfg = _load_vault_config()
+    cfg = _load_vault_config(owner)
     session = cfg.get("session")
     if not session:
         return {"error": "Vault is locked. Run vault_unlock or provide session key in settings.", "exit_code": 1}
 
-    stdout, stderr, rc = await _run_bw(["list", "items", "--search", query], session=session)
+    stdout, stderr, rc = await _run_bw(["list", "items", "--search", query], session=session, owner=owner)
     if rc != 0:
         return {"error": f"bw failed: {stderr[:300]}", "exit_code": 1}
 
@@ -91,6 +71,8 @@ async def do_vault_search(content: str, owner: Optional[str] = None) -> Dict:
 
 async def do_vault_get(content: str, owner: Optional[str] = None) -> Dict:
     """Retrieve a full vault entry (including password) by item ID. Logs access to assistant chat."""
+    if not owner or owner in {"api", "internal-tool"}:
+        return {"error": "A named Exodus account is required for vault access", "exit_code": 1}
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -102,12 +84,12 @@ async def do_vault_get(content: str, owner: Optional[str] = None) -> Dict:
     if not reason:
         return {"error": "reason is required — explain WHY you need this password", "exit_code": 1}
 
-    cfg = _load_vault_config()
+    cfg = _load_vault_config(owner)
     session = cfg.get("session")
     if not session:
         return {"error": "Vault is locked. Unlock first.", "exit_code": 1}
 
-    stdout, stderr, rc = await _run_bw(["get", "item", item_id], session=session)
+    stdout, stderr, rc = await _run_bw(["get", "item", item_id], session=session, owner=owner)
     if rc != 0:
         return {"error": f"bw failed: {stderr[:300]}", "exit_code": 1}
 
@@ -149,6 +131,8 @@ async def do_vault_get(content: str, owner: Optional[str] = None) -> Dict:
 
 async def do_vault_unlock(content: str, owner: Optional[str] = None) -> Dict:
     """Unlock the vault using a master password. Stores the resulting session key."""
+    if not owner or owner in {"api", "internal-tool"}:
+        return {"error": "A named Exodus account is required for vault access", "exit_code": 1}
     try:
         args = _parse_tool_args(content)
     except ValueError:
@@ -159,7 +143,7 @@ async def do_vault_unlock(content: str, owner: Optional[str] = None) -> Dict:
 
     # Do not pass the master password as an argv element. Local process lists
     # can expose argv to other users; stdin keeps the secret out of `ps`.
-    stdout, stderr, rc = await _run_bw(["unlock", "--raw"], input_text=master_password + "\n")
+    stdout, stderr, rc = await _run_bw(["unlock", "--raw"], input_text=master_password + "\n", owner=owner)
     if rc != 0:
         return {"error": f"Unlock failed: {stderr[:300]}", "exit_code": 1}
 
@@ -167,23 +151,10 @@ async def do_vault_unlock(content: str, owner: Optional[str] = None) -> Dict:
     if not session:
         return {"error": "bw returned empty session", "exit_code": 1}
 
-    # Save session to vault.json
-    from pathlib import Path
-    p = Path(VAULT_FILE)
-    cfg = {}
-    if p.exists():
-        try:
-            cfg = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    cfg["session"] = session
+    from src.vault_accounts import load_config, save_config
     from datetime import datetime as _dt
+    cfg = load_config(owner)
+    cfg["session"] = session
     cfg["unlocked_at"] = _dt.utcnow().isoformat()
-    p.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
-    try:
-        import os as _os
-        _os.chmod(str(p), 0o600)
-    except Exception:
-        pass
-
-    return {"output": "Vault unlocked. Session saved.", "exit_code": 0}
+    save_config(owner, cfg)
+    return {"output": "Your vault is unlocked.", "exit_code": 0}

@@ -1,3 +1,4 @@
+import {initTeamInvitations, loadInvitations} from './teamInvitations.js';
 // static/js/admin.js — Admin panel module (ES6)
 // Admin-only: users, endpoints, MCP, RAG, embeddings, tokens, webhooks, features
 
@@ -195,10 +196,10 @@ async function loadUsers() {
         delBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const username = delBtn.dataset.admDelUser;
-          if (!await uiModule.styledConfirm(`Remove user "${username}"?`, { confirmText: 'Remove', danger: true })) return;
+          if (!await uiModule.styledConfirm(`Remove Exodus access for "${username}"? Also revoke their Vaultwarden access and shared-vault memberships separately. Their old username will be retired.`, { confirmText: 'Remove', danger: true })) return;
           const res = await fetch('/api/auth/users', { method: 'DELETE', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
           if (res.ok) loadUsers();
-          else uiModule.showError('Failed to delete user');
+          else uiModule.showError('Failed to remove Exodus access');
         });
       }
 
@@ -333,11 +334,11 @@ function initSignupToggle() {
   const toggle = el('adm-signupToggle');
   fetch('/api/auth/status', { credentials: 'same-origin' })
     .then(r => r.json())
-    .then(d => { toggle.checked = !!d.signup_enabled; })
+    .then(d => { toggle.checked = !!d.signup_enabled; toggle.disabled = !!d.invite_only; document.getElementById('team-registration-policy').textContent = d.invite_only ? 'Invitation-only: the first account is the administrator. Members join with an invitation and choose their own password.' : 'Legacy open signup can be enabled below. Invitations are recommended for teams.'; })
     .catch(e => console.warn('Auth status fetch failed:', e));
   toggle.addEventListener('change', async () => {
     try {
-      const res = await fetch('/api/auth/signup-toggle', { method: 'POST', credentials: 'same-origin' });
+      const res = await fetch('/api/auth/open-signup', { method: 'PUT', credentials: 'same-origin', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enabled: toggle.checked}) });
       const data = await res.json();
       toggle.checked = data.signup_enabled;
     } catch (e) { toggle.checked = !toggle.checked; }
@@ -2909,7 +2910,7 @@ function initDangerZone() {
       const kind = btn.dataset.wipeKind;
       const isAll = kind === '__all__';
       const label = isAll ? 'data across every category' : (_LABELS[kind] || kind);
-      if (!await uiModule.styledConfirm(`Delete ALL ${label}? This cannot be undone.`, { confirmText: 'Delete', danger: true })) return;
+      if (!await uiModule.styledConfirm(`Delete ALL ${label}? This cannot be undone. Separately revoke access in Vaultwarden and any other connected services.`, { confirmText: 'Delete', danger: true })) return;
       if (!await uiModule.styledConfirm(`Really delete every one of your ${label}?`, { confirmText: isAll ? 'Yes, delete everything' : 'Yes, delete everything', danger: true })) return;
       btn.disabled = true;
       const prevHtml = btn.innerHTML;
@@ -3155,7 +3156,7 @@ function initLogsView() {
 function initAll() {
   modalEl = el('settings-modal');
   const inits = [
-    initSignupToggle, initShareDefaultsToggle, initAddUser, initEndpointForm, initMcpForm,
+    initTeamInvitations, initSignupToggle, initShareDefaultsToggle, initAddUser, initEndpointForm, initMcpForm,
     initCalDAV, initBackup, initDangerZone, initTokenForm, initLogsView,
     () => settingsModule.initIntegrations()
   ];
@@ -3168,6 +3169,7 @@ function initAll() {
 
 function refreshAll() {
   loadUsers();
+  loadInvitations();
   loadEndpoints();
   loadBuiltinTools();
   loadMcpServers();

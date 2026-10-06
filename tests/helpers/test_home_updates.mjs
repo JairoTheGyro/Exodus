@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHomeUpdates,createResponseGuard} from '../../static/js/homeUpdates.js';
+function fixture(){const listeners=new Map(),refreshed=[];let scheduled,profiles=0;const updates=createHomeUpdates({subscribe:(topic,fn)=>{listeners.set(topic,fn);return()=>listeners.delete(topic);},refresh:id=>refreshed.push(id),refreshProfile:async()=>{profiles++;},allWidgets:['tasks','schedule','capture','team'],schedule:fn=>{scheduled=fn;return fn;},cancel:()=>{scheduled=null;}});return{updates,listeners,refreshed,fire:()=>scheduled?.(),get profiles(){return profiles;}};}
+test('notes and document bursts invalidate each dependent slice once',async()=>{const f=fixture();f.listeners.get('notes')();f.listeners.get('documents')();f.listeners.get('notes')();assert.deepEqual(f.refreshed,[]);await f.fire();assert.deepEqual(new Set(f.refreshed),new Set(['tasks','metrics','files','team']));assert.equal(f.refreshed.length,4);assert.equal(f.profiles,0);});
+test('profile and goal bursts refresh authoritative profile before widgets',async()=>{const f=fixture();f.listeners.get('goals')();f.listeners.get('profile')();await f.fire();assert.equal(f.profiles,1);assert(f.refreshed.includes('metrics'));});
+test('reconnect refreshes every slice and stop removes all subscriptions',async()=>{const f=fixture();f.listeners.get('reconnect')();await f.fire();assert.deepEqual(f.refreshed,['tasks','schedule','capture','team']);f.updates.stop();assert.equal(f.listeners.size,0);f.updates.enqueue('notes');await f.updates.flush();assert.equal(f.refreshed.length,4);});
+test('responses arriving out of order or after view removal are rejected',()=>{const begin=createResponseGuard(),element={isConnected:true};const first=begin(element),latest=begin(element);assert.equal(first(),false);assert.equal(latest(),true);element.isConnected=false;assert.equal(latest(),false);});
+
+test('scratchpad autosaves do not repeat diagnostics health probes',async()=>{const f=fixture();f.listeners.get('scratchpad')();await f.fire();assert.deepEqual(f.refreshed,['capture']);});

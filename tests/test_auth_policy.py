@@ -160,7 +160,9 @@ def test_setup_rejects_short_password(tmp_path):
     assert "8 characters" in exc.value.detail
 
 
-def test_signup_rejects_short_password(tmp_path):
+def test_signup_rejects_short_password(tmp_path, monkeypatch):
+    # Explicitly exercise the preserved legacy public-signup option.
+    monkeypatch.setenv("EXODUS_INVITE_ONLY", "false")
     mgr = _make_manager(tmp_path)
     mgr.create_user("admin", "admin-password", is_admin=True)
     mgr.signup_enabled = True

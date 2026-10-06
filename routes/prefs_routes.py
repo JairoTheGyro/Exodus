@@ -1,12 +1,24 @@
 """User preferences API — per-user key/value store backed by a JSON file."""
 import json
+import threading
+from functools import wraps
 from typing import Optional
 from fastapi import APIRouter, Request
 from core.atomic_io import atomic_write_json
-from src.auth_helpers import get_current_user
+from src.auth_helpers import require_user
 from src.constants import USER_PREFS_FILE
 
 PREFS_FILE = USER_PREFS_FILE
+_PREFS_LOCK = threading.RLock()
+
+
+def _locked(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        with _PREFS_LOCK:
+            return fn(*args, **kwargs)
+    return wrapped
+
 _FOREGROUND_POLICY_KEYS = (
     "foreground_fallback_enabled",
     "foreground_model_fallbacks",
@@ -53,6 +65,7 @@ def _load_for_user(user: Optional[str] = None) -> dict:
     return dict(all_prefs) if user is None else {}
 
 
+@_locked
 def _save_for_user(user: Optional[str], prefs: dict):
     """Save preferences for a specific user."""
     all_prefs = _load()
@@ -105,21 +118,22 @@ def setup_prefs_routes():
 
     @router.get("")
     async def get_all_prefs(request: Request):
-        user = get_current_user(request)
+        user = require_user(request) or None
         return _load_for_user(user)
 
     @router.get("/{key}")
     async def get_pref(request: Request, key: str):
-        user = get_current_user(request)
+        user = require_user(request) or None
         prefs = _load_for_user(user)
         return {"key": key, "value": prefs.get(key)}
 
     @router.put("/{key}")
     async def set_pref(request: Request, key: str, body: dict):
-        user = get_current_user(request)
-        prefs = _load_for_user(user)
-        prefs[key] = body.get("value")
-        _save_for_user(user, prefs)
+        user = require_user(request) or None
+        with _PREFS_LOCK:
+            prefs = _load_for_user(user)
+            prefs[key] = body.get("value")
+            _save_for_user(user, prefs)
         return {"key": key, "value": prefs[key]}
 
     return router

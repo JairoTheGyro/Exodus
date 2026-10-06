@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content, viewport-fit=cover" />
   <title>Home · Exodus</title>
-  <link rel="icon" type="image/png" href="/static/icons/exodus.png">
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==">
   <link rel="stylesheet" href="/static/temple.css">
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" content="#282c34">
@@ -14,7 +14,7 @@
        in email bodies — was wrapping random digits in <a href="tel:..."> with
        browser-default styling that didn't match the Exodus theme. -->
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-  <link rel="apple-touch-icon" href="/static/icons/exodus.png">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <script nonce="{{CSP_NONCE}}">
   window._odysseusLoadTime = Date.now();
   (function(){
@@ -40,10 +40,7 @@
         // there during load and the bar "switches" colour once the app boots.
         var mtc = document.querySelector('meta[name="theme-color"]');
         if (mtc && c.bg) mtc.setAttribute('content', c.bg);
-        // Update favicon to match accent color
-        var ac = c.red || '#e06c75';
-        var fav = document.querySelector("link[rel='icon']");
-        if (fav) fav.href = '/static/icons/exodus.png';
+        // The shared logo renderer sets the favicon after theme colors are ready.
         // Derive syntax highlighting colors from theme
         function h2hsl(hex) {
           hex = hex.replace('#','');
@@ -766,7 +763,7 @@
     <div class="sidebar-header">
       <button class="sidebar-hamburger" id="sidebar-toggle-btn" title="Toggle sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="sidebar-brand" id="sidebar-brand-btn" style="cursor:pointer;" title="New chat">
-        <img class="exodus-logo sidebar-exodus-logo" src="/static/icons/exodus.png" alt="" width="24" height="24"><span class="sidebar-brand-title">Exodus</span>
+        <img class="exodus-logo sidebar-exodus-logo" data-logo-pending alt="" width="24" height="24"><span class="sidebar-brand-title">Exodus</span>
       </div>
     </div>
     <div class="sidebar-inner">
@@ -1014,7 +1011,7 @@
       <button type="button" class="incognito-indicator" id="incognito-indicator" title="Nobody mode active — click to deactivate" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="8" y1="16" x2="16" y2="8"/><line x1="8" y1="8" x2="16" y2="16"/></svg></button>
       <div class="chat-meta-overlay"><span id="current-meta">Exodus Chat</span><span id="current-meta-count" class="chat-meta-count" aria-hidden="true"></span><span id="session-cost-display" class="session-cost-display" style="display:none;"></span><button type="button" class="chat-context-pill" id="chat-context-pill" title="Chat context" hidden><span class="chat-context-dot"></span><span id="chat-context-pill-label">0%</span></button><span class="export-dropdown-wrap" id="export-dropdown-wrap"><button type="button" class="export-dl-btn" id="export-dl-btn" title="More"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><div class="export-dropdown-menu" id="export-dropdown-menu"><div class="export-dropdown-item" id="export-rename-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></span><span>Rename</span></div><div class="export-dropdown-item" id="export-compact-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M7 12h10"/><path d="M10 17h4"/></svg></span><span class="export-compact-pill">Compact</span></div><div class="export-dropdown-item" id="export-copy-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span><span>Copy Chat</span></div><div class="export-dropdown-item" id="export-pdf-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-2h2a1.5 1.5 0 0 1 0 3H9z"/></svg></span><span>PDF</span></div><div class="export-dropdown-item" id="export-doc-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span><span>Save to Documents</span></div><div class="export-dropdown-item dropdown-item-danger" id="export-delete-btn"><span class="dropdown-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></span><span>Delete Chat</span></div></div></span></div>    </div>
     <div id="welcome-screen">
-      <div class="welcome-name"><img class="welcome-boat exodus-logo" src="/static/icons/exodus.png" alt="" width="32" height="32">Exodus</div>
+      <div class="welcome-name"><img class="welcome-boat exodus-logo" data-logo-pending alt="" width="32" height="32">Exodus</div>
       <div class="welcome-sub" id="welcome-sub">New chat ready.</div>
       <div class="welcome-tip" id="welcome-tip"></div>
       <button type="button" class="incognito-btn" id="incognito-btn" title="Enable Nobody mode — no memory, no history saved">
@@ -1557,9 +1554,9 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             <span>Agent Tools</span>
           </button>
-          <button class="settings-nav-item admin-only" data-settings-tab="users" data-settings-advanced>
+          <button class="settings-nav-item admin-only" data-settings-tab="users">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Users</span>
+            <span>Team &amp; invitations</span>
           </button>
           <button class="settings-nav-item admin-only" data-settings-tab="system" data-settings-advanced>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v-.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/></svg>
@@ -2258,14 +2255,39 @@
         <!-- ═══ ADMIN: USERS TAB ═══ -->
         <div data-settings-panel="users" class="hidden">
           <div class="admin-card">
-            <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>Registration</h2>
+            <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>Team access</h2>
+            <p id="team-registration-policy" class="admin-toggle-sub">Invitation-only team access.</p>
             <div class="admin-toggle-row">
               <div>
                 <div class="admin-toggle-label">Open signup</div>
-                <div class="admin-toggle-sub">Allow anyone to create an account from the login page</div>
+                <div class="admin-toggle-sub">Disabled by invitation-only team policy. Existing accounts are kept.</div>
               </div>
               <label class="admin-switch"><input type="checkbox" id="adm-signupToggle"><span class="admin-slider"></span></label>
             </div>
+          </div>
+          <div class="admin-card">
+            <h2>Invite a teammate</h2>
+            <p class="admin-toggle-sub">Each person gets their own account, preferences and AI mode. Shared server settings remain controlled by administrators.</p>
+            <label for="team-invite-username">Teammate’s username</label>
+            <div class="admin-add-form">
+              <input id="team-invite-username" type="text" maxlength="64" autocomplete="off" placeholder="e.g. alex">
+              <button type="button" id="team-create-invite" class="admin-btn-add">Create invitation</button>
+            </div>
+            <p id="team-invite-status" role="status" aria-live="polite" class="admin-toggle-sub"></p>
+            <div id="team-invite-result" hidden>
+              <label for="team-invite-link">Private invitation link · expires in 7 days</label>
+              <input id="team-invite-link" type="text" readonly style="width:100%">
+              <button type="button" id="team-copy-invite" class="admin-btn-sm">Copy invitation</button>
+            </div>
+            <p class="admin-toggle-sub">Links work once. Anyone with the link can claim that account, so share it privately. This Mac-only installation is not accessible from teammates’ computers yet.</p>
+            <div id="team-invitations" aria-label="Pending invitations">Loading invitations…</div>
+          </div>
+          <div class="admin-card">
+            <h2>Vaultwarden accounts</h2>
+            <p class="admin-toggle-sub">Vaultwarden has separate accounts and master passwords. Invite the first owner and each teammate in its administration page. Without email delivery, they can choose Create account in the vault using the invited email address.</p>
+            <a class="admin-btn-sm" href="/vault/admin" target="_blank" rel="noopener noreferrer">Open vault administration</a>
+            <p class="admin-toggle-sub">Use the separate Vaultwarden administrator credential. Exodus does not store or submit it. Organization collections are for deliberately shared passwords; personal vault items stay private.</p>
+            <p class="admin-toggle-sub"><strong>When someone leaves:</strong> remove their Exodus access here, and separately revoke their Vaultwarden access and shared-vault membership. On shared computers, log out of both apps.</p>
           </div>
           <div class="admin-card">
             <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M12 15v3m-3-3h6M12 3v2m0 16v-2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M3 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="3"/></svg>Model Defaults</h2>
@@ -2281,8 +2303,8 @@
             <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</h2>
             <div id="adm-userList"><div class="admin-empty">Loading...</div></div>
           </div>
-          <div class="admin-card">
-            <h2><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>Add User</h2>
+          <details class="admin-card"><summary>Advanced: create an account directly</summary>
+            <p class="admin-toggle-sub">Prefer an invitation so your teammate chooses their own password.</p>
             <div class="admin-add-form">
               <input id="adm-newUsername" type="text" placeholder="Username">
               <input id="adm-newPassword" type="password" placeholder="Password">
@@ -2292,7 +2314,7 @@
               <button class="admin-btn-add" id="adm-addBtn">Add User</button>
               <span id="adm-addMsg" style="font-size:11px"></span>
             </div>
-          </div>
+          </details>
         </div>
 
         <!-- ═══ SERVICES TAB ═══ -->
@@ -2725,13 +2747,14 @@
               <a href="https://github.com/dani-garcia/vaultwarden" target="_blank" rel="noopener noreferrer">Vaultwarden repository &amp; guide</a>
             </div>
             <div id="vaultwarden-diagnostics" hidden>
-              <p class="local-service-note">On the computer running Exodus, open a terminal in the Sovereign Hub folder and start the vault services with:</p>
+              <p class="local-service-note">On the computer running Exodus, open a terminal in the Sovereign Hub folder and start Vaultwarden with:</p>
               <p class="local-service-address"><code id="vaultwarden-start-command"></code></p>
-              <p class="local-service-note">Then choose Check again. If it stays unavailable, check the vault and gateway containers in Docker Desktop. Exodus does not have permission to control Docker directly.</p>
+              <p class="local-service-note">Then choose Check again. If it stays unavailable, check the Vaultwarden container in Docker Desktop. Exodus does not have permission to control Docker directly.</p>
             </div>
             <p class="local-service-address" id="vaultwarden-address" hidden>Vault address: <code></code></p>
-            <p id="vaultwarden-access" class="local-service-note">The vault opens on its own protected page. This preserves Vaultwarden’s browser security protections.</p>
-            <p id="vaultwarden-registration" class="local-service-note">Open registration is disabled by this deployment’s defaults. An administrator can invite your separate vault account and manage registration policy in Vaultwarden’s admin panel.</p>
+            <p id="vaultwarden-access" class="local-service-note">The vault opens directly on its own HTTPS page with a separate account and master password.</p>
+            <p class="local-service-note">Each teammate signs into their own vault. Exodus logout does not log out this separate vault page; sign out of both on shared computers. Manage your vault preferences inside Vaultwarden.</p>
+            <p id="vaultwarden-registration" class="local-service-note">Checking account creation settings…</p>
             <p class="local-service-note"><strong>Demo only — do not enter real passwords or private information in this development setup.</strong> Email delivery and mobile push notifications are not configured. Vaultwarden is not affiliated with Bitwarden, Inc.</p>
           </article>
         </div>

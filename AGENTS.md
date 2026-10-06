@@ -5,6 +5,11 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
 - Keep Odysseus as the shared interface and foundation.
 - Inspect existing code before adding a feature. Extend or connect existing
   functionality instead of creating duplicates.
+- Team onboarding is first administrator, then invitations. Follow
+  `docs/TEAM_ACCOUNTS.md`: personal data/settings belong to the signed-in account;
+  shared infrastructure stays admin-managed. Never inherit another account’s
+  credentials or vault session. Every integration must document invitations,
+  removal, personal/shared scope and cross-account tests in both modes.
 - Do not delete existing features. Simpler views must keep a clear route to
   deeper controls, and existing direct links must continue to work.
 - Explain consequential decisions in plain language. The user is learning.
@@ -23,6 +28,10 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
 - Wait for the user's instruction to fix or commit. Do not automatically commit,
   push, open pull requests, or move work into a cloud environment after a feature.
   Commit and push are separate actions; follow the user's requested scope.
+- Give each commit a specific, descriptive subject naming the feature or module
+  discussed and the concrete change, so the history is easy to track. Avoid
+  generic subjects such as "updates" or "fixes". Honor an exact commit message
+  when the user provides one.
 - Cloud migration is no longer the active plan. Keep the prepared cloud helpers
   as optional tooling, but do not start cloud tasks or migrate services/data
   unless the user explicitly asks to resume that work.

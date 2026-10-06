@@ -5,10 +5,10 @@ import vm from 'node:vm';
 
 const source = readFileSync('static/js/settings/vaultwarden.js', 'utf8').replace('export function ', 'function ');
 const config = {
-  vault_url: 'http://localhost:8092/vault/', launch_path: '/vault',
-  access_mode: 'local', registration_allowed: false, embedded: false,
+  vault_url: 'https://127.0.0.1:8092/', launch_path: '/vault',
+  access_mode: 'https', registration_allowed: true, registration_policy_source: 'deployment', embedded: false,
   admin_enabled: true,
-  start_command: 'docker compose -p sovereign-hub up -d --no-deps vaultwarden vaultwarden-gateway',
+  start_command: 'docker compose -p sovereign-hub up -d --no-deps vaultwarden',
 };
 const running = {status: 'running', reachable: true, checked_at: '2026-10-01T12:00:00Z', sync: {status: 'unknown'}};
 function node() {
@@ -53,10 +53,22 @@ assert.equal(f.element('launch').hidden, false);
 assert.equal(f.element('launch').target, '_self', 'Preserve the shared tab-opening preference');
 assert.match(f.element('status').textContent, /running/);
 assert.match(f.element('sync').textContent, /inside the vault/);
-assert.match(f.element('registration').textContent, /disabled/);
+assert.match(f.element('registration').textContent, /Create account/);
+assert.match(f.element('registration').textContent, /temporarily enabled in the deployment settings/);
+assert.match(f.element('registration').textContent, /admin settings can override/);
+assert.equal(f.element('address').querySelector('code').textContent, 'https://127.0.0.1:8092/');
+assert.match(f.element('access').textContent, /directly.*HTTPS/);
+assert.match(f.element('access').textContent, /browser must trust/);
 assert.equal(f.element('diagnostics').hidden, true);
 assert.match(f.element('checked').textContent, /Last checked:/);
 assert.equal(f.timers.size, 0, 'Clear timeout after successful completion');
+f.set({config: {...config, registration_allowed: false}});
+await f.element('refresh').listeners.click();
+assert.match(f.element('registration').textContent, /disabled/);
+assert(!f.element('registration').textContent.includes('Create account'));
+f.set({config: {...config, registration_allowed: false, admin_enabled: false}});
+await f.element('refresh').listeners.click();
+assert.match(f.element('registration').textContent, /configure secure vault administration/);
 
 f.set({health: {...running, status: 'offline', reachable: false}});
 await f.element('refresh').listeners.click();
@@ -65,6 +77,7 @@ assert.equal(f.element('launch').href, undefined, 'An old reachable result must 
 assert.match(f.element('status').textContent, /offline/);
 assert.equal(f.element('diagnostics').hidden, false);
 assert.equal(f.element('start-command').textContent, config.start_command);
+assert(!f.element('status').textContent.includes('gateway'));
 f.set({health: {...running, status: 'degraded'}});
 await f.element('refresh').listeners.click();
 assert.match(f.element('status').textContent, /not ready/);
@@ -77,12 +90,16 @@ f.close(); assert.equal(f.element('refresh').listeners.click, undefined);
 
 for (const [hostname, overrides, allowed] of [
   ['192.168.1.3', {}, false],
-  ['exodus.example', {access_mode: 'https', vault_url: 'https://vault.example/vault/'}, true],
-  ['localhost', {access_mode: 'https', vault_url: 'http://vault.example/vault/'}, false],
+  ['exodus.example', {access_mode: 'https', vault_url: 'https://vault.example/'}, true],
+  ['localhost', {access_mode: 'https', vault_url: 'http://vault.example/'}, false],
   ['localhost', {vault_url: 'javascript:alert(1)'}, false],
-  ['localhost', {vault_url: 'http://user:password@localhost:8092/vault/'}, false],
+  ['localhost', {vault_url: 'https://user:password@localhost:8092/'}, false],
   ['localhost', {launch_path: '//untrusted.example'}, false],
   ['127.0.0.1', {}, true],
+  ['[::1]', {vault_url: 'https://[::1]:8092/'}, true],
+  ['exodus.example', {vault_url: 'https://127.0.0.1:8092/'}, false],
+  ['localhost', {access_mode: 'local', vault_url: 'http://localhost:8092/'}, true],
+  ['exodus.example', {access_mode: 'local', vault_url: 'http://localhost:8092/'}, false],
 ]) {
   const check = fixture({hostname, config: {...config, ...overrides}}); await settle();
   assert.equal(check.element('launch').hidden, !allowed, hostname + JSON.stringify(overrides));
@@ -114,4 +131,4 @@ const shared = readFileSync('static/js/settings/localServices.js', 'utf8');
 const home = readFileSync('static/js/home.js', 'utf8');
 assert.match(shared, /service === 'vaultwarden' \? initVaultwardenDetails\(body\)/);
 assert.match(home, /openLocalServices\(kind==='vault'\?'vaultwarden'/, 'Home must share the same launcher');
-console.log('PASS: Vaultwarden status, protected launch, closed registration, sync honesty, offline/degraded diagnosis, tab preference, URL safety, auth failure, request cancellation, duplicate clicks, timeout and shared Home launcher.');
+console.log('PASS: Vaultwarden HTTPS root URL, protected launch, open/closed deployment registration, sync honesty, single-container diagnosis, tab preference, loopback/URL safety, auth failure, cancellation, duplicate clicks, timeout and shared Home launcher.');

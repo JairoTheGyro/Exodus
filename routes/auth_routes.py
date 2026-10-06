@@ -1,7 +1,7 @@
 """Authentication routes — login, logout, signup, status, user management."""
 
 from fastapi import APIRouter, Request, Response, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 import asyncio
 import logging
@@ -55,6 +55,16 @@ class SetupRequest(BaseModel):
 class SignupRequest(BaseModel):
     username: str
     password: str
+
+
+class InvitationRequest(BaseModel):
+    username: str = Field(max_length=64)
+
+
+class AcceptInvitationRequest(BaseModel):
+    token: str = Field(max_length=128)
+    username: str = Field(max_length=64)
+    password: str = Field(max_length=72)
 
 
 class ChangePasswordRequest(BaseModel):
@@ -162,6 +172,47 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
             raise HTTPException(409, "Username already taken")
         return {"ok": True, "message": "Account created"}
 
+    @router.post("/accept-invitation")
+    async def accept_invitation(body: AcceptInvitationRequest, request: Request):
+        if not _signup_limiter.check(request.client.host):
+            raise HTTPException(429, "Too many attempts — try again later")
+        if len(body.password) < PASSWORD_MIN_LENGTH or len(body.password.encode("utf-8")) > 72:
+            raise HTTPException(400, f"Password must be at least {PASSWORD_MIN_LENGTH} characters and at most 72 UTF-8 bytes")
+        accepted = await asyncio.to_thread(
+            auth_manager.accept_invitation, body.token, body.username, body.password)
+        if not accepted:
+            raise HTTPException(400, "Invitation is invalid, expired, revoked, or already used. Ask your administrator for a new link.")
+        return {"ok": True}
+
+    @router.get("/invitations")
+    async def list_invitations(request: Request, response: Response):
+        user = _get_current_user(request)
+        if not user or not auth_manager.is_admin(user):
+            raise HTTPException(403, "Admin only")
+        response.headers["Cache-Control"] = "no-store"
+        return {"invitations": auth_manager.list_invitations()}
+
+    @router.post("/invitations")
+    async def create_invitation(body: InvitationRequest, request: Request, response: Response):
+        user = _get_current_user(request)
+        if not user or not auth_manager.is_admin(user):
+            raise HTTPException(403, "Admin only")
+        try:
+            result = await asyncio.to_thread(auth_manager.create_invitation, body.username, user)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @router.delete("/invitations/{identifier}")
+    async def revoke_invitation(identifier: str, request: Request):
+        user = _get_current_user(request)
+        if not user or not auth_manager.is_admin(user):
+            raise HTTPException(403, "Admin only")
+        if not auth_manager.revoke_invitation(identifier, user):
+            raise HTTPException(404, "Invitation not found")
+        return {"ok": True}
+
     @router.post("/login")
     async def login(body: LoginRequest, request: Request, response: Response):
         if not _login_limiter.check(request.client.host):
@@ -207,6 +258,7 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         token = request.cookies.get(SESSION_COOKIE)
         result = auth_manager.status(token)
         result["signup_enabled"] = auth_manager.signup_enabled
+        result["invite_only"] = auth_manager.invite_only
         # Include the caller's effective privileges so the frontend can
         # hide / dim UI controls the user isn't allowed to use. Admins get
         # ADMIN_PRIVILEGES (everything on), regular users get their stored
@@ -645,6 +697,8 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         user = _get_current_user(request)
         if not user or not auth_manager.is_admin(user):
             raise HTTPException(403, "Admin only")
+        if auth_manager.invite_only:
+            raise HTTPException(409, "This installation uses invitations. Public signup is disabled.")
         auth_manager.signup_enabled = not auth_manager.signup_enabled
         return {"ok": True, "signup_enabled": auth_manager.signup_enabled}
 
@@ -654,6 +708,8 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         user = _get_current_user(request)
         if not user or not auth_manager.is_admin(user):
             raise HTTPException(403, "Admin only")
+        if body.enabled and auth_manager.invite_only:
+            raise HTTPException(409, "This installation uses invitations. Public signup is disabled.")
         auth_manager.signup_enabled = body.enabled
         return {"ok": True,"signup_enabled": auth_manager.signup_enabled}
 

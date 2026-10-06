@@ -15,12 +15,12 @@ COMPOSE_PATHS = tuple(
         "docker-compose.gpu-amd.yml",
     )
 )
-ENV_EXAMPLE_PATH = ROOT / "env.example"
+ENV_EXAMPLE_PATH = ROOT / ".env.example"
 
 
 def _env_example():
     if not ENV_EXAMPLE_PATH.exists():
-        pytest.skip("this checkout does not include the optional env.example file")
+        pytest.skip("this checkout does not include the optional .env.example file")
     return ENV_EXAMPLE_PATH.read_text(encoding="utf-8")
 
 
