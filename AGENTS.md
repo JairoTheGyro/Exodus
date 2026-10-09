@@ -46,6 +46,11 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
   and visible results, and cleanup. Report actual execution separately from the
   reusable procedure; never label an unrun live/device check as passed.
 - Do not force-push or silently resolve Git divergence.
+- When the user authorizes a release, report three separate verified checks:
+  saved locally, running and checked in Docker, and pushed to GitHub. Compare
+  deployed source with the checkout and local HEAD with remote main; a Git push
+  alone does not update running containers. Keep this iCloud-backed checkout
+  downloaded locally so Docker bind mounts can read it reliably.
 - Never run broad tests against the operator's live data. Keep synthetic data
   and disposable service volumes separate from the `sovereign-hub` deployment.
 - Do not claim Docker, browser automation, model calls, mail delivery or device

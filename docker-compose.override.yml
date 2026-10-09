@@ -148,6 +148,8 @@ services:
       - ./src/chat_processor.py:/app/src/chat_processor.py:ro
       - ./routes/personal_routes.py:/app/routes/personal_routes.py:ro
       - ./services/search/providers.py:/app/services/search/providers.py:ro
+      - ./services/hwfit/models.py:/app/services/hwfit/models.py:ro
+      - ./services/hwfit/catalogs:/app/services/hwfit/catalogs:ro
       - ./src/agent_tools/web_tools.py:/app/src/agent_tools/web_tools.py:ro
       - ./scripts/test_searxng.py:/app/scripts/test_searxng.py:ro
       - ./routes/local_document_routes.py:/app/routes/local_document_routes.py:ro
