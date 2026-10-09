@@ -15,7 +15,7 @@ import httpx
 
 
 DEFAULT_INTERNAL_URL = "https://vaultwarden:80/alive"
-DEFAULT_PUBLIC_URL = "https://localhost:8092/"
+DEFAULT_PUBLIC_URL = "https://127.0.0.1:8092/"
 HEALTH_TIMEOUT_SECONDS = 3.0
 MAX_HEALTH_BYTES = 2048
 START_COMMAND = "docker compose -p sovereign-hub up -d --no-deps vaultwarden"

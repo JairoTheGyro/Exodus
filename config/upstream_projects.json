@@ -18,7 +18,9 @@
     "used_commit": "eb212e23fad88e6136723f43e5b73543fa7026d3",
     "used_date": "2026-09-28",
     "used_version": "1.37.3",
-    "used_note": "Official Vaultwarden 1.37.3 container, pinned by image digest in Docker Compose. Runs separately from Exodus. This baseline records the installed release source; main may include unreleased work."
+    "used_note": "Official Vaultwarden container observed locally as 1.37.3 on 2026-10-06; OCI labels match this source revision. Compose currently uses vaultwarden/server:latest with pull_policy: missing, not a digest pin. The recorded image digest identifies the audited image; checking updates never pulls or replaces it.",
+    "observed_at": "2026-10-06",
+    "used_image": "vaultwarden/server@sha256:1587c45feaa479f1f5e8af3b00eded36bff77bcf1880cf8dbf0541706dd470e0"
   },
   {
     "id": "deepseek-harness",
@@ -29,5 +31,41 @@
     "used_date": "2026-09-28",
     "used_version": "0.1.7-rc.2",
     "used_note": "Published @deepseek-ai/dsh package pinned to 0.1.7-rc.2 (npm latest at installation). Developer preview, with an Exodus model gateway and separate coding workspace. Newer prereleases are not installed automatically."
+  },
+  {
+    "id": "searxng",
+    "name": "SearXNG",
+    "repository": "searxng/searxng",
+    "branch": "master",
+    "used_commit": "7159b8aed3c37cbc849782abf737ac83253b9fc8",
+    "used_date": "2026-05-31",
+    "used_version": "2026.5.31-7159b8aed",
+    "observed_at": "2026-10-06",
+    "used_image": "searxng/searxng@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f",
+    "used_note": "Recorded from the installed container image version and source-revision labels on 2026-10-06. Compose uses this dated image tag. This audit records the current installation; it does not establish the original installation date. The tracked branch may contain unreleased changes."
+  },
+  {
+    "id": "chromadb",
+    "name": "ChromaDB",
+    "repository": "chroma-core/chroma",
+    "branch": "main",
+    "used_commit": "11f3c7435e71024aa0a2b53710a28d3289d922d1",
+    "used_date": "2026-05-04",
+    "used_version": "CLI 1.4.4",
+    "observed_at": "2026-10-06",
+    "used_image": "chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6",
+    "used_note": "The installed chroma executable reports 1.4.4; this comparison uses its official cli-1.4.4 release revision. The server version API separately reports 1.0.0. The image has no source-revision label, so this release match is not a verified build provenance claim. Compose uses latest; the recorded image digest identifies the installation audited on 2026-10-06, not an enforced pin or original install date."
+  },
+  {
+    "id": "ntfy",
+    "name": "ntfy",
+    "repository": "binwiederhier/ntfy",
+    "branch": "main",
+    "used_commit": "4c2b69e0591b51d7ed7b2e71954f0f7be936b47f",
+    "used_date": "2026-08-04",
+    "used_version": "2.27.0",
+    "observed_at": "2026-10-06",
+    "used_image": "binwiederhier/ntfy@sha256:f2419f405127afa868f10985c1a41449e673477cee1eb19994339a5ae8b592e7",
+    "used_note": "The installed ntfy executable reports 2.27.0; this comparison uses the official v2.27.0 release revision. Compose uses the floating default tag. The recorded image digest identifies the installation audited on 2026-10-06; it is not an enforced pin or a record of the original installation date."
   }
 ]

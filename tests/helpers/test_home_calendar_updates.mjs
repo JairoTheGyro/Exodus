@@ -42,9 +42,23 @@ await assert.rejects(pending);
 assert.equal(refreshes.length, 2, 'Failed saves must not announce a change');
 assert.deepEqual(Object.keys(context._allEvents), ['saved'], 'Failed optimistic row is removed');
 
+vm.runInContext('_deleteEvent("saved")',context);
+respond({ok:false,status:503});
+await new Promise(setImmediate);
+await updates.flush();
+assert.deepEqual(Object.keys(context._allEvents),['saved'],'Failed delete restores the event');
+assert.equal(refreshes.length,2,'Failed deletes must not announce a change');
+
+vm.runInContext('_deleteEvent("saved")',context);
+respond({ok:true});
+await new Promise(setImmediate);
+await updates.flush();
+assert.deepEqual(Object.keys(context._allEvents),[]);
+assert.equal(refreshes.length,3,'Confirmed deletion refreshes Home');
+
 // The agent stream already emits this event on manage_calendar completion.
 events.dispatchEvent(new CustomEvent('calendar-refresh'));
 await updates.flush();
-assert.deepEqual(refreshes, ['schedule','schedule','schedule']);
+assert.deepEqual(refreshes, ['schedule','schedule','schedule','schedule']);
 updates.stop();bus.stop();
-console.log('Calendar confirmed saves, failure rollback, and agent → Home signals passed.');
+console.log('Calendar create/edit/delete, failure rollback, and agent → Home signals passed.');

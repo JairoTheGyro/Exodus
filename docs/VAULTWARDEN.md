@@ -117,8 +117,21 @@ the live login and Create account pages without a certificate warning. Signup
 preflight was tested in disposable data with registration both enabled and
 disabled; no real user account or master password was created by these tests.
 
-Back up the full active bind directory only while stopped, along with the secret
-volume/admin password and TLS files. To roll back this storage transition, stop
+The existing local backup command now snapshots the active bind directory,
+including `db.sqlite3`, with SQLite's read-only backup API; it also includes
+attachments, vault keys, local TLS files and the private admin-password file.
+See [local backup setup and restore](LOCAL_BACKUPS.md) for the daily macOS job,
+three-archive retention, permissions and limitations. The separate named secret
+volume is not included; its hash can be recreated from the preserved private
+admin-password file. For an exactly coordinated database-and-attachment snapshot,
+stop the vault before backup. Device syncing still requires a separate test.
+
+The current binding is deliberately Mac-only. A phone cannot reach this Mac via
+`127.0.0.1` (on the phone that means the phone itself). Phone access, certificate
+trust on that device, and any LAN/VPN exposure require a separate deployment
+choice; an HTTPS health check here does not complete that reminder.
+
+To roll back this storage transition, stop
 the new vault, restore the previous Compose configuration and use the retained
 named volume with the previous image. Changes made after migration exist only
 in the active bind directory; preserve those before any rollback.

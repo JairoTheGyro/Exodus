@@ -1137,7 +1137,8 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             db.close()
 
     @router.get("/events")
-    async def list_events(request: Request, start: str, end: str, calendar: str = ""):
+    async def list_events(request: Request, start: str, end: str, calendar: str = "",
+                          local_start: Optional[date] = None, local_end: Optional[date] = None):
         owner = _require_user(request)
         try:
             start_dt = _parse_dt(start)
@@ -1148,6 +1149,22 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             # just log it and return no events for this window.
             logger.warning("list_events: unparseable range start=%r end=%r", start, end)
             return {"events": []}
+        if (local_start is None) != (local_end is None):
+            raise HTTPException(422, "Supply both local_start and local_end dates")
+        if local_start is not None and local_end <= local_start:
+            raise HTTPException(422, "local_end must be after local_start (exclusive)")
+        # All-day events are floating calendar dates, not UTC instants. Home
+        # supplies its local date window alongside the precise timed bounds.
+        day_start = datetime.combine(local_start, datetime.min.time()) if local_start else start_dt
+        day_end = datetime.combine(local_end, datetime.min.time()) if local_end else end_dt
+        starts_before_end = or_(
+            and_(CalendarEvent.all_day == True, CalendarEvent.dtstart < day_end),
+            and_(CalendarEvent.all_day.isnot(True), CalendarEvent.dtstart < end_dt),
+        )
+        ends_after_start = or_(
+            and_(CalendarEvent.all_day == True, CalendarEvent.dtend > day_start),
+            and_(CalendarEvent.all_day.isnot(True), CalendarEvent.dtend > start_dt),
+        )
         db = SessionLocal()
         try:
             # Scope events to calendars owned by the caller.
@@ -1163,15 +1180,15 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
                     # Non-recurring: event times must overlap the query window
                     and_(
                         or_(CalendarEvent.rrule == "", CalendarEvent.rrule.is_(None)),
-                        CalendarEvent.dtstart < end_dt,
-                        CalendarEvent.dtend > start_dt,
+                        starts_before_end,
+                        ends_after_start,
                     ),
                     # Recurring: dtstart before window end — RRULE expansion
                     # generates the actual occurrences within the window
                     and_(
                         CalendarEvent.rrule.isnot(None),
                         CalendarEvent.rrule != "",
-                        CalendarEvent.dtstart < end_dt,
+                        starts_before_end,
                     ),
                 ),
             )
@@ -1185,7 +1202,8 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             # Expand recurring events into individual occurrences.
             expanded = []
             for e in events:
-                expanded.extend(_expand_rrule(e, start_dt, end_dt))
+                expanded.extend(_expand_rrule(e, day_start if e.all_day else start_dt,
+                                               day_end if e.all_day else end_dt))
 
             # Sort by occurrence start time for consistent frontend ordering.
             truncated = any(e.get("truncated") for e in expanded)

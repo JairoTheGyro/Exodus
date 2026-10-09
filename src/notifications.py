@@ -23,7 +23,7 @@ def _destination():
         if not active:
             return None  # Do not bypass an explicitly disabled integration.
         return active['base_url'].rstrip('/'), active.get('api_key', '')
-    return os.getenv('NTFY_BASE_URL', 'http://localhost:8080').rstrip('/'), ''
+    return os.getenv('NTFY_BASE_URL', 'http://localhost:8091').rstrip('/'), ''
 
 
 class DestinationRejected(ValueError):

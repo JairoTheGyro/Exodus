@@ -838,6 +838,8 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         if not user or not auth_manager.is_admin(user):
             raise HTTPException(403, "Admin only")
         body = await request.json()
+        from src.ai_policy import require_integration_mode
+        require_integration_mode(user, body)
         item = add_integration(body)
         return {"ok": True, "integration": mask_integration_secret(item)}
 
@@ -848,6 +850,11 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         if not user or not auth_manager.is_admin(user):
             raise HTTPException(403, "Admin only")
         body = await request.json()
+        from src.ai_policy import require_integration_mode
+        existing = get_integration(integration_id)
+        if not existing:
+            raise HTTPException(404, "Integration not found")
+        require_integration_mode(user, {**existing, **body})
         item = update_integration(integration_id, body)
         if not item:
             raise HTTPException(404, "Integration not found")
@@ -873,6 +880,8 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         integ = get_integration(integration_id)
         if not integ:
             raise HTTPException(404, "Integration not found")
+        from src.ai_policy import require_integration_mode
+        require_integration_mode(user, integ)
         preset = (integ.get("preset") or integ.get("name", "")).lower()
 
         # ntfy is special: a GET / proves the server is reachable but

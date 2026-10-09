@@ -99,6 +99,22 @@ class UpstreamTests(unittest.TestCase):
         self.assertEqual(data["projects"][0]["project"]["used_commit"], BASE)
         self.assertEqual(self.calls, [])
 
+    def test_shipped_services_have_exact_recorded_references_without_network(self):
+        tracker=UpdateTracker(self.directory.name,transport=httpx.MockTransport(
+            lambda request: self.fail('Reading installed references must remain offline')))
+        expected={'odysseus','vaultwarden','deepseek-harness','searxng','chromadb','ntfy'}
+        self.assertTrue(expected.issubset(tracker.projects))
+        for name in expected:
+            view=tracker.view(name)
+            self.assertIsNone(view['snapshot'])
+            self.assertRegex(view['project']['used_commit'],r'^[0-9a-f]{40}$')
+        for name in ('vaultwarden','searxng','chromadb','ntfy'):
+            project=tracker.project(name)
+            self.assertRegex(project['used_image'],r'^[a-z0-9_./-]+@sha256:[0-9a-f]{64}$')
+            self.assertEqual(project['observed_at'],'2026-10-06')
+        self.assertIn('not a digest pin',tracker.project('vaultwarden')['used_note'])
+        self.assertIn('not a verified build provenance claim',tracker.project('chromadb')['used_note'])
+
     def test_check_records_real_comparison_and_does_not_advance_baseline(self):
         data = self.check().json()
         self.assertEqual(data["project"]["used_commit"], BASE)

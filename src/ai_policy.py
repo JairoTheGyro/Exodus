@@ -61,7 +61,12 @@ def allowed_without_ai(path, method):
     if path.startswith('/api/home/'):
         return True
     if path.startswith('/api/auth/'):
-        return '/integrations' not in path or method == 'GET'
+        # Integration handlers retain admin checks and validate AI-free presets.
+        return True
+    if path == '/api/tasks/parse':
+        return False
+    if path == '/api/tasks' or re.fullmatch(r'/api/tasks/(?:onboarding|notifications|runs/recent|meta/(?:actions|events|output-targets)|[^/]+(?:/(?:runs|pause|resume|run|stop|revert|clear-cache|webhook-regenerate))?)', path):
+        return True
     if path.startswith(('/api/prefs', '/api/fonts', '/api/upstream', '/api/contacts/')):
         return True
     if path in ('/api/health', '/api/config', '/api/client-info', '/api/version'):
@@ -72,6 +77,8 @@ def allowed_without_ai(path, method):
         return method == 'GET'
     if path in ('/api/notes/export/zip', '/api/notes/export/json'):
         return method == 'GET'
+    if path == '/api/notes/import/json':
+        return method == 'POST'
     if path == '/api/calendar/quick-parse':
         return method == 'POST'  # Local parser; optional inference has its own AI guard.
     if path == '/api/documents':
@@ -104,9 +111,9 @@ def allowed_without_ai(path, method):
         r'/api/email/oauth/google/(authorize|callback)',
         r'/api/email/[^/]+/unflag-spam',
     ]
-    # These generic one-segment paths overlap named AI operations.
-    if path in ('/api/notes/fire-reminder',):
-        return False
+    # Reminder delivery is ordinary functionality; synthesis has an owner guard.
+    if path == '/api/notes/fire-reminder':
+        return method == 'POST'
     return any(re.fullmatch(pattern, path) for pattern in patterns)
 
 
@@ -158,6 +165,45 @@ def tracked_stream(fn):
     return wrapped
 
 
+# Reviewed local actions only. Shell/custom/MCP actions can invoke models outside
+# Exodus, so they are not assumed AI-free simply because task_type is "action".
+NON_AI_TASK_ACTIONS = frozenset({
+    'tidy_sessions', 'tidy_documents', 'tidy_research', 'daily_brief',
+})
+NON_AI_INTEGRATION_PRESETS = frozenset({
+    'ntfy', 'miniflux', 'gitea', 'linkding', 'homeassistant',
+    'discord_webhook', 'vaultwarden', 'freshrss',
+})
+
+
+def task_uses_ai(task_type=None, action=None, output_target=None):
+    output = output_target or 'session'
+    # Delivery checks MCP before legacy bare email addresses. Mirror that
+    # precedence so a tool name containing @ cannot impersonate an email.
+    ordinary_output = not output.startswith('mcp__') and (
+        output in ('none', 'session', 'notification', 'email')
+        or output.startswith('email:')
+        or bool(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', output)))
+    return (task_type != 'action' or action not in NON_AI_TASK_ACTIONS
+            or not ordinary_output)
+
+
+def task_blocked_by_mode(task):
+    return ai_free(task.owner) and task_uses_ai(
+        getattr(task, 'task_type', None), getattr(task, 'action', None),
+        getattr(task, 'output_target', None))
+
+
+def require_task_mode(owner, task_type, action, output_target=None):
+    if ai_free(owner) and task_uses_ai(task_type, action, output_target):
+        raise HTTPException(403, 'This automation needs Full Exodus. Ordinary maintenance remains available in AI-free mode.')
+
+
+def require_integration_mode(owner, integration):
+    if ai_free(owner) and integration.get('preset') not in NON_AI_INTEGRATION_PRESETS:
+        raise HTTPException(403, 'In AI-free mode, choose a supported non-AI service preset. Custom integrations remain available in Full Exodus.')
+
+
 def scheduled_owner(fn):
     @wraps(fn)
     async def wrapped(self, task_id, *args, **kwargs):
@@ -165,12 +211,15 @@ def scheduled_owner(fn):
         with SessionLocal() as db:
             task = db.get(ScheduledTask, task_id)
             owner = task.owner if task else None
+            uses_ai = task is None or task_uses_ai(task.task_type, task.action, task.output_target)
         token = AI_OWNER.set(owner)
         current = asyncio.current_task()
-        _track(owner, current)
+        if uses_ai:
+            _track(owner, current)
         try:
             return await fn(self, task_id, *args, **kwargs)
         finally:
-            _untrack(owner, current)
+            if uses_ai:
+                _untrack(owner, current)
             AI_OWNER.reset(token)
     return wrapped

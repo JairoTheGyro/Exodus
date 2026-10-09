@@ -102,9 +102,8 @@ def test_get_email_config_does_not_resolve_ownerless_account_for_other_tenant(mo
         monkeypatch.delenv(var, raising=False)
 
     with mock.patch("core.database.SessionLocal", Factory):
-        cfg = eh._get_email_config(account_id="acct-legacy", owner="attacker")
-
-    assert cfg.get("account_id") != "acct-legacy"
+        with pytest.raises(eh.EmailNotConfiguredError):
+            eh._get_email_config(account_id="acct-legacy", owner="attacker")
 
 
 def test_get_email_config_resolves_ownerless_account_on_mailbox_match():

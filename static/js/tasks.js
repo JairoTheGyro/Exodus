@@ -13,6 +13,7 @@ import { bindMenuDismiss, dismissOrRemove } from './escMenuStack.js';
 import { getSettings, invalidateSettings } from './appConfig.js';
 
 const API_BASE = window.location.origin;
+const _aiFree = () => document.documentElement.dataset.workspaceMode === 'ai-free';
 let _open = false;
 let _tasksCascadeNext = false;   // play the domino-in entrance on the next render
 let _tasks = [];
@@ -857,7 +858,7 @@ function _renderList() {
     // The status pill replaces the old dot and doubles as pause/resume.
     const titleRow = document.createElement('div');
     titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;';
-    const statusBadge = task.status === 'paused'
+    const statusBadge = task.blocked_by_mode ? '<span class="task-state-label">Full mode required</span>' : task.status === 'paused'
       ? `<button type="button" class="task-status-badge task-state-badge task-paused-badge" data-task-status-action="resume" title="Paused - click to resume" style="position:relative;top:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><span class="task-state-label">paused</span></button>`
       : task.status === 'active'
         ? `<button type="button" class="task-status-badge task-state-badge task-active-badge" data-task-status-action="pause" title="Active - click to pause" style="position:relative;top:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 19 12 7 20 7 4"/></svg><span class="task-state-label">active</span></button>`
@@ -881,10 +882,10 @@ function _renderList() {
       const items = [];
       // Run now stays in the kebab too for users coming from muscle-memory /
       // mobile long-press. The expanded card also shows it next to Edit.
-      if (task.status !== 'completed') items.push({ label: 'Run now', icon: '<polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', action: () => _doRunNow(task.id) });
-      items.push({ label: 'Edit', icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>', action: () => _showForm(task) });
+      if (task.status !== 'completed' && !task.blocked_by_mode) items.push({ label: 'Run now', icon: '<polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', action: () => _doRunNow(task.id) });
+      if (!task.blocked_by_mode) items.push({ label: 'Edit', icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>', action: () => _showForm(task) });
       if (task.status === 'active') items.push({ label: 'Pause', icon: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>', action: () => _doPause(task.id) });
-      else if (task.status === 'paused') items.push({ label: 'Resume', icon: '<polygon points="5 3 19 12 5 21 5 3"/>', action: () => _doResume(task.id) });
+      else if (task.status === 'paused' && !task.blocked_by_mode) items.push({ label: 'Resume', icon: '<polygon points="5 3 19 12 5 21 5 3"/>', action: () => _doResume(task.id) });
       items.push({ label: 'History', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', action: () => _showRunHistory(task.id, task.name) });
       if (task.is_builtin && task.is_modified) {
         items.push({ label: 'Revert to default', icon: '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>', action: () => _doRevert(task.id) });
@@ -929,7 +930,7 @@ function _renderList() {
     detail.style.cssText = 'display:none;margin-top:7px;padding:8px 0 2px;border-top:1px solid var(--border);position:relative;';
     const detailActions = document.createElement('div');
     detailActions.style.cssText = 'display:flex;justify-content:flex-end;gap:6px;margin-top:7px;';
-    if (task.status !== 'completed') {
+    if (task.status !== 'completed' && !task.blocked_by_mode) {
       const runBtn = document.createElement('button');
       runBtn.className = 'memory-toolbar-btn task-detail-run-btn';
       runBtn.title = 'Run now';
@@ -948,7 +949,7 @@ function _renderList() {
       e.stopPropagation();
       _showForm(task);
     });
-    detailActions.appendChild(editBtn);
+    if (!task.blocked_by_mode) detailActions.appendChild(editBtn);
     const extra = [];
     if (task.last_run) extra.push('Last: ' + _relativeTime(task.last_run));
     if (task.output_target && task.output_target !== 'session') extra.push('→ ' + task.output_target.replace(/^mcp__/, '').replace(/__/g, ' › '));
@@ -1156,6 +1157,7 @@ function _presetIcon(p) {
 }
 
 function _showPresetPicker() {
+  if (_aiFree()) return _showForm(null, 'action', 'schedule');
   const modal = document.getElementById('tasks-modal');
   if (!modal) return;
   const body = modal.querySelector('.modal-body');
@@ -1210,7 +1212,11 @@ function _showForm(existing, initTaskType, initTriggerType) {
   const body = modal.querySelector('.modal-body');
   if (!body) return;
 
-  const curTaskType = existing?.task_type || initTaskType || 'llm';
+  if (_aiFree() && existing?.blocked_by_mode) {
+    uiModule?.showToast('Switch to Full Exodus to edit this automation. Its history is kept.');
+    return;
+  }
+  const curTaskType = _aiFree() ? 'action' : existing?.task_type || initTaskType || 'llm';
   const curTriggerType = existing?.trigger_type || initTriggerType || 'schedule';
 
   body.innerHTML = `
@@ -1273,6 +1279,14 @@ function _showForm(existing, initTaskType, initTriggerType) {
     </div>
     </div>
   `;
+
+  if (_aiFree()) {
+    body.querySelectorAll('#task-form-type-toggle [data-val="llm"],#task-form-type-toggle [data-val="research"]').forEach(el => el.remove());
+    const modelSelect = document.getElementById('task-form-model');
+    modelSelect.previousElementSibling.hidden = true;
+    modelSelect.hidden = true;
+    body.querySelector('.memory-desc').textContent = 'Schedule ordinary maintenance without a model. AI automations stay suspended until you choose Full Exodus.';
+  }
 
   // --- Task type toggle ---
   let taskType = curTaskType;
@@ -1585,7 +1599,7 @@ function _showForm(existing, initTaskType, initTriggerType) {
   // Populate model dropdown from /api/models. Value is "endpoint_url::model"
   // so a single field encodes both the model name and which endpoint to call.
   // Blank value (option 0) = inherit session default.
-  fetch(`${API_BASE}/api/models`, { credentials: 'same-origin' })
+  if (!_aiFree()) fetch(`${API_BASE}/api/models`, { credentials: 'same-origin' })
     .then(r => r.json())
     .then(data => {
       const modelSel = document.getElementById('task-form-model');
@@ -1623,7 +1637,7 @@ function _showForm(existing, initTaskType, initTriggerType) {
   // Populate chain dropdown
   const chainSel = document.getElementById('task-form-chain');
   if (chainSel) {
-    const otherTasks = _tasks.filter(t => !existing || t.id !== existing.id);
+    const otherTasks = _tasks.filter(t => (!existing || t.id !== existing.id) && (!_aiFree() || !t.blocked_by_mode));
     for (const t of otherTasks) {
       const opt = document.createElement('option');
       opt.value = t.id;
@@ -2878,7 +2892,7 @@ function _renderMainView() {
   body.innerHTML = `
     <div class="admin-card" style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;top:-2px;">
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
-        <h2 style="margin:0;padding:0;line-height:1;position:relative;top:-4px;">Ongoing Tasks <span id="tasks-head-count" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
+        <h2 style="margin:0;padding:0;line-height:1;position:relative;top:-4px;">Ongoing Jobs <span id="tasks-head-count" class="memory-count" style="font-size:0.6em;opacity:0.6;font-weight:normal"></span></h2>
         <button class="memory-toolbar-btn" id="tasks-pause-all-btn" title="Pause all active tasks" style="margin-left:auto;">Pause all</button>
       </div>
       <p class="memory-desc" style="position:relative;top:-4px;">Scheduled prompts and actions that run automatically. Results appear in a dedicated session.</p>
@@ -2970,7 +2984,7 @@ export function openTasks(focusId, opts) {
       <div class="memory-tabs tasks-tabs" role="tablist">
         <button class="memory-tab tasks-tab active" data-tab="tasks" role="tab" aria-selected="true">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          Tasks <span id="tasks-tab-count" class="memory-count" style="font-size:0.8em;opacity:0.6;font-weight:normal;margin-left:4px">0</span>
+          Jobs <span id="tasks-tab-count" class="memory-count" style="font-size:0.8em;opacity:0.6;font-weight:normal;margin-left:4px">0</span>
         </button>
         <button class="memory-tab tasks-tab" data-tab="activity" role="tab" aria-selected="false">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -3171,7 +3185,7 @@ async function _pollTaskNotifications() {
 }
 
 function startNotificationPolling() {
-  if (document.documentElement.dataset.workspaceMode === 'ai-free') return;
+  // Ordinary Automations also report completions/errors in AI-free mode.
   if (_notifInterval) return;
   setTimeout(_pollTaskNotifications, 1500);
   _notifInterval = setInterval(_pollTaskNotifications, 30000);

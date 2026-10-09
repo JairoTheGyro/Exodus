@@ -1,4 +1,8 @@
 /* Shared, non-AI Home. All colors follow Exodus's active theme. */
+.home-memory-policy { flex-basis:100%; display:grid; gap:5px; }
+.home-memory-policy label, .note-memory-policy label { display:flex; align-items:center; gap:8px; }
+.home-memory-policy small, .note-memory-policy small { display:block; opacity:.7; font-size:11px; line-height:1.5; }
+.note-memory-policy { padding:8px 12px; border-top:1px solid var(--border); font-size:12px; }
 #workspace-home { position:fixed; inset:0 0 0 260px; z-index:45; overflow:auto; background:var(--bg,#20242c); color:var(--fg,#e4e8ed); padding:40px clamp(20px,4vw,64px); box-sizing:border-box; }
 #workspace-home[hidden], #home-choice[hidden], #home-customize[hidden] { display:none!important; }
 body.sidebar-collapsed #workspace-home, body.hamburger-only #workspace-home { left:0; }
@@ -60,7 +64,7 @@ body.sidebar-collapsed #workspace-home, body.hamburger-only #workspace-home { le
 #home-sidebar-button { width:calc(100% - 16px); margin:8px; padding:10px; color:inherit; background:transparent; border:1px solid var(--border); border-radius:8px; text-align:left; cursor:pointer; }
 #workspace-mode-settings { padding:12px 18px; border-bottom:1px solid var(--border); display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:12px; }
 html[data-workspace-mode=ai-free] .home-ai-feature,
-html[data-workspace-mode=ai-free] :is(#sidebar-new-chat-btn,#sidebar-search-btn,#tool-workshop-btn,#tool-code-btn,#tool-memory-btn,#tool-compare-btn,#tool-cookbook-btn,#tool-research-btn,#tool-tasks-btn,#rail-new-chat,#rail-brain,#rail-research,#rail-code,#rail-tasks,#rail-compare,#welcome-screen,#message,#chat-form,#input-container,#input-area,#messages,#chat-messages,#model-picker-btn,#overflow-plus-btn,#bash-toggle-btn,#web-toggle-btn,#mode-agent-btn,#mode-chat-btn,#chat-header,#sessions-section,#groups-section,#session-list,#sessions-list),
+html[data-workspace-mode=ai-free] :is(#sidebar-new-chat-btn,#sidebar-search-btn,#tool-workshop-btn,#tool-code-btn,#tool-memory-btn,#tool-compare-btn,#tool-cookbook-btn,#tool-research-btn,#rail-new-chat,#rail-brain,#rail-research,#rail-code,#rail-compare,#welcome-screen,#message,#chat-form,#input-container,#input-area,#messages,#chat-messages,#model-picker-btn,#overflow-plus-btn,#bash-toggle-btn,#web-toggle-btn,#mode-agent-btn,#mode-chat-btn,#chat-header,#sessions-section,#groups-section,#session-list,#sessions-list),
 html[data-workspace-mode=ai-free] [data-settings-tab="services"],html[data-workspace-mode=ai-free] [data-settings-tab="added-models"],html[data-workspace-mode=ai-free] [data-settings-tab="ai"],html[data-workspace-mode=ai-free] [data-settings-tab="search"],
 html[data-workspace-mode=ai-free] [data-settings-panel="services"],html[data-workspace-mode=ai-free] [data-settings-panel="added-models"],html[data-workspace-mode=ai-free] [data-settings-panel="ai"],html[data-workspace-mode=ai-free] [data-settings-panel="search"] { display:none!important; }
 html[data-workspace-mode=choose] body > :not(#workspace-home) { visibility:hidden; }
@@ -70,8 +74,7 @@ html.theme-temple #workspace-home {inset:0; padding:12px;} html.theme-temple .ho
 
 html[data-workspace-mode=ai-free] :is(#tool-gallery-btn,#chat-container,#scroll-bottom-btn,#rail-gallery,#rail-search-btn) {display:none!important;}
 body.home-active #chat-container {visibility:hidden;}
-html[data-workspace-mode=ai-free] [data-settings-tab="reminders"],
-html[data-workspace-mode=ai-free] [data-settings-panel="reminders"] {display:none!important;}
+html[data-workspace-mode=ai-free] [data-settings-panel="reminders"] .admin-card:has(#set-reminder-llm-toggle) {display:none!important;}
 #home-choice {overflow:auto;}
 
 html[data-workspace-mode=ai-free] :is(#rail-new-session,#rail-delete-session,#rail-chats,#rail-cookbook,#rail-memory) {display:none!important;}
@@ -79,7 +82,7 @@ html[data-workspace-mode=ai-free] :is(#rail-new-session,#rail-delete-session,#ra
 
 html[data-workspace-mode=ai-free] :is([data-doclib-tab="chats"],[data-doclib-tab="research"]) {display:none!important;}
 
-html[data-workspace-mode=ai-free] :is(#workshop-modal,#research-overlay,#research-pane,#tasks-modal,#cookbook-modal,#search-overlay,#custom-preset-modal) {display:none!important;}
+html[data-workspace-mode=ai-free] :is(#workshop-modal,#research-overlay,#research-pane,#cookbook-modal,#search-overlay,#custom-preset-modal) {display:none!important;}
 html[data-workspace-mode=ai-free] .doc-editor-pane {max-width:100%;}
 
 .home-card-actions { display:flex; align-items:center; gap:4px; }

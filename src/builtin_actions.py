@@ -1825,7 +1825,7 @@ async def action_daily_brief(owner: str, **kwargs) -> Tuple[str, bool]:
         recent_subjects: list[tuple[str, str]] = []
         try:
             import email as _email
-            conn = _imap_connect(None)
+            conn = _imap_connect(None, owner=owner)
             try:
                 conn.select("INBOX", readonly=True)
                 status, data = conn.uid("SEARCH", None, "UNSEEN")

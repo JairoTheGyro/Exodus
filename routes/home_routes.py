@@ -1,5 +1,6 @@
 """Non-AI Home: owner-scoped views over existing content and real personal state."""
 import json
+import logging
 import re
 import time
 import uuid
@@ -17,6 +18,7 @@ from src.home_store import database, profile, save
 from src.ai_policy import cancel_ai
 
 _weather_cache = {}
+logger = logging.getLogger(__name__)
 
 WIDGETS = ['tasks', 'schedule', 'focus', 'inbox', 'files', 'capture', 'apps', 'metrics', 'team', 'weather']
 
@@ -31,6 +33,7 @@ class Preferences(BaseModel):
     pins: list[str] | None = Field(default=None, max_length=40)
     city: str | None = Field(default=None, max_length=100)
     weather_enabled: bool | None = None
+    ai_include_archived_notes: bool | None = None
 
 class TaskCreate(BaseModel):
     text: str = Field(min_length=1, max_length=500)
@@ -123,6 +126,14 @@ def setup_home_routes():
             value.update(patch)
             save(owner, value, conn)
         if body.mode == 'ai-free': cancel_ai(owner)
+        if body.mode == 'full' or body.ai_include_archived_notes is not None:
+            from src.note_indexing import reindex_owner_notes
+            # Reuses the queue; AI-free accounts only enqueue consent cleanup.
+            # Failure cannot undo a saved privacy choice; retrieval reads it live.
+            try:
+                reindex_owner_notes(owner)
+            except Exception:
+                logger.warning('Memory policy saved; note indexing will resume on the next save')
         return {'profile': value}
 
     @router.get('/tasks')

@@ -58,3 +58,6 @@ timetree*.png
 !/.env.example
 **/data/
 backups/
+# Private data retained/staged by the local restore command (root only).
+/data.before-restore-*/
+/.exodus-restore-*/

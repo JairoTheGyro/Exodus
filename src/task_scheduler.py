@@ -720,8 +720,8 @@ class TaskScheduler:
                 ).all()
                 to_dispatch = []
                 for task in due:
-                    from src.home_store import ai_free
-                    if ai_free(task.owner):
+                    from src.ai_policy import task_blocked_by_mode
+                    if task_blocked_by_mode(task):
                         continue
                     if task.id in self._executing:
                         continue
@@ -843,12 +843,12 @@ class TaskScheduler:
                     db.commit()
                 return
 
-            from src.home_store import ai_free
-            if ai_free(task.owner):
+            from src.ai_policy import task_blocked_by_mode
+            if task_blocked_by_mode(task):
                 run = db.query(TaskRun).filter(TaskRun.id == run_id).first()
                 if run:
                     run.status = "skipped"
-                    run.error = "AI-free workspace: automations are suspended for this account."
+                    run.error = "AI-free workspace: this AI or unreviewed automation is suspended for this account."
                     run.finished_at = _utcnow()
                     db.commit()
                 return
@@ -1060,7 +1060,8 @@ class TaskScheduler:
             # explicitly turned them off for this task — quiets chatty
             # housekeeping cron tasks without disabling them entirely.
             should_notify = (
-                (task.task_type or "llm") in {"llm", "research"}
+                ((task.task_type or "llm") in {"llm", "research"}
+                 or output == "notification")
                 and getattr(task, "notifications_enabled", True)
             )
             if should_notify:

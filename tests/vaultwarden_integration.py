@@ -217,7 +217,7 @@ class VaultwardenChecks(unittest.TestCase):
         with patch.dict(os.environ):
             for name in ('VAULTWARDEN_INTERNAL_URL','VAULTWARDEN_PUBLIC_URL','VAULTWARDEN_SIGNUPS_ALLOWED'):
                 os.environ.pop(name, None)
-            self.assertEqual(self.service.connection_urls(), ('https://vaultwarden:80/alive','https://localhost:8092/'))
+            self.assertEqual(self.service.connection_urls(), ('https://vaultwarden:80/alive','https://127.0.0.1:8092/'))
             config = self.client.get('/api/vaultwarden/config').json()
             self.assertFalse(config['registration_allowed'])
             self.assertEqual(config['registration_policy_source'], 'deployment')

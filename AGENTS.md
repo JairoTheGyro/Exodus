@@ -41,6 +41,10 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
   `scripts/cloud_test.py` also works locally with its test dependencies installed;
   its name does not require using a cloud service. It is not the full upstream
   suite or proof of real provider/container behavior.
+- Keep `docs/PRACTICE_TESTS.md` current with a real-life acceptance check for each
+  added or changed feature: synthetic inputs, prerequisites/modes, expected saved
+  and visible results, and cleanup. Report actual execution separately from the
+  reusable procedure; never label an unrun live/device check as passed.
 - Do not force-push or silently resolve Git divergence.
 - Never run broad tests against the operator's live data. Keep synthetic data
   and disposable service volumes separate from the `sovereign-hub` deployment.

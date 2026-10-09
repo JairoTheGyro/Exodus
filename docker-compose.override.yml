@@ -119,6 +119,7 @@ services:
       - ./static/js/homeScratchpad.js:/app/static/js/homeScratchpad.js:ro
       - ./src/ai_policy.py:/app/src/ai_policy.py:ro
       - ./routes/home_routes.py:/app/routes/home_routes.py:ro
+      - ./routes/task/task_routes.py:/app/routes/task/task_routes.py:ro
       - ./src/app_helpers.py:/app/src/app_helpers.py:ro
       - ./src/embeddings.py:/app/src/embeddings.py:ro
       - ./src/task_endpoint.py:/app/src/task_endpoint.py:ro
@@ -131,6 +132,7 @@ services:
       - ./static/js/chatStream.js:/app/static/js/chatStream.js:ro
       - ./src/note_indexing.py:/app/src/note_indexing.py:ro
       - ./src/note_export.py:/app/src/note_export.py:ro
+      - ./src/note_import.py:/app/src/note_import.py:ro
       - ./core/database.py:/app/core/database.py:ro
       - ./src/service_health.py:/app/src/service_health.py:ro
       - ./src/notifications.py:/app/src/notifications.py:ro

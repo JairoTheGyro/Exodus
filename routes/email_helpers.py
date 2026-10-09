@@ -41,6 +41,10 @@ from src.secret_storage import decrypt as _decrypt
 logger = logging.getLogger(__name__)
 
 
+class EmailConfigurationError(RuntimeError):
+    """Account configuration could not be read safely; never select a fallback."""
+
+
 class EmailNotConfiguredError(RuntimeError):
     """Raised when an IMAP operation is attempted on an account that has no
     inbox configured (e.g. a send-only / SMTP-only account).
@@ -1030,9 +1034,14 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
       1. If account_id given → that specific EmailAccount row.
       2. Else → the row with is_default=True (scoped to `owner` when given).
       3. Else → the first enabled row (scoped to `owner` when given).
-      4. Else → legacy flat keys in data/settings.json (kept for envs
-         where the migration hasn't run yet or accounts table is empty).
-      5. Else → env vars (SMTP_HOST / IMAP_HOST / ...).
+      4. Only with explicit operator opt-in AND a matching named owner →
+         legacy flat settings/env keys. This plaintext compatibility path is
+         disabled by default and never used after a database error.
+
+    An explicitly requested missing, disabled or foreign account fails closed;
+    it never selects a different account. Prefer encrypted Email Accounts in
+    Settings. Legacy opt-in requires EXODUS_ALLOW_LEGACY_EMAIL_CONFIG=true and
+    EXODUS_LEGACY_EMAIL_OWNER matching the authenticated caller exactly.
 
     Returned dict always has the same shape as before; an `account_id` key is
     added so callers can stamp derivative records (email_ai_replies etc.).
@@ -1042,9 +1051,6 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
     inherit whoever else's IMAP/SMTP creds happened to be the default. Pass
     `owner` from the route's auth dependency to scope the lookup.
     """
-    import os
-    from core.database import SessionLocal as _SL, EmailAccount as _EA
-
     def _owner_or_matching_legacy_account(query):
         if not owner:
             return query
@@ -1053,9 +1059,9 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
         same_mailbox = or_(_EA.imap_user == owner, _EA.from_address == owner)
         return query.filter(or_(_EA.owner == owner, and_(unowned, same_mailbox)))
 
-    resolved_id = None
     row = None
     try:
+        from core.database import SessionLocal as _SL, EmailAccount as _EA
         db = _SL()
         try:
             if account_id:
@@ -1068,6 +1074,8 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
                 # only visible on a mailbox match, same as the fallback below.
                 if row is not None and owner and not _account_visible_to_owner(row, owner):
                     row = None
+                if row is None:
+                    raise EmailNotConfiguredError("Requested email account is unavailable")
             # Fallback path — restrict to this owner's accounts so we don't
             # leak another user's default mailbox to an unconfigured user.
             if row is None:
@@ -1079,7 +1087,6 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
                 q = _owner_or_matching_legacy_account(q)
                 row = q.order_by(_EA.created_at.asc()).first()
             if row is not None:
-                resolved_id = row.id
                 cfg = {
                     "account_id": row.id,
                     "account_name": row.name,
@@ -1108,13 +1115,35 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
                 return cfg
         finally:
             db.close()
-    except Exception as e:
-        logger.debug(f"email_accounts lookup failed, falling back to settings.json: {e}")
+    except EmailNotConfiguredError:
+        raise
+    except Exception:
+        # DB/driver errors can contain bound credential values. Do not log or
+        # return the original exception, and never open a different mailbox.
+        logger.warning("Email account configuration could not be read safely")
+        raise EmailConfigurationError("Email account configuration is unavailable; retry or check the account settings") from None
 
-    # Legacy fallback — flat keys in settings.json / env vars
+    legacy_owner = os.environ.get("EXODUS_LEGACY_EMAIL_OWNER", "").strip()
+    legacy_allowed = os.environ.get("EXODUS_ALLOW_LEGACY_EMAIL_CONFIG", "").strip().lower() == "true"
+    if not legacy_allowed or not owner or not legacy_owner or owner != legacy_owner:
+        raise EmailNotConfiguredError("No email account configured for this user; add an Email Account in Settings")
+
+    # Deliberate temporary compatibility only. No credentials are copied,
+    # migrated or deleted here; the operator should reconnect through Settings.
+    try:
+        return _legacy_email_config()
+    except Exception:
+        logger.warning("Legacy email configuration could not be read safely")
+        raise EmailConfigurationError("Legacy email configuration is invalid; use Email Accounts in Settings") from None
+
+
+def _legacy_email_config() -> dict:
+    """Read plaintext legacy fields only after the opt-in/owner gate above."""
     settings = _load_settings()
+    if not isinstance(settings, dict):
+        raise ValueError("Invalid settings shape")
     cfg = {
-        "account_id": resolved_id,
+        "account_id": None,
         "account_name": "legacy",
         "smtp_host": settings.get("smtp_host", os.environ.get("SMTP_HOST", "")),
         "smtp_port": int(settings.get("smtp_port", os.environ.get("SMTP_PORT", "465")) or 465),
@@ -1128,13 +1157,13 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
         "imap_port": int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993),
         "imap_user": settings.get("imap_user", os.environ.get("IMAP_USER", "")),
         "imap_password": settings.get("imap_password", os.environ.get("IMAP_PASSWORD", "")),
-        "imap_starttls": settings.get("imap_starttls", int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993) == 143),
+        "imap_starttls": str(settings.get("imap_starttls", int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993) == 143)).lower() in {"true", "1"},
         "from_address": settings.get("email_from", os.environ.get("EMAIL_FROM", "")),
     }
     if not (cfg["smtp_host"] and cfg["smtp_user"] and cfg["smtp_password"]):
-        logger.warning("SMTP not configured — add an Email Account in Settings or set env vars")
+        logger.warning("SMTP not configured — add an Email Account in Settings")
     if not (cfg["imap_host"] and cfg["imap_user"] and cfg["imap_password"]):
-        logger.warning("IMAP not configured — add an Email Account in Settings or set env vars")
+        logger.warning("IMAP not configured — add an Email Account in Settings")
     return cfg
 
 
@@ -1154,9 +1183,9 @@ def _list_email_accounts() -> list[dict]:
             return [_get_email_config(r.id) for r in rows]
         finally:
             db.close()
-    except Exception as e:
-        logger.debug(f"_list_email_accounts failed, returning [default]: {e}")
-        return [_get_email_config()]
+    except Exception:
+        logger.warning("Email account list could not be read safely")
+        raise EmailConfigurationError("Email account list is unavailable; retry or check the account settings") from None
 
 
 # ── IMAP helpers ──

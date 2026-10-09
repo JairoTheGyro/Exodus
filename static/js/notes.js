@@ -390,6 +390,9 @@ const COLOR_HEX = {
 // ---- API ----
 
 let _loading = false;
+let _notesFetchSequence = 0;
+let _archiveRefreshRunning = false;
+let _archiveRefreshPending = false;
 // Undo stack — most recent action is at the end. We cap it small because the
 // only entries that survive a panel reload are in-memory anyway.
 const _undoStack = [];
@@ -445,19 +448,42 @@ function _archiveNoteById(id, { card = null, celebrate = false } = {}) {
   return true;
 }
 
-async function _fetchNotes() {
-  _loading = true;
+async function _fetchNotes({ archived = _showingArchived, apply = true } = {}) {
+  const sequence = apply ? ++_notesFetchSequence : null;
+  const current = () => apply && sequence === _notesFetchSequence && archived === _showingArchived;
+  if (apply) _loading = true;
   try {
-    const url = `${API_BASE}/api/notes${_showingArchived ? '?archived=true' : ''}`;
+    const url = `${API_BASE}/api/notes${archived ? '?archived=true' : ''}`;
     const res = await fetch(url, { credentials: 'same-origin' });
-    if (!res.ok) { _notes = []; return; }
+    if (!res.ok) { if (current()) _notes = []; return []; }
     const data = await res.json();
-    _notes = data.notes || data || [];
+    const notes = data.notes || data || [];
+    if (current()) _notes = notes;
+    return notes;
   } catch (e) {
     console.error('Failed to fetch notes:', e);
-    _notes = [];
+    if (current()) _notes = [];
+    return [];
   } finally {
-    _loading = false;
+    if (apply && sequence === _notesFetchSequence) _loading = false;
+  }
+}
+
+async function _refreshAfterArchiveChange() {
+  // A view toggle may have read before the write committed. Coalesce completion
+  // refreshes (including bulk actions) and always reread the currently selected view.
+  _archiveRefreshPending = true;
+  if (_archiveRefreshRunning) return;
+  _archiveRefreshRunning = true;
+  try {
+    while (_archiveRefreshPending && _open) {
+      _archiveRefreshPending = false;
+      await _fetchNotes();
+      if (_open && !document.querySelector('#notes-pane .note-form')) _renderNotes();
+    }
+  } finally {
+    _archiveRefreshRunning = false;
+    _archiveRefreshPending = false;
   }
 }
 
@@ -487,7 +513,11 @@ async function _patchNote(id, patch) {
     body: JSON.stringify(patch),
   });
   if (!res.ok) throw new Error('Failed to update note');
-  return await res.json();
+  const saved = await res.json();
+  if (Object.hasOwn(patch, 'archived') || Object.hasOwn(patch, 'is_archived')) {
+    void _refreshAfterArchiveChange();
+  }
+  return saved;
 }
 
 // ---- Helpers ----
@@ -1057,11 +1087,11 @@ let _firedDotDismissedAt = (() => {
   } catch { return 0; }
 })();
 
-function _countFiredReminders() {
+function _countFiredReminders(notes = _notes) {
   // Reminders whose time has actually passed (not just date-today),
   // and which fired after the last user dismissal.
   const now = Date.now();
-  return _notes.filter(n => {
+  return notes.filter(n => {
     if (n.archived || _isNoteFullyDone(n)) return false;
     if (!n.due_date || !_hasTimeComponent(n.due_date)) return false;
     const t = new Date(n.due_date).getTime();
@@ -1076,8 +1106,8 @@ export function dismissFiredReminderDot() {
   _updateRailBadge();
 }
 
-function _updateRailBadge() {
-  const fired = _countFiredReminders();
+function _updateRailBadge(notes = _notes) {
+  const fired = _countFiredReminders(notes);
   // Rail (mini sidebar) — only show the count when reminders have ACTUALLY
   // fired since the last dismissal (i.e. you haven't opened notes yet).
   // Showing every overdue note forever made the badge feel permanent.
@@ -1128,15 +1158,12 @@ function _updateRailBadge() {
 }
 
 export async function refreshDueBadge(opts = {}) {
-  // Usually lightweight, but callers that just created a note reminder can
-  // force a refresh so the background reminder loop sees it immediately.
-  if (opts.force || _notes.length === 0) {
-    try {
-      const wasArchived = _showingArchived;
-      _showingArchived = false;
-      await _fetchNotes();
-      _showingArchived = wasArchived;
-    } catch {}
+  // Badge data is independent of the selected Notes view. Never temporarily
+  // switch the shared archive flag across an await or overwrite archived rows.
+  if (opts.force || _notes.length === 0 || _showingArchived) {
+    const notes = await _fetchNotes({ archived: false, apply: !_showingArchived });
+    _updateRailBadge(notes);
+    return;
   }
   _updateRailBadge();
 }
@@ -1194,16 +1221,21 @@ export function openPanel() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span class="notes-header-btn-label">Toggle</span>
       </button>
-      <button id="notes-export-toggle" type="button" class="doc-action-icon-btn notes-header-text-btn" title="Export notes" aria-label="Export notes" aria-expanded="false" aria-controls="notes-export-options" style="gap:5px;">
+      <button id="notes-export-toggle" type="button" class="doc-action-icon-btn notes-header-text-btn" title="Export or import notes" aria-label="Export or import notes" aria-expanded="false" aria-controls="notes-export-options" style="gap:5px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>
-        <span class="notes-header-btn-label">Export</span>
+        <span class="notes-header-btn-label">Export / import</span>
       </button>
       <button id="notes-minimize-btn" class="modal-minimize-btn" title="Minimize" aria-label="Minimize notes" style="position:relative;left:2px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="18" x2="18" y2="18"/></svg></button>
     </div>
     <div id="notes-export-options" class="notes-export-options" hidden>
       <a class="notes-export-link" href="${API_BASE}/api/notes/export/zip" download="exodus-notes.zip">Markdown ZIP — all active notes</a>
+      <a class="notes-export-link" href="${API_BASE}/api/notes/export/zip?include_archived=true" download="exodus-notes.zip">Markdown ZIP — active + archived notes</a>
       <a class="notes-export-link" href="${API_BASE}/api/notes/export/json" download="exodus-notes.json">JSON backup — active + archived notes</a>
-      <small>Exports your saved notes, regardless of filters. Attachment links are included; image files are not bundled.</small>
+      <small>Exports your saved notes, regardless of filters. Downloads are not encrypted: keep them somewhere private. Attachment links are included; image files are not bundled.</small>
+      <button id="notes-import-select" type="button" class="notes-export-link" style="text-align:left;background:none;border:0;font:inherit;cursor:pointer;">Import JSON backup…</button>
+      <input id="notes-import-file" type="file" accept=".json,application/json" hidden />
+      <small>Creates new copies in your account; existing notes stay unchanged. Choose an Exodus JSON backup (up to 10 MiB, 5,000 notes and 20,000 checklist items total). Attachment files and chat links are not restored. Saved reminder dates and AI memory preferences follow your current settings.</small>
+      <small id="notes-import-status" role="status" aria-live="polite"></small>
     </div>
     <div class="notes-search-bar">
       <input type="text" id="notes-search" class="memory-search-input" placeholder="Search notes…" autocomplete="off" />
@@ -1292,6 +1324,37 @@ export function openPanel() {
     closeExport();
     exportBtn.focus();
   }));
+
+  const importBtn = pane.querySelector('#notes-import-select');
+  const importFile = pane.querySelector('#notes-import-file');
+  const importStatus = pane.querySelector('#notes-import-status');
+  importBtn.addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files?.[0];
+    if (!file || importBtn.disabled) return;
+    importBtn.disabled = true;
+    importStatus.textContent = 'Importing notes…';
+    try {
+      if (file.size > 10 * 1024 * 1024) throw new Error('Choose a JSON backup no larger than 10 MiB.');
+      const response = await fetch(`${API_BASE}/api/notes/import/json`, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: file,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Notes were not imported. Check the backup and try again.');
+      const summary = `Imported ${result.imported} note${result.imported === 1 ? '' : 's'} as new copies${result.archived ? ` (${result.archived} archived)` : ''}.`;
+      importStatus.textContent = [summary, ...(result.warnings || []).map(w => `${w.message} (${w.count})`)].join(' ');
+      await _fetchNotes();
+      // Keep an open unsaved note editor intact while refreshing the backing list.
+      if (_open && !pane.querySelector('.note-form')) _renderNotes();
+      uiModule.showToast(summary);
+    } catch (error) {
+      importStatus.textContent = error.message || 'Notes were not imported.';
+    } finally {
+      importBtn.disabled = false;
+      importFile.value = '';
+    }
+  });
 
   // Search
   const searchEl = document.getElementById('notes-search');
@@ -2920,6 +2983,7 @@ function _collectFormDraft(form) {
     color: form.dataset.noteColor || '',
     title: form.querySelector('.note-form-title')?.value || '',
     label: form.querySelector('.note-form-label')?.value || '',
+    ai_memory_enabled: form.querySelector('.note-form-ai-memory')?.checked !== false,
     due_date: form.querySelector('.note-form-due')?.value || null,
     repeat: form.querySelector('.note-form-repeat')?.value || 'none',
   };
@@ -2963,7 +3027,7 @@ function _applyDraftToNote(note, id) {
   const d = _loadDraft(id);
   if (_isDraftEmpty(d)) return { note, restored: false };
   const merged = { ...(note || {}) };
-  ['note_type', 'color', 'title', 'label', 'due_date', 'repeat', 'content', 'items'].forEach(k => {
+  ['note_type', 'color', 'title', 'label', 'due_date', 'repeat', 'content', 'items', 'ai_memory_enabled'].forEach(k => {
     if (d[k] !== undefined) merged[k] = d[k];
   });
   return { note: merged, restored: true };
@@ -3003,6 +3067,10 @@ function _buildForm(note = null) {
         : _buildChecklistHtml(items)}
     </div>
     <div class="note-form-reminder-tags"></div>
+    <div class="note-memory-policy">
+      <label><input type="checkbox" class="note-form-ai-memory" ${note?.ai_memory_enabled !== false ? 'checked' : ''}> Allow automatic AI memory</label>
+      <small>Off keeps this note out of automatic AI context. AI-free mode always skips memory. This does not erase earlier chat messages or prevent you from explicitly sharing the note with AI.</small>
+    </div>
     <div class="note-form-meta">
       <div class="note-form-type-seg${type === 'todo' ? ' is-todo' : type === 'draw' ? ' is-draw' : ''}" role="group">
         <button type="button" class="note-form-type-pill${type === 'note' ? ' active' : ''}" data-type="note">
@@ -3697,6 +3765,7 @@ function _buildForm(note = null) {
       color: currentColor,
       label: labelVal,
       tags: _tags,
+      ai_memory_enabled: form.querySelector('.note-form-ai-memory')?.checked !== false,
       due_date: form.querySelector('.note-form-due').value || null,
       repeat: form.querySelector('.note-form-repeat')?.value || 'none',
       image_url: currentImageUrl || null,

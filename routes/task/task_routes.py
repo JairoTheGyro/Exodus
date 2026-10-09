@@ -14,6 +14,8 @@ from core.database import SessionLocal, ScheduledTask, TaskRun
 from core.constants import internal_api_base
 from src.auth_helpers import get_current_user
 from src.constants import DATA_DIR, EMAIL_URGENCY_CACHE_DIR
+from src.ai_policy import require_task_mode, task_uses_ai, task_blocked_by_mode
+from src.home_store import ai_free
 from src.task_action_policy import (
     ADMIN_ONLY_TASK_ACTIONS,
     is_admin_only_task_action,
@@ -191,6 +193,7 @@ def _task_to_dict(t: ScheduledTask, include_last_run_result: bool = False) -> di
     defs = HOUSEKEEPING_DEFAULTS.get(t.action) if t.action else None
     d = {
         "id": t.id,
+        "blocked_by_mode": task_blocked_by_mode(t),
         "name": _display_task_name(t),
         "prompt": t.prompt,
         "task_type": t.task_type or "llm",
@@ -401,6 +404,8 @@ def setup_task_routes(task_scheduler) -> APIRouter:
                     ScheduledTask.action.in_(list(HOUSEKEEPING_DEFAULTS.keys())),
                 ).all()
                 for task in tasks:
+                    if task_blocked_by_mode(task):
+                        continue
                     defs = HOUSEKEEPING_DEFAULTS.get(task.action or "")
                     if defs and defs.get("ship_paused"):
                         continue
@@ -452,6 +457,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
     async def create_task(request: Request, req: TaskCreate):
         user = _owner(request)
 
+        require_task_mode(user, req.task_type, req.action, req.output_target)
         # Validate
         if req.task_type in ("llm", "research") and not req.prompt:
             raise HTTPException(400, "Prompt is required for LLM/research tasks")
@@ -676,6 +682,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
 
             next_task_type = req.task_type if req.task_type is not None else task.task_type
             next_action = req.action if req.action is not None else task.action
+            require_task_mode(user, next_task_type, next_action, req.output_target if req.output_target is not None else task.output_target)
             _require_admin_for_task_action(user, next_task_type, next_action)
 
             if req.name is not None:
@@ -801,6 +808,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
                 raise HTTPException(404, "Task not found")
             if user and task.owner != user:
                 raise HTTPException(403, "Access denied")
+            require_task_mode(user, task.task_type, task.action, task.output_target)
             _require_admin_for_task_action(user, task.task_type, task.action)
             task.status = "active"
             if (task.trigger_type or "schedule") == "schedule":
@@ -864,6 +872,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
                 raise HTTPException(404, "Task not found")
             if user and task.owner != user:
                 raise HTTPException(403, "Access denied")
+            require_task_mode(user, task.task_type, task.action, task.output_target)
             _require_admin_for_task_action(user, task.task_type, task.action)
         finally:
             db.close()
@@ -988,6 +997,8 @@ def setup_task_routes(task_scheduler) -> APIRouter:
             {"value": "notification", "label": "Notification", "description": "Push a browser notification with the result (also saved to the session for history)"},
             {"value": "email", "label": "Email me", "description": "Send result through your configured SMTP account"},
         ]
+        if ai_free(_owner(request)):
+            return {"targets": targets}
         # Only include tools whose NAME clearly indicates an outbound delivery
         # action — match by verb in the tool name, not by any mention of "email"
         # in the description (which falsely picked up search_email, list_email,
@@ -1025,7 +1036,8 @@ def setup_task_routes(task_scheduler) -> APIRouter:
         return {"actions": [
             {"name": name, "description": desc}
             for name, desc in BUILTIN_ACTION_INFO.items()
-            if name not in _ADMIN_ONLY_ACTIONS or _is_admin(user)
+            if (name not in _ADMIN_ONLY_ACTIONS or _is_admin(user))
+            and (not ai_free(user) or not task_uses_ai("action", name))
         ]}
 
     @router.get("/meta/events")
@@ -1054,6 +1066,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
             ).first()
             if not task:
                 raise HTTPException(404, "Not found")
+            require_task_mode(task.owner, task.task_type, task.action, task.output_target)
             if (
                 is_admin_only_task_action(task.task_type, task.action)
                 and not owner_has_admin_task_privileges(task.owner)

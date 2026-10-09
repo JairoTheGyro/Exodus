@@ -306,6 +306,8 @@ def test_concurrent_legacy_seed_is_one_locked_transaction(
     monkeypatch.setattr(core_db, "engine", engine)
     monkeypatch.setattr(core_db, "SessionLocal", factory)
     monkeypatch.setattr(core_db, "SETTINGS_FILE", str(settings_file))
+    monkeypatch.setenv("EXODUS_ALLOW_LEGACY_EMAIL_CONFIG", "true")
+    monkeypatch.setenv("EXODUS_LEGACY_EMAIL_OWNER", "alice")
 
     read_barrier = threading.Barrier(2)
     real_read_text = Path.read_text
@@ -333,8 +335,8 @@ def test_concurrent_legacy_seed_is_one_locked_transaction(
                 SELECT owner, is_default FROM email_accounts
                 ORDER BY id
             """)).all()
-        assert rows == [(None, 1)]
-        assert "seed email account migration:" not in caplog.text
+        assert rows == [("alice", 1)]
+        assert "Legacy email account migration failed" not in caplog.text
     finally:
         engine.dispose()
 

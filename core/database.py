@@ -1831,6 +1831,7 @@ class Note(TimestampMixin, Base):
     label      = Column(String, nullable=True)
     pinned     = Column(Boolean, default=False)
     archived   = Column(Boolean, default=False)
+    ai_memory_enabled = Column(Boolean, default=True, nullable=False)
     # Public naming aliases reuse existing columns; no duplicate archive/tag state.
     is_archived = synonym("archived")
 
@@ -2005,18 +2006,26 @@ def _migrate_email_account_default_invariant():
 def _migrate_seed_email_account():
     """Atomically seed one legacy default account when no account exists.
 
-    Reading settings is intentionally done before taking the owner mutex.  The
+    Disabled unless the operator opts into legacy config for a named owner.
+    Existing accounts are never rewritten by this compatibility migration.
+    Reading settings is intentionally done before taking the owner mutex. The
     decisive emptiness check and insert share one locked transaction, so two
     application workers starting together cannot both seed a default row.
     """
     import json as _json
     import uuid as _uuid
 
+    legacy_owner = os.environ.get("EXODUS_LEGACY_EMAIL_OWNER", "").strip()
+    if os.environ.get("EXODUS_ALLOW_LEGACY_EMAIL_CONFIG", "").strip().lower() != "true" or not legacy_owner:
+        return
+
     settings_file = Path(SETTINGS_FILE)
     if not settings_file.exists():
         return
     try:
         s = _json.loads(settings_file.read_text(encoding="utf-8"))
+        if not isinstance(s, dict):
+            return
     except Exception:
         return
 
@@ -2035,6 +2044,9 @@ def _migrate_seed_email_account():
         if existing > 0:
             return
 
+        from src.secret_storage import encrypt
+        imap_port = int(s.get("imap_port") or 993)
+        imap_starttls = str(s.get("imap_starttls", imap_port == 143)).lower() in {"true", "1"}
         now = utcnow_naive()
         db.execute(text("""
             INSERT INTO email_accounts
@@ -2049,29 +2061,29 @@ def _migrate_seed_email_account():
                :from_address, :created_at, :updated_at)
         """), {
             "id": _uuid.uuid4().hex,
-            "owner": None,
+            "owner": legacy_owner,
             "name": "Default",
             "is_default": True,
             "enabled": True,
             "imap_host": imap_host,
-            "imap_port": int(s.get("imap_port") or 993),
+            "imap_port": imap_port,
             "imap_user": s.get("imap_user") or "",
-            "imap_password": s.get("imap_password") or "",
-            "imap_starttls": bool(s.get("imap_starttls", True)),
+            "imap_password": encrypt(s.get("imap_password") or ""),
+            "imap_starttls": imap_starttls,
             "smtp_host": smtp_host,
             "smtp_port": int(s.get("smtp_port") or 465),
             "smtp_user": s.get("smtp_user") or "",
-            "smtp_password": s.get("smtp_password") or "",
+            "smtp_password": encrypt(s.get("smtp_password") or ""),
             "from_address": s.get("email_from") or "",
             "created_at": now,
             "updated_at": now,
         })
         db.commit()
         logger.info("Seeded email_accounts 'Default' from settings.json")
-    except Exception as e:
+    except Exception:
         if db is not None:
             db.rollback()
-        logger.warning("seed email account migration: %s", e)
+        logger.warning("Legacy email account migration failed; check account settings")
     finally:
         if db is not None:
             db.close()
@@ -2081,6 +2093,17 @@ def _migrate_seed_email_account():
 # Any future migrations or schema changes that temporarily violate foreign-key
 # constraints will fail. To perform such operations, foreign_keys must be
 # temporarily disabled around the migration workflow.
+def _migrate_note_memory_policy():
+    """Add an opt-out flag without rewriting existing notes.
+
+    Back up app.db and .app_key before deployment (docs/LOCAL_BACKUPS.md).
+    Older application versions ignore the additional column on rollback.
+    """
+    if "ai_memory_enabled" not in {c["name"] for c in inspect(engine).get_columns("notes")}:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE notes ADD COLUMN ai_memory_enabled BOOLEAN NOT NULL DEFAULT TRUE"))
+
+
 def init_db():
     """
     Initialize the database by creating all tables.
@@ -2127,6 +2150,7 @@ def init_db():
     _migrate_add_cached_models_column()
     _migrate_add_pinned_models_column()
     _migrate_add_notes_sort_order()
+    _migrate_note_memory_policy()
     _migrate_add_model_type_column()
     _migrate_add_model_endpoint_refresh_columns()
     _migrate_add_model_endpoint_owner_column()

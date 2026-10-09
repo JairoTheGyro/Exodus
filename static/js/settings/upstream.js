@@ -59,6 +59,8 @@ function renderProject(entry, canCheck) {
     const s = entry.snapshot;
     const lines = [`${p.name} — upstream review`, `Repository: ${repo}`, `Tracked branch: ${p.branch}`,
       `Exodus upstream baseline: ${p.used_version || 'Unnumbered'} / ${p.used_commit} (${p.used_date})`, p.used_note,
+      p.observed_at ? `Installation observed: ${p.observed_at}` : '',
+      p.used_image ? `Recorded container image: ${p.used_image}` : '',
       `Latest checked declared version: ${s?.version || 'Not available'}`,
       `Latest checked revision: ${s?.head || 'Not checked'}`, `Last successful check: ${s?.checked_at || 'Never'}`,
       `Last attempt: ${entry.last_attempt || 'Never'}`, entry.error ? `Last check error: ${entry.error}` : '',
@@ -114,7 +116,9 @@ function renderProject(entry, canCheck) {
     card.replaceChildren(node('h4', p.name));
     const info = node('dl', undefined, 'license-tracker-details');
     const field = (label, content) => { const row = node('div'); const value = node('dd'); value.append(content); row.append(node('dt', label), value); info.append(row); };
-    field('Used as our base', link(`${p.used_version ? p.used_version + ' · ' : ''}${short(p.used_commit)} · ${p.used_date}`, `${repo}/commit/${p.used_commit}`));
+    field(p.observed_at ? 'Recorded release reference' : 'Used as our base', link(`${p.used_version ? p.used_version + ' · ' : ''}${short(p.used_commit)} · ${p.used_date}`, `${repo}/commit/${p.used_commit}`));
+    if(p.observed_at)field('Installation verified',node('span',p.observed_at));
+    if(p.used_image){const image=node('code',p.used_image);image.style.overflowWrap='anywhere';field('Recorded image',image);}
     field('Tracked branch', node('span', p.branch));
     field('Latest checked revision', s ? link(short(s.head), `${repo}/commit/${s.head}`) : node('span', 'Not checked yet'));
     field('Latest declared version', node('span', s?.version || (s ? 'Not available — use the exact revision above' : 'Not checked yet')));

@@ -124,7 +124,7 @@ or any security behavior to match the operating system.
 ## License Tracker
 
 Settings includes License Tracker in both Essentials and Advanced for all users.
-It currently credits Odysseus and Vaultwarden, with their verified licenses,
+It credits Odysseus, Vaultwarden, DeepSeek Harness, SearXNG, ChromaDB and ntfy with their verified licenses,
 repository, license links, and actual verification date. Extend the existing
 panel and Settings registry when adding projects; preserve original notices.
 This is a manually maintained list, not a complete dependency inventory or an
@@ -135,10 +135,14 @@ with the version used merely because an upstream project changes its terms.
 ### Upstream update history
 
 License Tracker also shows upstream revisions and public update history. Its
-shipped manifest, `config/upstream_projects.json`, records each exact baseline
-used by Exodus separately from the latest checked branch revision. Maintain
+shipped manifest, `config/upstream_projects.json`, records each exact comparison
+revision separately from the latest checked branch revision. Maintain
 that baseline deliberately after an actual integration; checking for updates
 must never change it. Partial backports do not advance the full baseline.
+Container entries also record the inspected image digest and observation date;
+these records are not enforced Compose pins or original installation dates.
+Chroma's reference is the official CLI 1.4.4 release matching its executable;
+the image lacks a source revision label, so full build provenance remains unverified.
 
 Opening the panel only reads the local server cache. Admin-triggered checks,
 older history, and file-detail requests may query the allowlisted public GitHub
@@ -450,7 +454,7 @@ Its in-memory queue is bounded to 32 pending/running jobs and two workers; full
 queues drop alerts rather than delaying work. Pending alerts do not survive app
 restart. Callers must pass trusted owner, AI-origin and incognito context.
 
-`NTFY_BASE_URL` defaults to http://ntfy:80 in Compose, or http://localhost:8080
+`NTFY_BASE_URL` defaults to http://ntfy:80 in Compose, or http://localhost:8091
 for native use. `NTFY_DEFAULT_TOPIC` defaults to exodus-alerts. A saved enabled
 ntfy integration overrides the environment URL and retains its bearer token.
 An explicitly disabled saved integration prevents environment fallback.
@@ -529,14 +533,25 @@ metadata until reindexing succeeds. AI-Free accounts still defer embedding; loca
 saves never depend on Chroma availability. Pending sync retains the previously
 documented in-memory retry/restart limitation.
 
+Automatic memory now also checks each note's ai_memory_enabled flag and the
+account's ai_include_archived_notes preference (off by default). Explicitly
+sharing a note with an agent and previously saved chat content are separate.
+Revoked/deleted notes are rejected against live SQL on retrieval immediately;
+owned vector cleanup uses model-free Chroma HTTP even in AI-free mode. Consent
+and revision are rechecked around encoding. Failed cleanup retries are still
+in-memory and can be lost across restart; durable deletion intents remain future
+work before claiming guaranteed physical erasure while Chroma is unavailable.
+Archive list requests reject stale responses and refresh after pending writes;
+reminder badges never replace the archived list with active records.
+
 Verification uses disposable AI-Free state in notes_search_integration.py and
 notes_organization_integration.py, plus browser checks for tag editing, chip
 counts/filter changes, archive/unarchive and persistence across reload.
 
 ## Local Notes export
 
-Notes → Export offers Markdown ZIP (all active notes) and JSON backup (active
-and archived notes). Both ignore the current search/chip selection and preserve
+Notes → Export / import offers active-only or active-plus-archived Markdown ZIP,
+and JSON backup (active and archived notes). Exports ignore the current search/chip selection and preserve
 existing account ownership rules; signed-in users cannot export other accounts.
 The exact GET routes /api/notes/export/zip and /api/notes/export/json are available
 in both workspace modes and do not invoke AI, Chroma, or external services.
@@ -553,7 +568,8 @@ legacy values, for structural fidelity. Date strings retain stored precision;
 no timezone is invented for database timestamps without one.
 
 These exports include attachment references, not image binaries or other tables
-such as chat sessions. No import/restore UI is added. Downloads use native browser
+such as chat sessions. Downloads are unencrypted, with an explicit UI notice.
+Downloads use native browser
 attachment handling without a whole-file JavaScript Blob. Generation uses a small
 database batch and a temporary disk file, closed on failure, completion or client
 disconnect. Memory scales with the largest note and ZIP entry directory, not the
@@ -565,6 +581,28 @@ empty exports, cleanup and a 1,000-note / 62.5 MiB export. Measured peak additio
 process RSS was 7.71 MiB (Python allocations 2.27 MiB) in the local Docker test;
 these are test measurements, not universal memory limits. Browser downloads were
 opened and checked using disposable notes in an AI-free fixture.
+
+POST /api/notes/import/json restores a version-1 Exodus JSON backup as new,
+caller-owned notes, never overwriting existing IDs. The whole bounded envelope
+is validated before one transaction. Unsafe attachment references and foreign
+chat/automation links are not restored; warnings explain omissions. Old backups
+without memory consent default to automatic memory off. Existing save/event
+hooks refresh Home and apply the current account's memory policy. Both modes
+use the same local import path. Attachment files need the full local backup.
+
+## Local daily backups
+
+The Mac LaunchAgent installed by scripts/setup_local_backups.py invokes the
+existing backup CLI at 03:00 local time and keeps the latest three automatic
+archives. It has no resident process or additional container. Backups include
+local data, uploaded files, app.db with .app_key, scratchpad metadata, Vaultwarden
+and its TLS/admin files, and .env. SQLite uses consistent online snapshots;
+archives are atomic and owner-only. Restore validates and stages before swapping
+data, retaining a rollback directory that is ignored by Git and Docker builds.
+These archives are not encrypted or off-device. Docker named volumes (including
+Chroma/ntfy/Harness state) are not covered by this filesystem backup. The source
+notes remain available to reindex, but do not claim complete vector/service-state
+recovery. See docs/LOCAL_BACKUPS.md for coverage, restore and scheduling details.
 
 ## Original Library files
 
@@ -639,6 +677,9 @@ failed save does not announce success. Stale overlapping schedule responses are
 ignored. All-day forms use inclusive displayed dates and exclusive stored ends;
 nonpositive stored durations are normalized on create/update. Timed form saves
 use the selected date's offset rather than today's offset, preserving DST.
+Home sends local_start/local_end dates for floating all-day events, separately
+from UTC bounds for timed events. Recurrence uses the same date window, preventing
+tomorrow's or yesterday's all-day events from leaking into Today across timezones.
 
 Verification: `tests/calendar_quickadd_integration.py` uses isolated SQLite and
 blocked/mock inference for parsing, both modes, persistence, timezone anchoring,
@@ -754,3 +795,19 @@ The current Mac-only deployment is not a production multi-tenant deployment:
 shared ntfy topics, admin-only Harness, and other shared infrastructure are not
 private per-account services. Every future integration needs explicit ownership,
 settings, onboarding/offboarding, and cross-user tests. See docs/TEAM_ACCOUNTS.md.
+
+## Verified AI-free ordinary operations
+
+Reminders, supported non-AI integration setup/tests and the Automations view
+remain available in both modes. AI-free reminders deliver the original note
+text even when AI synthesis was previously enabled; background delivery carries
+the note owner's policy. Existing admin and account checks remain unchanged.
+The scheduler permits only reviewed local housekeeping actions and the plain
+daily digest in AI-free mode. Model/research jobs, arbitrary shell actions and
+custom tool delivery remain suspended, with their saved definitions/history
+intact. Switching modes cancels model jobs, not ordinary maintenance. Unknown
+integration presets cannot be tested or enabled through AI-free configuration;
+known ntfy, feeds, git, bookmarks, smart-home and vault presets remain available.
+Explicit ordinary-job notification output delivers owner-scoped browser notices
+in both modes; quiet or muted housekeeping remains quiet.
+The native ntfy fallback is port 8091, matching the local stack.

@@ -30,6 +30,13 @@ SUITES = {
     "notes-search": ("unittest", "tests/notes_search_integration.py"),
     "notes-organization": ("unittest", "tests/notes_organization_integration.py"),
     "notes-export": ("unittest", "tests/notes_export_integration.py"),
+    "notes-privacy": ("unittest", "tests/notes_privacy_integration.py"),
+    "notes-import": ("unittest", "tests/notes_import_integration.py"),
+    "notes-index-cleanup": ("pytest", "tests/test_note_index_cleanup.py"),
+    "email-legacy-config": ("pytest", "tests/test_email_legacy_config.py"),
+    "local-backup-roundtrip": ("pytest", "tests/test_local_backup_roundtrip.py"),
+    "local-backup-schedule": ("pytest", "tests/test_local_backup_schedule.py"),
+    "mode-parity": ("unittest", "tests/mode_parity_integration.py"),
     "library": ("unittest", "tests/library_files_integration.py"),
     "calendar": ("unittest", "tests/calendar_quickadd_integration.py"),
     "home": ("unittest", "tests/home_integration.py"),
@@ -46,6 +53,10 @@ SUITES = {
     "ui-home-forms": ("node", "tests/helpers/test_home_form_preservation.mjs"),
     "ui-email-ports": ("node", "tests/helpers/test_email_port_security.mjs"),
     "ui-vaultwarden": ("node", "tests/helpers/test_vaultwarden_ui.mjs"),
+    "ui-notes-import": ("node", "tests/helpers/test_notes_import.mjs"),
+    "ui-notes-archive": ("node", "tests/helpers/test_notes_archive_race.mjs"),
+    "ui-home-memory-policy": ("node", "tests/helpers/test_home_memory_policy.mjs"),
+    "ui-automation-mode": ("node", "tests/helpers/test_automation_mode_ui.mjs"),
 }
 
 
@@ -60,6 +71,7 @@ def isolated_environment(directory: Path):
         "PYTHONPATH": os.pathsep.join((str(ROOT), str(ROOT / "tests"))),
         "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUNBUFFERED": "1",
         "PYTHON_DOTENV_DISABLED": "1", "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+        "PYDANTIC_DISABLE_PLUGINS": "__all__",
         "ODYSSEUS_DATA_DIR": str(data), "DATABASE_URL": "sqlite:///" + str(data / "test.db"),
         "EXODUS_DOCUMENTS_DIR": str(directory / "documents"),
         "EXODUS_SCRATCHPAD_DIR": str(data),

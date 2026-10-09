@@ -108,7 +108,9 @@ def test_index_upsert_delete_and_ownership(note_store,monkeypatch):
     assert 'updated' in next(iter(collection.rows.values()))['document']
     monkeypatch.setattr('src.home_store.ai_free',lambda owner:True)
     monkeypatch.setattr('src.ai_policy.ai_free',lambda owner:True)
-    assert ni.ingest_note('n1','alice',rag=rag)['status']=='unavailable'
+    assert ni.ingest_note('n1','alice',rag=rag)['status']=='skipped'
+    assert not ni.current_metadata(next(iter(collection.rows.values()))['metadata'])
+    # Deletions clean up existing vectors even in AI-free, without embeddings.
     with factory() as db:
         db.delete(db.get(dbmod.Note,'n1'));db.commit()
     assert ni.ingest_note('n1','alice',rag=rag)['status']=='removed'

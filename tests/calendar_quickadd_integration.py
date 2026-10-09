@@ -112,6 +112,41 @@ class CalendarQuickAdd(unittest.TestCase):
         events = self.client.get('/api/calendar/events', params={'start':'2026-09-30T04:00:00Z', 'end':'2026-10-01T04:00:00Z'}).json()['events']
         self.assertIn(uid, [e['uid'] for e in events])
 
+    def test_home_uses_local_dates_for_all_day_and_utc_for_timed_events(self):
+        for title, start, end, all_day, extra in [
+            ('Yesterday', '2026-09-29', '2026-09-30', True, {}),
+            ('Today', '2026-09-30', '2026-10-01', True, {}),
+            ('Tomorrow', '2026-10-01', '2026-10-02', True, {}),
+            ('Trip', '2026-09-29', '2026-10-02', True, {}),
+            ('Recurring', '2026-09-01', '2026-09-02', True, {'rrule':'FREQ=DAILY'}),
+            ('Tokyo evening', '2026-09-29T20:00:00Z', '2026-09-29T21:00:00Z', False, {}),
+            ('Both zones', '2026-09-30T08:00:00Z', '2026-09-30T09:00:00Z', False, {}),
+            ('New York evening', '2026-10-01T02:00:00Z', '2026-10-01T03:00:00Z', False, {}),
+        ]:
+            r=self.client.post('/api/calendar/events',json={'summary':title,'dtstart':start,'dtend':end,'all_day':all_day,**extra})
+            self.assertEqual(r.status_code,200,r.text)
+        for mode in ('full','ai-free'):
+            self.client.patch('/api/home/profile',json={'mode':mode})
+            for start,end,evening in [('2026-09-30T04:00:00Z','2026-10-01T04:00:00Z','New York evening'),
+                                      ('2026-09-29T15:00:00Z','2026-09-30T15:00:00Z','Tokyo evening')]:
+                with self.subTest(mode=mode,zone=evening):
+                    r=self.client.get('/api/calendar/events',params={'start':start,'end':end,
+                        'local_start':'2026-09-30','local_end':'2026-10-01'})
+                    self.assertEqual(r.status_code,200,r.text)
+                    events=r.json()['events']
+                    self.assertEqual(sorted(e['summary'] for e in events),sorted(['Today','Trip','Recurring','Both zones',evening]))
+                    recurrence=[e for e in events if e['summary']=='Recurring']
+                    self.assertEqual(recurrence[0]['dtstart'],'2026-09-30')
+            self.client.headers['x-test-user']='someone-else'
+            self.assertEqual(self.client.get('/api/calendar/events',params={'start':start,'end':end,
+                'local_start':'2026-09-30','local_end':'2026-10-01'}).json()['events'],[])
+            self.client.headers['x-test-user']='calendar-audit'
+
+    def test_home_date_bounds_require_complete_positive_window(self):
+        params={'start':'2026-09-30T04:00:00Z','end':'2026-10-01T04:00:00Z','local_start':'2026-09-30'}
+        self.assertEqual(self.client.get('/api/calendar/events',params=params).status_code,422)
+        self.assertEqual(self.client.get('/api/calendar/events',params={**params,'local_end':'2026-09-30'}).status_code,422)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -58,6 +58,7 @@ class NoteOrganization(BaseModel):
 
 class NoteCreate(NoteOrganization):
     is_archived: bool = False
+    ai_memory_enabled: bool = True
     title: str = ""
     content: Optional[str] = None
     items: Optional[list] = None
@@ -74,6 +75,7 @@ class NoteCreate(NoteOrganization):
 
 
 class NoteUpdate(NoteOrganization):
+    ai_memory_enabled: Optional[bool] = None
     title: Optional[str] = None
     content: Optional[str] = None
     items: Optional[list] = None
@@ -120,6 +122,7 @@ def _note_to_dict(note: Note) -> Dict[str, Any]:
         "pinned": note.pinned,
         "archived": bool(note.archived),
         "is_archived": bool(note.archived),
+        "ai_memory_enabled": bool(note.ai_memory_enabled),
         "due_date": note.due_date,
         "source": note.source,
         "session_id": note.session_id,
@@ -197,7 +200,8 @@ async def dispatch_reminder(
     from src.settings import load_settings
     settings = {**load_settings(), **(settings_override or {})}
     channel = settings.get("reminder_channel", "browser")
-    llm_on = bool(settings.get("reminder_llm_synthesis", False))
+    from src.home_store import ai_free
+    llm_on = bool(settings.get("reminder_llm_synthesis", False)) and not ai_free(owner)
     title = (title or "").strip()
     note_body = (note_body or "").strip()
     cache_key = str(note_id) if note_id else ""
@@ -253,14 +257,20 @@ async def dispatch_reminder(
             if url and model:
                 persona_id = (settings.get("reminder_llm_persona") or "").strip()
                 sys_prompt = synthesis_system_prompt(persona_id)
-                raw = await llm_call_async(
-                    url=url, model=model,
-                    messages=[
-                        {"role": "system", "content": sys_prompt},
-                        {"role": "user", "content": f"Title: {title}\n\n{note_body}".strip()},
-                    ],
-                    temperature=0.7, max_tokens=200, headers=headers, timeout=30,
-                )
+                from src.ai_policy import AI_OWNER, require_ai
+                ai_token = AI_OWNER.set(owner)
+                try:
+                    require_ai(owner)
+                    raw = await llm_call_async(
+                        url=url, model=model,
+                        messages=[
+                            {"role": "system", "content": sys_prompt},
+                            {"role": "user", "content": f"Title: {title}\n\n{note_body}".strip()},
+                        ],
+                        temperature=0.7, max_tokens=200, headers=headers, timeout=30,
+                    )
+                finally:
+                    AI_OWNER.reset(ai_token)
                 from src.text_helpers import strip_think as _strip_think
                 # prose=True strips untagged "The user wants me to…" chain-of-thought.
                 # prompt_echo=True strips Qwen-style "Thinking Process:" / leaked
@@ -670,14 +680,22 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
 
     # --- LOCAL EXPORTS (no AI, vector lookup, or external requests) ---
     @router.get("/export/zip")
-    def export_notes_zip(request: Request):
+    def export_notes_zip(request: Request, include_archived: bool = False):
         from src.note_export import build_note_export, NoteExportResponse
-        return NoteExportResponse(build_note_export(_owner(request), "zip"), "zip")
+        return NoteExportResponse(build_note_export(_owner(request), "zip", include_archived=include_archived), "zip")
 
     @router.get("/export/json")
     def export_notes_json(request: Request):
         from src.note_export import build_note_export, NoteExportResponse
         return NoteExportResponse(build_note_export(_owner(request), "json"), "json")
+
+    @router.post("/import/json")
+    async def import_notes_json(request: Request):
+        from starlette.concurrency import run_in_threadpool
+        from src.note_import import read_import_body, import_note_json
+        owner = _owner(request)
+        body = await read_import_body(request)
+        return await run_in_threadpool(import_note_json, body, owner)
 
     # --- CREATE ---
     @router.post("")
@@ -703,6 +721,7 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 label=body.label,
                 archived=body.archived if body.archived is not None else body.is_archived,
                 pinned=body.pinned,
+                ai_memory_enabled=body.ai_memory_enabled,
                 due_date=body.due_date,
                 source=body.source,
                 session_id=body.session_id,
@@ -774,6 +793,8 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 note.tags = body.tags
             if body.pinned is not None:
                 note.pinned = body.pinned
+            if body.ai_memory_enabled is not None:
+                note.ai_memory_enabled = body.ai_memory_enabled
             if body.archived is not None:
                 note.archived = body.archived
             if body.is_archived is not None:

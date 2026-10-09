@@ -94,7 +94,7 @@ def _write_markdown(file, note):
         file.write(('\nAttachment reference: ' + note.image_url + '\n').encode('utf-8'))
 
 
-def build_note_export(owner, format):
+def build_note_export(owner, format, *, include_archived=False):
     """Build before sending headers; on failure discard the incomplete export.
 
     Memory is bounded by a small row batch, the largest note, and ZIP's central
@@ -108,7 +108,7 @@ def build_note_export(owner, format):
             query = db.query(Note)
             if owner is not None:
                 query = query.filter(Note.owner == owner)
-            if format == 'zip':
+            if format == 'zip' and not include_archived:
                 query = query.filter(Note.archived == False)
             notes = query.order_by(Note.id).yield_per(10)
             if format == 'zip':

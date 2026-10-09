@@ -64,8 +64,8 @@ class OrganizationChecks(unittest.TestCase):
         from unittest.mock import Mock
         encode=Mock(return_value=[[1.,2.]])
         rag=SimpleNamespace(healthy=True,_lanes=[SimpleNamespace(collection=Collection(),encode=encode)],_split_into_chunks=lambda text,chunk_size:[text])
-        self.assertEqual(ni.ingest_note(nid,'search-test',rag=rag)['status'],'unavailable');encode.assert_not_called()
-        with database() as db:save('search-test',{'mode':'full'},db)
+        self.assertEqual(ni.ingest_note(nid,'search-test',rag=rag)['status'],'skipped');encode.assert_not_called()
+        with database() as db:save('search-test',{'mode':'full','ai_include_archived_notes':True},db)
         self.assertEqual(ni.ingest_note(nid,'search-test',rag=rag)['status'],'indexed')
         old=next(iter(rows.values()));self.assertEqual(json.loads(old['tags']),['Work']);self.assertTrue(ni.current_metadata(old))
         self.update(nid,tags=['Personal'],is_archived=True)
