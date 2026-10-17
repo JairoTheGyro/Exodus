@@ -2,6 +2,7 @@
 # Validated on Python 3.11 without Docker, models, vector libraries, or npm.
 # Keep requirements.txt as the runtime source of truth.
 fastapi==0.142.2
+uvicorn==0.54.0
 httpx==0.28.1
 httpx2==2.13.1
 pydantic==2.13.5

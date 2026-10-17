@@ -1,0 +1,6 @@
+# Reviewed false positives for the gitleaks secret scan. Each line is a finding
+# fingerprint (commit:file:rule:line). Only add entries after confirming the
+# flagged text is not a real secret.
+
+# Prose in the P30 practice-test row ("files/keys, corruption/failure cleanup").
+8a41dbdbf77110e8ce4622dcff1836ffec491cee:docs/PRACTICE_TESTS.md:generic-api-key:93
