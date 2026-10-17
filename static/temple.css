@@ -1,6 +1,6 @@
 /* TempleOS-style presentation. Original reference: TempleOS 4.05 desktop.
    All existing controls stay in the DOM and use their existing handlers. */
-@font-face { font-family:'Exodus Temple'; src:url('/static/fonts/temple/Temple8x8.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+@font-face { font-family:'Exodus Temple'; src:url('fonts/temple/Temple8x8.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
 .exodus-logo { object-fit:contain; image-rendering:pixelated; flex-shrink:0; }
 .sidebar-exodus-logo { width:32px; height:32px; vertical-align:middle; margin-right:14px; }
 .welcome-name .exodus-logo { width:40px; height:40px; }

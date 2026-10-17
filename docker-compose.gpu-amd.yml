@@ -17,6 +17,9 @@ services:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
       - ${APP_DATA_DIR:-./data}:/app/data:z
+      # Alias the existing persistent directory; no second copy of user data.
+      - ${APP_DATA_DIR:-./data}:/data:z
+      - ${APP_DATA_DIR:-./data}/documents:/data/documents:z
       - ${APP_LOGS_DIR:-./logs}:/app/logs:z
       # Cookbook remote-server SSH identity. Odysseus can generate a key here;
       # add the shown public key to each remote server's authorized_keys.
@@ -28,6 +31,16 @@ services:
       # land under /app/.local for the odysseus user. Persist them so a
       # container recreate does not silently remove installed serve engines.
       - ${APP_DATA_DIR:-./data}/local:/app/.local:z
+      # Public certificate only: Exodus verifies the vault's private health URL.
+      - ${VAULTWARDEN_TLS_DIR:-./data/vaultwarden-tls}/cert.pem:/run/vaultwarden-tls/cert.pem:ro
+    # Mask vault data, TLS keys and admin credentials under both data aliases.
+    tmpfs:
+      - /app/data/vaultwarden:rw,noexec,nosuid,size=1m,mode=000
+      - /data/vaultwarden:rw,noexec,nosuid,size=1m,mode=000
+      - /app/data/vaultwarden-tls:rw,noexec,nosuid,size=1m,mode=000
+      - /data/vaultwarden-tls:rw,noexec,nosuid,size=1m,mode=000
+      - /app/data/vaultwarden-access:rw,noexec,nosuid,size=1m,mode=000
+      - /data/vaultwarden-access:rw,noexec,nosuid,size=1m,mode=000
     extra_hosts:
       # Lets the container reach local services on the Docker host, including
       # Ollama at http://host.docker.internal:11434.
@@ -40,10 +53,27 @@ services:
       - RESEARCH_LLM_ENDPOINT=${RESEARCH_LLM_ENDPOINT:-}
       - HF_TOKEN=${HF_TOKEN:-}
       - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
-      - SEARXNG_INSTANCE=http://searxng:8080
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://searxng:8080}
+      - SEARXNG_INSTANCE=${SEARXNG_INSTANCE:-http://searxng:8080}
+      - SEARXNG_CATEGORIES=${SEARXNG_CATEGORIES:-general}
+      - NTFY_BASE_URL=${NTFY_BASE_URL:-http://ntfy:80}
+      - NTFY_DEFAULT_TOPIC=${NTFY_DEFAULT_TOPIC:-exodus-alerts}
+      - NTFY_ENABLED=${NTFY_ENABLED:-true}
+      - NTFY_CACHE_MESSAGES=${NTFY_CACHE_MESSAGES:-true}
+      - CHROMA_HOST=${CHROMA_HOST:-chromadb}
+      - CHROMA_PORT=${CHROMA_PORT:-8000}
+      - CHROMA_COLLECTION=${CHROMA_COLLECTION:-exodus_knowledge}
       - CHROMADB_HOST=chromadb
       - CHROMADB_PORT=8000
+      - VAULTWARDEN_INTERNAL_URL=https://vaultwarden:80/alive
+      - VAULTWARDEN_PUBLIC_URL=${VAULTWARDEN_DOMAIN:-https://127.0.0.1:${VAULTWARDEN_PORT:-8092}}
+      - VAULTWARDEN_CA_FILE=/run/vaultwarden-tls/cert.pem
+      - VAULTWARDEN_SIGNUPS_ALLOWED=${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
+      - EXODUS_DOCUMENTS_DIR=/data/documents
+      - EXODUS_SCRATCHPAD_DIR=/data
+      - EXODUS_DOCUMENT_UPLOAD_MAX_BYTES=${EXODUS_DOCUMENT_UPLOAD_MAX_BYTES:-26214400}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/app.db}
+      - EXODUS_INVITE_ONLY=${EXODUS_INVITE_ONLY:-true}
       - AUTH_ENABLED=${AUTH_ENABLED:-true}
       - LOCALHOST_BYPASS=${LOCALHOST_BYPASS:-false}
       - COMPANION_BASE_URL=${COMPANION_BASE_URL:-}
@@ -92,6 +122,7 @@ services:
       # Find yours with:  id -u  /  id -g
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
+    networks: [default, vault_local]
     depends_on:
       searxng:
         condition: service_healthy
@@ -111,7 +142,7 @@ services:
     ports:
       - "${CHROMADB_BIND:-127.0.0.1}:8100:8000"
     volumes:
-      - chromadb-data:/chroma/chroma
+      - chromadb-data:/data
     environment:
       - ANONYMIZED_TELEMETRY=FALSE
     restart: unless-stopped
@@ -179,10 +210,105 @@ services:
     volumes:
       - ntfy-cache:/var/cache/ntfy
     environment:
-      - NTFY_BASE_URL=${NTFY_BASE_URL:-http://localhost:8091}
+      - NTFY_BASE_URL=${NTFY_PUBLIC_URL:-http://localhost:8091}
+    restart: unless-stopped
+
+  # Code runs in a dedicated environment; it cannot access the host checkout,
+  # vault, Docker socket, or Exodus database. Only a scoped model token is shared.
+  harness:
+    build: ./integrations/harness
+    image: sovereign-hub-harness:0.1.7-rc.2
+    init: true
+    ports:
+      - "127.0.0.1:8093:3080"
+    volumes:
+      - harness-home:/home/node/.dsh
+      - ./data/code-projects:/workspace
+      - ./data/code-bridge:/run/exodus:ro
+      - ./integrations/harness/supervisor.mjs:/opt/exodus/supervisor.mjs:ro
+      - ./integrations/harness/workshop-runner.mjs:/opt/exodus/workshop-runner.mjs:ro
+      - ./integrations/harness/workshop-tools.mjs:/opt/exodus/workshop-tools.mjs:ro
+    environment:
+      DSH_HOME: /home/node/.dsh
+      DSH_TELEMETRY_DISABLED: "1"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "node", "-e", "const a=Object.values(require('os').networkInterfaces()).flat().find(x=>x.family==='IPv4'&&!x.internal).address;fetch('http://'+a+':3080/').then(r=>process.exit(r.ok||r.status===401?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Privacy Hub: upgrade deliberately after a consistent backup. Do not pull
+  # latest on every restart. Preparation migrates the old named volume safely.
+  vaultwarden:
+    image: vaultwarden/server:latest
+    pull_policy: missing
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        if [ ! -r "$${ADMIN_TOKEN_FILE}" ] || [ ! -s "$${ADMIN_TOKEN_FILE}" ]; then
+          echo "Vaultwarden admin secret is missing or unreadable. Run scripts/prepare_vaultwarden.py first." >&2
+          exit 1
+        fi
+        exec /start.sh "$$@"
+      - exodus-vaultwarden
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:${VAULTWARDEN_PORT:-8092}:80"
+    volumes:
+      - ${VAULTWARDEN_DATA_DIR:-./data/vaultwarden}:/data
+      - vaultwarden-secrets:/run/secrets:ro
+      - ${VAULTWARDEN_TLS_DIR:-./data/vaultwarden-tls}/cert.pem:/run/tls/cert.pem:ro
+      - ${VAULTWARDEN_TLS_DIR:-./data/vaultwarden-tls}/key.pem:/run/tls/key.pem:ro
+    environment:
+      DATA_FOLDER: /data
+      # IP literal avoids native HSTS upgrading unrelated localhost services.
+      DOMAIN: "${VAULTWARDEN_DOMAIN:-https://127.0.0.1:${VAULTWARDEN_PORT:-8092}}"
+      ROCKET_ADDRESS: "0.0.0.0"
+      ROCKET_PORT: "80"
+      ROCKET_TLS: '{certs="/run/tls/cert.pem",key="/run/tls/key.pem"}'
+      # Enable temporarily in the ignored local .env for initial onboarding.
+      INVITATIONS_ALLOWED: "true"
+      SIGNUPS_DOMAINS_WHITELIST: ""
+      SIGNUPS_ALLOWED: "${VAULTWARDEN_SIGNUPS_ALLOWED:-false}"
+      ADMIN_TOKEN_FILE: /run/secrets/vaultwarden_admin_token
+      ENABLE_WEBSOCKET: "true"
+      DISABLE_ICON_DOWNLOAD: "true"
+      ICON_CACHE_TTL: "0"
+      PUSH_ENABLED: "false"
+      # No unsolicited update checks or query-string/access-token logs.
+      LOG_LEVEL: "warn"
+      EXTENDED_LOGGING: "false"
+    networks: [vault_local]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m,uid=1000,gid=1000,mode=1770"]
+    cap_drop: [ALL]
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    security_opt: [no-new-privileges:true]
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "--cacert", "/run/tls/cert.pem", "https://localhost:80/alive"]
+      interval: 20s
+      timeout: 4s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
 volumes:
   searxng-data:
   chromadb-data:
   ntfy-cache:
+  vaultwarden-data:
+  vaultwarden-secrets:
+  harness-home:
+
+networks:
+  # A regular bridge is required for Docker Desktop to publish a host port.
+  # Only Exodus and Vaultwarden join it; host access remains loopback-only.
+  vault_local:
+    driver: bridge

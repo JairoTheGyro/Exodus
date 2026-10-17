@@ -409,11 +409,10 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
             raise HTTPException(400, "Cannot rename user")
 
         def _rollback_auth_rename() -> bool:
-            # On self-rename the admin session has already moved to the new
-            # username, so the rollback must authenticate as the new user.
-            rollback_user = new_username if user == old_username else user
+            # Renaming back would be refused: rename_user retired the old
+            # username. Revert the exact change instead, sessions included.
             try:
-                return bool(auth_manager.rename_user(new_username, old_username, rollback_user))
+                return bool(auth_manager.revert_rename_user(new_username, old_username))
             except Exception as rollback_err:
                 logger.error(
                     "Failed to roll back auth rename %s -> %s after owner migration failure: %s",
