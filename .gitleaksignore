@@ -2,5 +2,7 @@
 # fingerprint (commit:file:rule:line). Only add entries after confirming the
 # flagged text is not a real secret.
 
-# Prose in the P30 practice-test row ("files/keys, corruption/failure cleanup").
+# Prose in the P30 row of the practice-test table, not a credential.
 8a41dbdbf77110e8ce4622dcff1836ffec491cee:docs/PRACTICE_TESTS.md:generic-api-key:93
+# An earlier version of this file quoted that same prose in a comment.
+cbf9d5087b5592dbfb5804f7b545561c800d9cc6:.gitleaksignore:generic-api-key:5
