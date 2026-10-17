@@ -5,6 +5,8 @@ on:
     types: [opened, edited, reopened, closed]
 
 permissions:
+  # contents: read lets actions/checkout fetch the script on a private repo.
+  contents: read
   issues: write
 
 jobs:
