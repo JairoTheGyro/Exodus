@@ -8,15 +8,16 @@ name: ci / docker publish
 # manifest list and applies the tags (faster + cleaner than QEMU emulation).
 # Registry: ghcr.io/<owner>/<repo>.
 
+# Exodus runs self-hosted from the local checkout and does not use published
+# images, so automatic publishing on push is turned off. Run it manually from
+# the Actions tab if an image is ever needed. To restore automatic publishing,
+# add back:
+#   push:
+#     branches: [dev, main]
+#     paths-ignore: ['**.md', 'docs/**', 'website/**', 'assets/branding/**',
+#                    '.github/ISSUE_TEMPLATE/**']
 on:
-  push:
-    branches: [dev, main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'website/**'
-      - 'assets/branding/**'
-      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
 
 concurrency:
   group: docker-publish-${{ github.ref }}
