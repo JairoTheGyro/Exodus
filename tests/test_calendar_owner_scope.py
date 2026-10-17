@@ -94,6 +94,7 @@ class _CalendarEvent:
     rrule = _Column("CalendarEvent.rrule")
     dtstart = _Column("CalendarEvent.dtstart")
     dtend = _Column("CalendarEvent.dtend")
+    all_day = _Column("CalendarEvent.all_day")
     calendar_id = _Column("CalendarEvent.calendar_id")
 
 

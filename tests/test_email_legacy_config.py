@@ -19,6 +19,9 @@ def accounts(monkeypatch, tmp_path):
     monkeypatch.setattr(database, "SessionLocal", factory)
     monkeypatch.setattr(secret_storage, "_KEY_PATH", tmp_path / ".app_key")
     monkeypatch.setattr(secret_storage, "_fernet", Fernet(Fernet.generate_key()))
+    # Other tests reload src.secret_storage; make email_helpers decrypt with
+    # the same module instance (and key) that encrypts the fixtures below.
+    monkeypatch.setattr(helpers, "_decrypt", secret_storage.decrypt)
     monkeypatch.delenv("EXODUS_ALLOW_LEGACY_EMAIL_CONFIG", raising=False)
     monkeypatch.delenv("EXODUS_LEGACY_EMAIL_OWNER", raising=False)
     legacy = Mock(return_value={

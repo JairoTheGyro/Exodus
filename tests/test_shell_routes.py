@@ -367,7 +367,7 @@ class TestPackageProbeStatus:
 
         assert _package_installed_from_probe("vllm", probe) is True
         assert status.available is False
-        assert "outside Odysseus" in status.note
+        assert "outside Exodus" in status.note
 
     def test_llama_cpp_is_installed_when_native_llama_server_exists(self):
         probe = {
@@ -391,7 +391,7 @@ class TestPackageProbeStatus:
         )
 
         assert status.available is False
-        assert "Update this system dependency outside Odysseus." not in status.note
+        assert "Update this system dependency outside Exodus." not in status.note
 
     def test_diffusers_requires_torch_too(self):
         missing_torch = {

@@ -20,7 +20,12 @@ def test_document_ai_tidy_resolves_with_owner_scope():
 
 
 def test_calendar_quick_parse_resolves_with_owner_scope():
+    # quick_parse parses locally and delegates optional AI parsing to
+    # _quick_parse_ai; both must be scoped to the signed-in owner.
     body = _function_source("routes/calendar_routes.py", "quick_parse")
+    assert "owner = _require_user(request)" in body
+    assert "require_ai(owner)" in body
+    body = _function_source("routes/calendar_routes.py", "_quick_parse_ai")
     assert "owner = _require_user(request)" in body
     assert 'resolve_endpoint("utility", owner=owner or None)' in body
     assert 'resolve_endpoint("default", owner=owner or None)' in body

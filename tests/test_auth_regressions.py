@@ -123,6 +123,8 @@ def test_set_signup_enabled_true_is_idempotent():
 
     request = _fake_auth_request()
     auth.signup_enabled = False
+    # Legacy open-registration mode; Exodus defaults to invite-only.
+    auth.invite_only = False
 
     out = asyncio.run(target(body=SetOpenRegistrationRequest(enabled=True),request=request))
 
