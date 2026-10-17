@@ -39,9 +39,10 @@ features or savings claims should stand in for working functionality.
 ## Local development
 
 The active workflow, confirmed on 2026-10-01, is fully local: the user requests a
-feature, we implement and verify it, and the user tests it. Changes may be
-committed and pushed to GitHub at any time; the self-hosted copy and GitHub should
-always be kept in sync in both directions. Cloud migration has been set aside;
+feature, we implement and verify it on its own branch, and the user tests it.
+Each change then goes through a pull request and is merged into `main`, which
+may happen at any time without separate permission. The self-hosted copy and
+GitHub should always be kept in sync in both directions. Cloud migration has been set aside;
 the prepared cloud tooling remains optional and does not change where Exodus or
 its Docker services run.
 
