@@ -163,4 +163,5 @@ services:
       - ./routes/vault/vault_routes.py:/app/routes/vault/vault_routes.py:ro
       - ./src/tools/vault.py:/app/src/tools/vault.py:ro
       - ./static/js/admin.js:/app/static/js/admin.js:ro
+      - ./static/js/modelPicker.js:/app/static/js/modelPicker.js:ro
       - ./static/js/teamInvitations.js:/app/static/js/teamInvitations.js:ro
