@@ -60,6 +60,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # The image build installs large ML wheels (torch/CUDA) and exhausts the
+      # default runner disk. Remove preinstalled toolchains the build never uses.
+      - name: Free runner disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+          sudo docker image prune --all --force
+          df -h /
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e  # v4.3.0
 
@@ -101,6 +111,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # The image build installs large ML wheels (torch/CUDA) and exhausts the
+      # default runner disk. Remove preinstalled toolchains the build never uses.
+      - name: Free runner disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/share/swift
+          sudo docker image prune --all --force
+          df -h /
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e  # v4.3.0
 
@@ -122,7 +142,10 @@ jobs:
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
 
+      # SARIF upload needs GitHub code scanning (Advanced Security), which
+      # private repositories on the free plan lack. The scan above still runs.
       - name: Upload Trivy results
+        if: ${{ !github.event.repository.private }}
         uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
         with:
           sarif_file: trivy-results.sarif
