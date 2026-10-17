@@ -1,6 +1,7 @@
 """
 Basic tests for odysseus-ui application structure
 """
+import fnmatch
 import pytest
 import sys
 import os
@@ -37,8 +38,15 @@ class TestAppStructure:
         root = os.path.dirname(os.path.dirname(__file__))
         gitignore_path = os.path.join(root, ".gitignore")
         with open(gitignore_path, encoding="utf-8") as fh:
-            ignored = {line.strip() for line in fh}
-        assert ".env" in ignored, ".env should stay local and ignored"
+            patterns = [line.strip() for line in fh]
+        ignored = False
+        for pattern in patterns:
+            if not pattern or pattern.startswith("#"):
+                continue
+            negated = pattern.startswith("!")
+            if fnmatch.fnmatch(".env", pattern.lstrip("!").lstrip("/")):
+                ignored = not negated
+        assert ignored, ".env should stay local and ignored"
 
     def test_env_example_exists(self):
         """Test that .env.example exists"""

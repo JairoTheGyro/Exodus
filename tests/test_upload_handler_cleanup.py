@@ -813,9 +813,10 @@ def test_note_calendar_and_document_routes_reserve_before_database_writes(monkey
         SimpleNamespace(),
         document_handler,
     )
+    # Included sub-routers (Library local files) have no endpoint of their own.
     create_document = next(
         route.endpoint for route in document_router.routes
-        if route.endpoint.__name__ == "create_document"
+        if getattr(getattr(route, "endpoint", None), "__name__", "") == "create_document"
     )
     with pytest.raises(HTTPException) as document_error:
         asyncio.run(create_document(

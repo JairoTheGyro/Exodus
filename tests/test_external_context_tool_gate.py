@@ -1395,7 +1395,7 @@ def test_frontend_tool_approval_uses_opaque_id_and_fixed_decisions():
         for source in approval_module_sources
     )
     assert all(
-        "20260815approvalsave1" in source
+        "20260929workspace1" in source
         for source in approval_module_sources
     )
 

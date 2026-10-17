@@ -668,9 +668,13 @@ def test_owner_migration_failure_rolls_back_auth_rename(monkeypatch, tmp_path):
     assert "alice" in am.users
     assert "alice2" not in am.users
     assert am.get_username_for_token(alice_token) == "alice"
-    saved_users = json.loads((tmp_path / "auth.json").read_text(encoding="utf-8"))["users"]
+    saved = json.loads((tmp_path / "auth.json").read_text(encoding="utf-8"))
+    saved_users = saved["users"]
     assert "alice" in saved_users
     assert "alice2" not in saved_users
+    # A reverted rename must not leave either username retired.
+    assert "alice" not in saved.get("retired_usernames", [])
+    assert "alice2" not in saved.get("retired_usernames", [])
 
 
 def test_self_rename_owner_migration_failure_rolls_back_auth_session(monkeypatch, tmp_path):

@@ -28,7 +28,14 @@ PUBLIC_GUIDES = {
 # Local deployment/development instructions are maintained with the source,
 # not published as Pages guides. Keep exceptions exact: other Markdown and
 # all landing-page videos must still live in website/.
-OPERATIONAL_GUIDES = {"VAULTWARDEN.md", "CLOUD_DEVELOPMENT.md"}
+OPERATIONAL_GUIDES = {
+    "CLOUD_DEVELOPMENT.md",
+    "EMAIL_SECURITY.md",
+    "LOCAL_BACKUPS.md",
+    "PRACTICE_TESTS.md",
+    "TEAM_ACCOUNTS.md",
+    "VAULTWARDEN.md",
+}
 # Files a referenced image name could legitimately appear in.
 TEXT_EXTS = {".md", ".html", ".htm", ".js", ".ts", ".css", ".py", ".sh",
              ".json", ".yml", ".yaml", ".txt"}

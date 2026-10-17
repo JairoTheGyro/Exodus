@@ -449,6 +449,44 @@ class AuthManager:
         )
         return True
 
+    def revert_rename_user(self, new_username: str, old_username: str) -> bool:
+        """Undo a just-completed rename_user after a later step failed.
+
+        Unlike renaming back, this releases the retirement of the original
+        username (which rename_user recorded) and does not retire the
+        temporary new one, so the account returns to its exact prior state.
+        """
+        old_username = old_username.strip().lower()
+        new_username = new_username.strip().lower()
+        if not old_username or not new_username:
+            return False
+        with self._config_lock:
+            if new_username not in self.users or old_username in self.users:
+                return False
+            retired = self._config.get("retired_usernames", [])
+            if old_username in retired:
+                # Remove only the entry this rename appended (the last one).
+                retired.reverse()
+                retired.remove(old_username)
+                retired.reverse()
+            self._config.setdefault("users", {})[old_username] = self._config["users"].pop(new_username)
+            self._save()
+
+        reverted_sessions = 0
+        with self._sessions_lock:
+            for sess in self._sessions.values():
+                sess_user = str((sess or {}).get("username") or "").strip().lower()
+                if sess_user == new_username:
+                    sess["username"] = old_username
+                    reverted_sessions += 1
+        if reverted_sessions:
+            self._save_sessions()
+        logger.info(
+            "Reverted rename '%s' -> '%s'; restored %d active session(s)",
+            old_username, new_username, reverted_sessions,
+        )
+        return True
+
     def is_admin(self, username: str) -> bool:
         return self.users.get(username, {}).get("is_admin", False)
 

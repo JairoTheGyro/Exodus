@@ -151,6 +151,8 @@ function makeWorld() {
 
   const document = {
     activeElement: null,
+    // Full mode: loadSessions returns early when workspaceMode is 'ai-free'.
+    documentElement: { dataset: {} },
     getElementById: (id) => byId.get(id) || null,
     querySelector: () => null,
     querySelectorAll: () => [],

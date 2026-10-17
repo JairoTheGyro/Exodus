@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
-<link rel="stylesheet" href="/static/temple.css">
+<link rel="stylesheet" href="static/temple.css">
 <title>Exodus — Login</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==">
 <link rel="manifest" href="static/manifest.json">
@@ -489,7 +489,9 @@
 
     // Setup or signup first
     if (mode === 'setup' || mode === 'signup' || mode === 'invite') {
-      const endpoint = appUrl(mode === 'setup' ? '/api/auth/setup' : mode === 'invite' ? '/api/auth/accept-invitation' : '/api/auth/signup');
+      const endpoint = mode === 'setup' ? appUrl('/api/auth/setup')
+        : mode === 'invite' ? appUrl('/api/auth/accept-invitation')
+        : appUrl('/api/auth/signup');
       try {
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -617,7 +619,7 @@ if (window.visualViewport) {
   });
 }
 </script>
-<script type="module" src="/static/js/settings/brand.js"></script>
+<script type="module" src="static/js/settings/brand.js"></script>
 <script type="module" nonce="{{CSP_NONCE}}">
 // Drive the login page's bg effect off the user's saved theme. The
 // sync bootstrap above already set the body class + effect CSS vars so
@@ -638,6 +640,6 @@ try {
   console.error('[login-bg] failed:', e);
 }
 </script>
-<script type="module" src="/static/js/templeLogin.js"></script>
+<script type="module" src="static/js/templeLogin.js"></script>
 </body>
 </html>
