@@ -25,10 +25,18 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
 
 - The user requests a feature; implement and verify it in this existing local
   checkout and Docker installation; then let the user test it in Exodus.
-- Commit and push to GitHub whenever it makes sense; no separate permission is
-  needed. Keep the self-hosted copy and GitHub in sync in both directions: pull
-  from GitHub before starting work, and push finished changes so GitHub matches
-  what is running locally. Do not move work into a cloud environment unasked.
+- Every feature or fix follows branch → commit → pull request → merge:
+  1. Pull the latest `main` from GitHub, then create a descriptively named
+     branch for the work (for example `feat/notes-search`).
+  2. Implement, verify and commit on that branch; push it to GitHub. While the
+     branch is checked out, the running Exodus shows the in-progress change, so
+     the user can test it before it is merged.
+  3. Open a pull request into `main` that explains the change in plain language.
+  4. Merge the pull request, then switch this checkout back to `main` and pull,
+     so the self-hosted copy and GitHub match again.
+  No separate permission is needed for any of these steps. Never commit directly
+  to `main`. Keep the self-hosted copy and GitHub in sync in both directions. Do
+  not move work into a cloud environment unasked.
 - Give each commit a specific, descriptive subject naming the feature or module
   discussed and the concrete change, so the history is easy to track. Avoid
   generic subjects such as "updates" or "fixes". Honor an exact commit message
