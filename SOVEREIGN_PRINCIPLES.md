@@ -39,10 +39,11 @@ features or savings claims should stand in for working functionality.
 ## Local development
 
 The active workflow, confirmed on 2026-10-01, is fully local: the user requests a
-feature, we implement and verify it, the user tests it, then explicitly asks for
-fixes or a commit. Do not automatically commit or push after implementing a
-feature. Cloud migration has been set aside; the prepared cloud tooling remains
-optional and does not change where Exodus or its Docker services run.
+feature, we implement and verify it, and the user tests it. Changes may be
+committed and pushed to GitHub at any time; the self-hosted copy and GitHub should
+always be kept in sync in both directions. Cloud migration has been set aside;
+the prepared cloud tooling remains optional and does not change where Exodus or
+its Docker services run.
 
 The Compose override reads edited source files directly from this checkout,
 using the installed container image. UI changes need a browser refresh. Mounted

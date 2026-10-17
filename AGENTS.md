@@ -25,9 +25,10 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
 
 - The user requests a feature; implement and verify it in this existing local
   checkout and Docker installation; then let the user test it in Exodus.
-- Wait for the user's instruction to fix or commit. Do not automatically commit,
-  push, open pull requests, or move work into a cloud environment after a feature.
-  Commit and push are separate actions; follow the user's requested scope.
+- Commit and push to GitHub whenever it makes sense; no separate permission is
+  needed. Keep the self-hosted copy and GitHub in sync in both directions: pull
+  from GitHub before starting work, and push finished changes so GitHub matches
+  what is running locally. Do not move work into a cloud environment unasked.
 - Give each commit a specific, descriptive subject naming the feature or module
   discussed and the concrete change, so the history is easy to track. Avoid
   generic subjects such as "updates" or "fixes". Honor an exact commit message
@@ -46,13 +47,11 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
   and visible results, and cleanup. Report actual execution separately from the
   reusable procedure; never label an unrun live/device check as passed.
 - Do not force-push or silently resolve Git divergence.
-- When the user authorizes a release, report three separate verified checks:
+- When pushing a change, report three separate verified checks:
   saved locally, running and checked in Docker, and pushed to GitHub. Compare
   deployed source with the checkout and local HEAD with remote main; a Git push
   alone does not update running containers. Keep this iCloud-backed checkout
   downloaded locally so Docker bind mounts can read it reliably.
-- Never run broad tests against the operator's live data. Keep synthetic data
-  and disposable service volumes separate from the `sovereign-hub` deployment.
 - Do not claim Docker, browser automation, model calls, mail delivery or device
   sync passed unless actually exercised in that environment. Probe capabilities
   first, and report skipped checks with their reason.
