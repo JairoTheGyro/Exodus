@@ -34,9 +34,23 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
   3. Open a pull request into `main` that explains the change in plain language.
   4. Merge the pull request, then switch this checkout back to `main` and pull,
      so the self-hosted copy and GitHub match again.
+  5. Update the running self-hosted Exodus so it serves the merged `main`:
+     refresh for UI-only changes, restart the app for mounted Python changes,
+     and rebuild for dependency or image changes (inspect the Compose
+     configuration first). Then confirm the running version matches `main`.
   No separate permission is needed for any of these steps. Never commit directly
-  to `main`. Keep the self-hosted copy and GitHub in sync in both directions. Do
-  not move work into a cloud environment unasked.
+  to `main`. Do not move work into a cloud environment unasked.
+- The workflow covers both copies, the self-hosted checkout and Docker
+  deployment on the Mac and the GitHub repository, in both directions:
+  - Changes that start on the Mac (uncommitted edits, work by another tool or
+    helper) go onto a branch and through a pull request; never leave them
+    unsaved or push them straight to `main`.
+  - Changes that start on GitHub (merged pull requests, Dependabot updates,
+    edits made on github.com) are pulled to the Mac and applied to the running
+    Exodus as in step 5.
+  - At the start and end of every task, compare local `main`, GitHub `main`
+    and the running deployment, and report any difference. If the two copies
+    have diverged, stop and explain rather than overwrite either side.
 - Give each commit a specific, descriptive subject naming the feature or module
   discussed and the concrete change, so the history is easy to track. Avoid
   generic subjects such as "updates" or "fixes". Honor an exact commit message

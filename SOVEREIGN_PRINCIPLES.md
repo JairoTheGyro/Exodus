@@ -41,10 +41,13 @@ features or savings claims should stand in for working functionality.
 The active workflow, confirmed on 2026-10-01, is fully local: the user requests a
 feature, we implement and verify it on its own branch, and the user tests it.
 Each change then goes through a pull request and is merged into `main`, which
-may happen at any time without separate permission. The self-hosted copy and
-GitHub should always be kept in sync in both directions. Cloud migration has been set aside;
-the prepared cloud tooling remains optional and does not change where Exodus or
-its Docker services run.
+may happen at any time without separate permission. The workflow applies to
+both copies: the self-hosted checkout and running Docker deployment, and the
+GitHub repository. Changes starting on either side go through the same branch
+and pull request flow, and after each merge both the Mac's checkout and the
+running Exodus are brought up to date, so all three always match. Cloud
+migration has been set aside; the prepared cloud tooling remains optional and
+does not change where Exodus or its Docker services run.
 
 The Compose override reads edited source files directly from this checkout,
 using the installed container image. UI changes need a browser refresh. Mounted
