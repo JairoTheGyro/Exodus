@@ -858,6 +858,10 @@ app.include_router(setup_backup_routes(memory_manager, preset_manager, skills_ma
 from routes.font_routes import setup_font_routes
 app.include_router(setup_font_routes())
 
+# Calculator currency rates (same-origin proxy; used only by Convert → Currency)
+from routes.calculator_routes import setup_calculator_routes
+app.include_router(setup_calculator_routes())
+
 
 # MCP (Model Context Protocol)
 from src.mcp_manager import McpManager

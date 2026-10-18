@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'exodus-v404-clock-app';
+const CACHE_NAME = 'exodus-v405-calculator-and-clock';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -194,6 +194,12 @@ const PANEL_PRECACHE = [
   '/static/js/clock/timers.js',
   '/static/js/clock/worldClock.js',
   '/static/js/clock/worldLand.js',
+  // Calculator — js/calculator/ graph (plus its lazily linked CSS).
+  '/static/js/calculator/calculator.css',
+  '/static/js/calculator/decimal.js',
+  '/static/js/calculator/engine.js',
+  '/static/js/calculator/index.js',
+  '/static/js/calculator/units.js',
 ];
 
 self.addEventListener('install', (e) => {

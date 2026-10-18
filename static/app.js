@@ -1123,6 +1123,21 @@ function initializeEventListeners() {
       }
     });
   }
+
+  // Calculator tool button — the module loads on first use (js/panels.js).
+  const toolCalculatorBtn = el('tool-calculator-btn');
+  if (toolCalculatorBtn) {
+    toolCalculatorBtn.addEventListener('click', async () => {
+      try {
+        const { loadPanel } = await import('./js/panels.js');
+        const calculatorModule = await loadPanel('calculator');
+        calculatorModule.toggleCalculator();
+      } catch (e) {
+        console.error('Calculator failed to load', e);
+        uiModule.showToast?.('Calculator could not load. Check your connection and try again.');
+      }
+    });
+  }
   // Refresh notes due-reminder badge on load and every 5 minutes
   if (notesModule && notesModule.refreshDueBadge) {
     notesModule.refreshDueBadge();

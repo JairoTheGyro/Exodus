@@ -29,8 +29,10 @@ PUBLIC_GUIDES = {
 # not published as Pages guides. Keep exceptions exact: other Markdown and
 # all landing-page videos must still live in website/.
 OPERATIONAL_GUIDES = {
+    "APP_RECREATION.md",
     "CLOUD_DEVELOPMENT.md",
     "EMAIL_SECURITY.md",
+    "EXODUS_ROADMAP.md",
     "LOCAL_BACKUPS.md",
     "PRACTICE_TESTS.md",
     "TEAM_ACCOUNTS.md",

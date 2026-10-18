@@ -6,3 +6,6 @@
 8a41dbdbf77110e8ce4622dcff1836ffec491cee:docs/PRACTICE_TESTS.md:generic-api-key:93
 # An earlier version of this file quoted that same prose in a comment.
 cbf9d5087b5592dbfb5804f7b545561c800d9cc6:.gitleaksignore:generic-api-key:5
+# Browser localStorage key names in the Calculator (not credentials).
+8232936b0d618b9fe2ec9e41e55323cf17656796:static/js/calculator/units.js:generic-api-key:178
+8232936b0d618b9fe2ec9e41e55323cf17656796:static/js/calculator/index.js:generic-api-key:26
