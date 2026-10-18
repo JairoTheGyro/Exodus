@@ -38,8 +38,17 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
      refresh for UI-only changes, restart the app for mounted Python changes,
      and rebuild for dependency or image changes (inspect the Compose
      configuration first). Then confirm the running version matches `main`.
-  No separate permission is needed for any of these steps. Never commit directly
-  to `main`. Do not move work into a cloud environment unasked.
+  No separate permission is needed for any of these steps: the user has granted
+  full permission to branch, commit, push, open/merge/close PRs, pull and update
+  the running app (2026-10-18). Report each merge and anything surprising.
+  Never commit directly to `main`. Do not move work into a cloud environment
+  unasked.
+- `docs/EXODUS_ROADMAP.md` is the living record of planned, in-progress and
+  finished work. Every PR moves its line(s) between sections in the same PR.
+  Recreated apps follow `docs/APP_RECREATION.md`.
+- Leave the Docker services in whatever on/off state the user chose. Restart the
+  app with `docker compose restart odysseus`; `start`/`up` also start its
+  `depends_on` services (searxng, chromadb).
 - The workflow covers both copies, the self-hosted checkout and Docker
   deployment on the Mac and the GitHub repository, in both directions:
   - Changes that start on the Mac (uncommitted edits, work by another tool or
