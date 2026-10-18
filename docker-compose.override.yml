@@ -126,6 +126,9 @@ services:
       - ./static/home.css:/app/static/home.css:ro
       - ./static/js/home.js:/app/static/js/home.js:ro
       - ./static/js/calendar.js:/app/static/js/calendar.js:ro
+      - ./static/js/clock.js:/app/static/js/clock.js:ro
+      - ./static/js/clock:/app/static/js/clock:ro
+      - ./static/js/panels.js:/app/static/js/panels.js:ro
       - ./static/js/models.js:/app/static/js/models.js:ro
       - ./static/js/memory.js:/app/static/js/memory.js:ro
       - ./static/js/rag.js:/app/static/js/rag.js:ro

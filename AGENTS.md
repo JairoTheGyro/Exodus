@@ -49,6 +49,12 @@ Read `SOVEREIGN_PRINCIPLES.md` before changing product behavior.
 - Leave the Docker services in whatever on/off state the user chose. Restart the
   app with `docker compose restart odysseus`; `start`/`up` also start its
   `depends_on` services (searxng, chromadb).
+- After switching or pulling branches, run `docker compose up -d --no-build
+  odysseus` (recreates the container if the override's mounts changed) and then
+  `docker compose restart odysseus` (single-file mounts keep the old file until a
+  restart), then compare every mounted file. A failed start can leave empty
+  directories where missing mount sources were; delete them before any image
+  build, or they get baked into the image.
 - The workflow covers both copies, the self-hosted checkout and Docker
   deployment on the Mac and the GitHub repository, in both directions:
   - Changes that start on the Mac (uncommitted edits, work by another tool or
