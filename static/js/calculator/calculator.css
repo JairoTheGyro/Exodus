@@ -16,7 +16,7 @@
   --calc-key-fn-on: color-mix(in srgb, var(--fg) 34%, var(--panel));
   --calc-key-util: color-mix(in srgb, var(--fg) 40%, var(--panel));
   --calc-key-op: var(--red, #e06c75);
-  --calc-on-op: #fff;
+  --calc-on-op: var(--calc-on-accent, #fff);   /* set from the accent's contrast in index.js */
   --calc-sidebar: color-mix(in srgb, var(--fg) 5%, var(--panel));
   --calc-font: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', 'Inter', system-ui, sans-serif;
 }
@@ -87,7 +87,10 @@
 }
 
 /* ── Body: optional history sidebar + calculator pane ── */
-#calculator-modal .calc-main { display: flex; min-height: 0; }
+/* The history column is taken out of flow so it scrolls within the pane's
+   height instead of stretching the window to the length of the history. */
+#calculator-modal .calc-main { display: flex; min-height: 0; position: relative; }
+#calculator-modal .calc-main.calc-with-history { padding-left: 220px; }
 #calculator-modal .calc-pane {
   display: flex;
   flex-direction: column;
@@ -95,9 +98,15 @@
   font-family: var(--calc-font);
   color: var(--calc-text);
 }
+/* Calculator.app's widths, shrinking (keys scale with the pane) when the
+   Exodus workspace beside the sidebar is narrower than the Mac window. */
+#calculator-modal .calc-main {
+  --calc-avail: calc(100vw - var(--icon-rail-w, 48px) - var(--sidebar-w, 0px) - 24px);
+}
+#calculator-modal .calc-main.calc-with-history { --calc-avail: calc(100vw - var(--icon-rail-w, 48px) - var(--sidebar-w, 0px) - 244px); }
 #calculator-modal .calc-pane[data-mode="basic"] { width: 230px; }
-#calculator-modal .calc-pane[data-mode="scientific"] { width: 674px; }
-#calculator-modal .calc-pane[data-mode="programmer"] { width: 488px; }
+#calculator-modal .calc-pane[data-mode="scientific"] { width: min(674px, var(--calc-avail)); min-width: 360px; container-type: inline-size; }
+#calculator-modal .calc-pane[data-mode="programmer"] { width: min(488px, var(--calc-avail)); min-width: 330px; container-type: inline-size; }
 
 /* ── Display ── */
 #calculator-modal .calc-display {
@@ -217,8 +226,8 @@
   padding: 4px 10px 11px;
 }
 #calculator-modal .calc-pane[data-mode="basic"] .calc-keys { grid-template-columns: repeat(4, 48px); grid-auto-rows: 48px; }
-#calculator-modal .calc-pane[data-mode="scientific"] .calc-keys { grid-template-columns: repeat(10, 60px); grid-auto-rows: 48px; padding-bottom: 10px; }
-#calculator-modal .calc-pane[data-mode="programmer"] .calc-keys { grid-template-columns: repeat(7, 1fr); grid-auto-rows: 48px; padding-bottom: 9px; }
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-keys { grid-template-columns: repeat(10, minmax(0, 1fr)); grid-auto-rows: 48px; padding-bottom: 10px; }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-keys { grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: 48px; padding-bottom: 9px; }
 #calculator-modal .calc-key {
   appearance: none;
   position: relative;
@@ -252,6 +261,14 @@
 #calculator-modal .calc-key[data-style="bar"] { background: var(--calc-key-fn); font-size: 15px; }
 #calculator-modal .calc-key[data-wide] { font-size: 22px; }
 #calculator-modal .calc-key:disabled { opacity: 0.4; cursor: default; filter: none; }
+/* Label sizes track the pane width (cqw) so a narrowed keypad still fits;
+   at full width they equal Calculator.app's sizes. */
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-key { font-size: min(25px, 3.7cqw); }
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-key:is([data-style="fn"], [data-style="fn-on"]) { font-size: min(17.5px, 2.6cqw); }
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-key[data-style="op"] { font-size: min(26px, 3.86cqw); }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-key { font-size: min(25px, 5.1cqw); }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-key:is([data-style="fn"], [data-style="fn-on"]) { font-size: min(17.5px, 3.6cqw); }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-key[data-style="op"] { font-size: min(26px, 5.3cqw); }
 #calculator-modal .calc-key svg { width: 1em; height: 1em; }
 
 /* RPN toolbar: a row under the stack (Basic), a column beside it (Scientific) */
@@ -326,8 +343,11 @@
 
 /* ── History sidebar ── */
 #calculator-modal .calc-history {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 220px;
-  flex-shrink: 0;
   border-right: 1px solid var(--calc-sep);
   background: var(--calc-sidebar);
   overflow-y: auto;
@@ -387,7 +407,7 @@
 /* ── Portaled menus: mode menu, history context menu ── */
 .calc-menu {
   position: fixed;
-  min-width: 210px;
+  width: 236px;
   padding: 5px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
@@ -411,10 +431,10 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.calc-menu-item:hover:not(:disabled) { background: var(--red); color: #fff; }
+.calc-menu-item:hover:not(:disabled) { background: var(--red); color: var(--calc-on-accent, #fff); }
 .calc-menu-item:disabled { opacity: 0.45; cursor: default; }
 .calc-menu-item.calc-danger { color: var(--color-error, #ff4444); }
-.calc-menu-item.calc-danger:hover { color: #fff; }
+.calc-menu-item.calc-danger:hover { color: var(--calc-on-accent, #fff); }
 .calc-menu-check { width: 12px; flex-shrink: 0; text-align: center; }
 .calc-menu-icon { width: 16px; flex-shrink: 0; display: inline-flex; justify-content: center; opacity: 0.85; }
 .calc-menu-sep { height: 1px; margin: 5px 8px; background: color-mix(in srgb, var(--fg) 14%, transparent); }
@@ -431,7 +451,7 @@
   font-size: 12px;
   cursor: pointer;
 }
-.calc-menu-places button[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+.calc-menu-places button[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: var(--calc-on-accent, #fff); }
 
 /* ── Unit picker (portaled popover) ── */
 .calc-picker {
@@ -474,7 +494,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.calc-chip[aria-pressed="true"] { background: var(--red); color: #fff; }
+.calc-chip[aria-pressed="true"] { background: var(--red); color: var(--calc-on-accent, #fff); }
 .calc-picker-list { flex: 1; overflow-y: auto; border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); }
 .calc-unit {
   display: grid;
@@ -541,6 +561,14 @@
   cursor: pointer;
 }
 #calculator-modal .calc-sheet-actions .calc-danger-btn { background: var(--color-danger, #c0392b); border-color: transparent; color: #fff; }
+
+/* Temple presentation flattens every button to white-on-blue text; give the
+   keys TempleOS cell borders and invert the operators so the keypad reads
+   as a keypad. Colours are Temple's own palette tokens. */
+html.theme-temple #calculator-modal .calc-key { border: 1px solid var(--temple-blue) !important; }
+html.theme-temple #calculator-modal .calc-key[data-style="op"] { background: var(--temple-blue) !important; color: var(--temple-white) !important; }
+html.theme-temple #calculator-modal .calc-key[data-style="util"],
+html.theme-temple #calculator-modal .calc-key[data-style="fn-on"] { background: var(--temple-light-cyan) !important; }
 
 /* Small screens: the window is a full-width sheet; keys stretch to fit. */
 @media (max-width: 768px) {

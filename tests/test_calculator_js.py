@@ -248,3 +248,22 @@ def test_calculator_only_uses_theme_tokens_for_colour():
     hexes = set(re.findall(r"#[0-9a-fA-F]{3,6}\b", css))
     assert hexes <= {"#fff", "#000", "#e06c75", "#ff4444", "#c0392b"}, hexes
     assert "var(--panel)" in css and "var(--fg)" in css and "var(--red" in css
+
+
+def test_browser_check_regressions_stay_fixed():
+    """Layout fixes found in the 2026-10-18 in-browser run of P34."""
+    css = (_CALC_DIR / "calculator.css").read_text()
+    js = (_CALC_DIR / "index.js").read_text()
+    # sub/superscript labels need an inline wrapper: flex items ignore vertical-align
+    assert "h('span.calc-key-label'" in js
+    # history scrolls inside the window instead of stretching it to the list length
+    assert re.search(r"\.calc-history \{\s*position: absolute;", css)
+    # Scientific/Programmer shrink to the workspace and labels scale with the pane
+    assert "min(674px, var(--calc-avail))" in css and "cqw" in css
+    assert "function keepOnScreen()" in js
+    # operator glyph colour follows the accent's contrast (Terminal's green accent)
+    assert "function syncAccentInk()" in js and "var(--calc-on-accent, #fff)" in css
+    # Temple keeps keys visible using Temple's own palette tokens
+    assert "html.theme-temple #calculator-modal .calc-key" in css and "var(--temple-blue)" in css
+    # the mode menu has a fixed width so the decimal-places row wraps
+    assert re.search(r"\.calc-menu \{\s*position: fixed;\s*width: 236px;", css)

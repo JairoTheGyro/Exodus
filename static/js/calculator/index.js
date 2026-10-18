@@ -374,7 +374,8 @@ function keyButton(spec) {
   });
   if (spec.wide) btn.dataset.wide = '';
   if (typeof spec.text === 'object') btn.innerHTML = ICONS[spec.text.icon];
-  else btn.append(spansToNodes(label(spec.text)));
+  // One inline wrapper: flex children ignore vertical-align, which <sup>/<sub> rely on.
+  else btn.append(h('span.calc-key-label', {}, spansToNodes(label(spec.text))));
   btn.addEventListener('click', () => {
     if (btn._longPressed) { btn._longPressed = false; return; }
     press(spec.key);
@@ -407,6 +408,45 @@ let keysEl = null;
 let open = false;
 let popup = null;           // { el, close } for the open menu or picker
 
+/** WCAG relative luminance of an `rgb(...)` string. */
+function luminance(rgb) {
+  const [r, g, b] = (rgb.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(v => {
+    const c = Number(v) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Operator keys, selected chips and menu highlights sit on the theme accent.
+ * Calculator.app uses white there; keep white while it has at least 3:1
+ * contrast and switch to a near-black ink on light accents (e.g. Terminal's
+ * green), so every preset and custom theme stays readable.
+ */
+function syncAccentInk() {
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;color:var(--red, #e06c75)';
+  document.body.append(probe);
+  const accent = getComputedStyle(probe).color;
+  probe.remove();
+  const L = luminance(accent);
+  const whiteContrast = 1.05 / (L + 0.05);
+  document.documentElement.style.setProperty('--calc-on-accent', whiteContrast >= 3 ? '#fff' : '#111');
+}
+
+let accentObserver = null;
+function watchTheme() {
+  syncAccentInk();
+  if (accentObserver) return;
+  let queued = false;
+  accentObserver = new MutationObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; syncAccentInk(); });
+  });
+  accentObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+}
+
 function ensureCss() {
   if (document.querySelector('link[data-calculator-css]')) return;
   document.head.append(h('link', { rel: 'stylesheet', href: CSS_HREF, 'data-calculator-css': '1' }));
@@ -425,6 +465,7 @@ function registerWindow() {
 
 function buildModal() {
   ensureCss();
+  watchTheme();
   modal = h(`div#${MODAL_ID}.modal`, { style: 'display:none' });
   historyBtn = h('button.calc-tool', {
     type: 'button', html: ICONS.sidebar, title: 'Show History', 'aria-label': 'Show History',
@@ -460,6 +501,7 @@ function buildModal() {
   window.addEventListener('keydown', onKeydown, true);
   window.addEventListener('keyup', onShift, true);
   window.addEventListener('blur', () => { if (shiftHeld) { shiftHeld = false; update(); } });
+  window.addEventListener('resize', () => { if (open) update(); });
 }
 
 // ── Rendering ───────────────────────────────────────────────────────────
@@ -467,7 +509,11 @@ function buildModal() {
 function update() {
   if (!pane) return;
   pane.dataset.mode = state.mode;
-  const showHistory = state.showHistory && historyAvailable();
+  // History needs 220px beside the keypad; when the workspace is too narrow it
+  // hides for now without changing the saved preference.
+  const roomForHistory = workspaceWidth() - 244 >= (state.mode === 'basic' ? 230 : state.mode === 'scientific' ? 360 : 330);
+  const showHistory = state.showHistory && historyAvailable() && roomForHistory;
+  main.classList.toggle('calc-with-history', showHistory);
   historyBtn.hidden = !historyAvailable();
   historyBtn.setAttribute('aria-pressed', String(showHistory));
   historyBtn.title = showHistory ? 'Hide History' : 'Show History';
@@ -500,6 +546,24 @@ function update() {
   }
   parts.push(keysEl);
   pane.replaceChildren(...parts);
+  requestAnimationFrame(keepOnScreen);
+}
+
+function workspaceWidth() {
+  const cs = getComputedStyle(document.documentElement);
+  const rail = parseFloat(cs.getPropertyValue('--icon-rail-w')) || 0;
+  const side = parseFloat(cs.getPropertyValue('--sidebar-w')) || 0;
+  return window.innerWidth - (window.innerWidth > 768 ? rail + side : 0);
+}
+
+/** A dragged window is pinned with a fixed left/top; when a mode change grows it, pull it back on screen. */
+function keepOnScreen() {
+  if (!content || content.style.position !== 'fixed' || !open) return;
+  const r = content.getBoundingClientRect();
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8));
+  const top = Math.max(8, Math.min(r.top, window.innerHeight - r.height - 8));
+  if (left !== r.left) content.style.left = `${left}px`;
+  if (top !== r.top) content.style.top = `${top}px`;
 }
 
 function spansEl(cls, spans) {
@@ -762,7 +826,7 @@ function openUnitPicker(anchor, isInput) {
     footer.replaceChildren();
     footer.hidden = !(category === 'Currency' && !query);
     if (!footer.hidden) {
-      footer.append(h('span', { text: rates?.source ? `Rates: ${rates.source}` : 'Rates via Exodus server' }));
+      footer.append(h('span', { text: `Rates: ${(rates?.source || 'ExchangeRate-API').replace(/\s*\(.*\)$/, '')}`, title: rates?.source || '' }));
       if (rates?.updated) footer.append(h('span', { text: `Updated ${relativeTime(rates.updated * 1000)}${rates.stale ? ' (offline copy)' : ''}` }));
     }
   };
@@ -773,10 +837,13 @@ function openUnitPicker(anchor, isInput) {
 
   panel.style.zIndex = String(topPortalZ());
   document.body.append(panel);
+  // Beside the window like Calculator.app's popover; inside it only when neither side has room.
   const a = anchor.getBoundingClientRect();
+  const win = content.getBoundingClientRect();
   const r = panel.getBoundingClientRect();
-  let left = a.right + 10;
-  if (left + r.width > window.innerWidth - 8) left = Math.max(8, a.left - r.width - 10);
+  let left = win.right + 10;
+  if (left + r.width > window.innerWidth - 8) left = win.left - r.width - 10;
+  if (left < 8) left = Math.max(8, Math.min(a.right + 10, window.innerWidth - r.width - 8));
   const top = Math.min(Math.max(8, a.top + a.height / 2 - r.height / 2), window.innerHeight - r.height - 8);
   panel.style.left = `${left}px`;
   panel.style.top = `${top}px`;
