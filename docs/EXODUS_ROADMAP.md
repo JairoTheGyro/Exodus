@@ -14,18 +14,13 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Working on it
 
-- **Stage 1 · Updates:** bring in the three Dependabot update PRs (#6 GitHub
-  Actions, #1 the bombadil test tool, #5 Python libraries). Keep MCP on version
-  1, then rebuild the running app with a rollback image.
+- **Stage 1 · Sign-in under a sub-address** (`/exodus/`): test in a real browser
+  with a temporary copy of Exodus and fake data. Pause the real Exodus while it
+  runs.
 
 ## Needs to get started
 
 ### Stage 1 · Stabilise and finish what's open
-- Hand test and merge the **Calculator** (`feat/calculator-app`), then the
-  **Clock** (`feat/clock-app`). They clash in `panels.js`, `sw.js` and the
-  practice tests; keep both.
-- **Sign-in under a sub-address** (`/exodus/`): test in a real browser with a
-  temporary copy of Exodus and fake data. Pause the real Exodus while it runs.
 - **License Tracker:** run every check for real, compare with GitHub, and record
   what works.
 
@@ -85,6 +80,18 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Finished
 
+- 2026-10-18 · **Clock** app (macOS-style world clock, alarms, stopwatch,
+  timers) merged alongside the Calculator (this PR).
+- 2026-10-18 · **Calculator** app (basic, scientific, programmer, conversions,
+  currency), hand-tested in the running Exodus
+  ([#27](https://github.com/JairoTheGyro/Exodus/pull/27)).
+- 2026-10-18 · **Updates:** GitHub Actions
+  ([#6](https://github.com/JairoTheGyro/Exodus/pull/6)), the bombadil test tool
+  ([#1](https://github.com/JairoTheGyro/Exodus/pull/1)) and the Python libraries
+  with MCP held at version 1
+  ([#24](https://github.com/JairoTheGyro/Exodus/pull/24), replacing #5). The app
+  image was rebuilt; the previous image is kept as
+  `sovereign-hub-odysseus:pre-deps-2026-10` for rollback.
 - 2026-10-18 · This roadmap and the app recreation guide
   (`docs/APP_RECREATION.md`) created; full-permission workflow recorded in
   `AGENTS.md`.
