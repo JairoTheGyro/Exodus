@@ -19,6 +19,11 @@ updates:
     groups:
       python:
         patterns: ["*"]
+    ignore:
+      # MCP 2 is a major release that may break Exodus's MCP servers; upgrade it
+      # deliberately on its own branch (roadmap: parking lot).
+      - dependency-name: "mcp"
+        update-types: ["version-update:semver-major"]
 
   # Frontend / tooling npm packages (package.json).
   - package-ecosystem: npm
