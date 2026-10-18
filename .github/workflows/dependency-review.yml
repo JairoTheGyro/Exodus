@@ -30,10 +30,10 @@ jobs:
   dependency-review:
     name: dependency-review (PR gate)
     # Only meaningful on a pull request -- it needs a base..head diff to review.
-    # It also needs GitHub Advanced Security, which private repositories on the
-    # free plan lack, so it is skipped while the repository is private.
-    # pip-audit below still runs either way.
-    if: github.event_name == 'pull_request' && !github.event.repository.private
+    # dependency-review-action needs GitHub dependency-review support (GitHub
+    # Advanced Security). Run it on the canonical repository and on any public
+    # repository; skip it while this fork is private. pip-audit below still runs.
+    if: github.event_name == 'pull_request' && (github.repository == 'odysseus-dev/odysseus' || !github.event.repository.private)
     runs-on: ubuntu-latest
     permissions:
       contents: read

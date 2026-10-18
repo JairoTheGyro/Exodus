@@ -55,10 +55,13 @@ Write-Step "Building portable exe bundle"
 Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue
 
 $dataArgs = @(
+    "--add-data", "licenses;licenses",
+    "--add-data", "THIRD_PARTY_PROVENANCE.json;.",
+    "--add-data", "ACKNOWLEDGMENTS.md;.",
     "--add-data", "static;static",
     "--add-data", "scripts;scripts",
     "--add-data", "mcp_servers;mcp_servers",
-    "--add-data", "services/hwfit/catalogs;services/hwfit/catalogs",
+    "--add-data", "services/hwfit/data;services/hwfit/data",
     "--add-data", "config;config",
     "--add-data", ".env.example;.env.example"
 )

@@ -282,7 +282,7 @@ def reset_model_cache():
 def refresh_dynamic_catalogs(force=False):
     """Refresh API-backed model catalogs and invalidate the merged cache.
 
-    The bundled JSON files remain the offline fallback. Dynamic catalogs live
+    The bundled JSON lists are intentionally empty. Dynamic catalogs live
     under DATA_DIR so runtime refreshes do not dirty the source tree.
     """
     from services.hwfit.hf_discovery import (
@@ -300,8 +300,8 @@ def refresh_dynamic_catalogs(force=False):
 def get_models():
     global _models_cache
     if _models_cache is None:
-        data_path = os.path.join(os.path.dirname(__file__), "catalogs", "hf_models.json")
-        static_mlx_path = os.path.join(os.path.dirname(__file__), "catalogs", "mlx_community_models.json")
+        data_path = os.path.join(os.path.dirname(__file__), "data", "hf_models.json")
+        static_mlx_path = os.path.join(os.path.dirname(__file__), "data", "mlx_community_models.json")
         try:
             from services.hwfit.hf_discovery import (
                 load_cached_hf_collection_models,
@@ -324,6 +324,7 @@ def get_models():
                 seen.add(name)
                 rows.append(_normalize_model_entry(model))
 
+        _append_models(_load_model_file(model_catalog_path()))
         for model in _load_model_file(data_path):
             if not isinstance(model, dict):
                 continue
@@ -340,4 +341,6 @@ def get_models():
 
 
 def model_catalog_path():
-    return os.path.join(os.path.dirname(__file__), "catalogs", "hf_models.json")
+    """Mutable user catalog populated by the maintenance scripts."""
+    from src.constants import DATA_DIR
+    return os.path.join(DATA_DIR, "hwfit", "hf_models.json")
