@@ -14,15 +14,22 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Working on it
 
-- **Stage 1 · Sign-in under a sub-address** (`/exodus/`): test in a real browser
-  with a temporary copy of Exodus and fake data. Pause the real Exodus while it
-  runs.
+- **Stage 1 · License Tracker screen:** the checks themselves are verified (see
+  Finished). Still to do: look at the Settings → License Tracker screen in the
+  browser once Jairo signs the browser pane back in.
 
 ## Needs to get started
 
 ### Stage 1 · Stabilise and finish what's open
-- **License Tracker:** run every check for real, compare with GitHub, and record
-  what works.
+
+### Service updates found by the License Tracker (2026-10-18)
+- **Vaultwarden 1.37.3 → 1.37.4** (password manager; patch release, do first).
+- **ntfy 2.27.0 → 2.32.0** (notifications).
+- **ChromaDB 1.4.4 → 1.5.9** (AI memory store; check data compatibility first).
+- **DeepSeek Harness 0.1.7-rc.2 → 0.2.1-rc.2** (preview releases; test carefully).
+- SearXNG: 392 newer changes since the installed dated image.
+- Each one: update its image or pin, keep the old one for rollback, restart only
+  that service, check it in Exodus, then update `config/upstream_projects.json`.
 
 ### Stage 2 · Catch up with the original Odysseus
 - Merge the ~469 new upstream Odysseus changes on a sync branch. Keep every
@@ -74,12 +81,27 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 - Later: a hosted version with open signups.
 
 ### Parking lot
+- **Whole app under a sub-address:** only the sign-in page supports serving
+  Exodus under a prefix like `/exodus/`. The rest of the app uses absolute paths
+  (inherited from Odysseus). Not needed for the home-server plan, which gives
+  Exodus its own address.
 - **MCP 2 upgrade,** tested on its own branch. Then remove the Dependabot ignore
   rule.
 - **Clearer rename error** when a username is reserved.
 
 ## Finished
 
+- 2026-10-18 · **License Tracker checks verified:** all six projects checked
+  live, and every result matched GitHub (Odysseus 469 changes ahead, Vaultwarden
+  35, Harness 2,373, SearXNG 392, ChromaDB 324, ntfy 307, plus their newest
+  releases). The one-minute wait, offline history and file-change details work.
+  15 automated tracker tests pass.
+- 2026-10-18 · **Sign-in under a sub-address tested** in a real browser (a
+  temporary copy behind a proxy, fake data). The sign-in page works under
+  `/exodus/`; the main app after sign-in doesn't (inherited, parked).
+- 2026-10-18 · Dependabot kept proposing MCP 2; the ignore now covers every 2.x
+  version, and fastapi 0.143.2 was taken
+  ([#31](https://github.com/JairoTheGyro/Exodus/pull/31), replacing #25).
 - 2026-10-18 · **Clock** app (macOS-style world clock, alarms, stopwatch,
   timers) merged alongside the Calculator (this PR).
 - 2026-10-18 · **Calculator** app (basic, scientific, programmer, conversions,
