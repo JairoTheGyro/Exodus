@@ -22,8 +22,10 @@ updates:
     ignore:
       # MCP 2 is a major release that may break Exodus's MCP servers; upgrade it
       # deliberately on its own branch (roadmap: parking lot).
+      # A plain major-update ignore didn't stop Dependabot from widening the
+      # range from mcp<2 to mcp<3, so ignore every 2.x+ version outright.
       - dependency-name: "mcp"
-        update-types: ["version-update:semver-major"]
+        versions: [">=2"]
 
   # Frontend / tooling npm packages (package.json).
   - package-ecosystem: npm
