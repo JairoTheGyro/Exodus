@@ -165,3 +165,6 @@ services:
       - ./static/js/admin.js:/app/static/js/admin.js:ro
       - ./static/js/modelPicker.js:/app/static/js/modelPicker.js:ro
       - ./static/js/teamInvitations.js:/app/static/js/teamInvitations.js:ro
+      - ./static/js/panels.js:/app/static/js/panels.js:ro
+      - ./static/js/calculator:/app/static/js/calculator:ro
+      - ./routes/calculator_routes.py:/app/routes/calculator_routes.py:ro
