@@ -220,7 +220,7 @@ export function createCardRendering({
       const next = [...body.children].filter(c => c !== existingForm);
       next.forEach(c => c.remove());
       if (sorted.length === 0) {
-        body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg">No notes <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
+        body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg" role="status">' + (state.searchQuery ? 'No matching notes found' : 'No notes') + ' <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
       } else {
         existingForm.insertAdjacentHTML('afterend', html);
       }
@@ -229,7 +229,7 @@ export function createCardRendering({
       _renderLabelsInto(body);
       _renderQuickAdd(body);
       if (sorted.length === 0) {
-        body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg">No notes yet <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
+        body.insertAdjacentHTML('beforeend', '<div class="notes-empty-msg" role="status">' + (state.searchQuery ? 'No matching notes found' : 'No notes yet') + ' <span style="vertical-align:-3px;margin-left:4px;">' + uiModule.emptyStateIcon('smiley') + '</span></div>');
       } else {
         body.insertAdjacentHTML('beforeend', html);
       }

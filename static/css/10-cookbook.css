@@ -4123,10 +4123,59 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Sovereign Solutions: everyday controls first, the full workspace on demand.
+   These rules only affect presentation; admin visibility still owns access. */
+.settings-view-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.settings-view-controls,
+.settings-setup-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings-view-bar p { margin: 0; flex: 1 1 220px; }
+.settings-view-controls button,
+.settings-setup-choices button { white-space: nowrap; }
+.settings-view-controls [aria-pressed="true"],
+.settings-setup-choices [aria-pressed="true"] {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border-color: var(--red);
+  color: var(--fg);
+}
+.settings-view-controls button:focus-visible,
+.settings-setup-choices button:focus-visible,
+.settings-local-help button:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.settings-setup-intro p { margin: 8px 0 16px; }
+.settings-local-help {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.settings-local-help button { flex-shrink: 0; }
+.settings-local-help span { flex: 1 1 220px; }
+#settings-modal.settings-essentials [data-settings-advanced],
+#settings-modal.settings-essentials[data-setup-choice="local"] [data-setup-card="cloud"],
+#settings-modal.settings-essentials[data-setup-choice="cloud"] [data-setup-card="local"],
+#settings-modal:not(.settings-essentials) .settings-setup-choices {
+  display: none !important;
+}
+
 .settings-layout {
   display: flex;
   min-height: 400px;
-  max-height: calc(85vh - 60px);
+  max-height: calc(85dvh - 150px);
 }
 
 .settings-modal-content[style*="height"],

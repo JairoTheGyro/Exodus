@@ -1,0 +1,125 @@
+/* Exodus additions (Workshop, License Tracker, Local Services). Loaded after
+   the upstream fragments; kept separate so upstream catch-ups stay simple. */
+/* The Workshop extends the existing modal and document surfaces. */
+#workshop-modal .ws-content { width:min(700px,94vw); max-height:92vh; background:var(--bg); }
+#workshop-modal #ws-close { display:flex !important; align-items:center; justify-content:center; }
+#workshop-modal .ws-body { overflow:auto; padding:20px 24px; display:flex; flex-direction:column; gap:14px; }
+#workshop-modal .ws-body > * { flex-shrink:0; }
+#workshop-modal p { margin:0; line-height:1.5; }
+#workshop-modal .ws-intro { font-size:24px; font-weight:650; letter-spacing:-.6px; }
+#workshop-modal .ws-demo { padding:14px; border:1px solid #bc873f; border-radius:8px; background:#bc873f12; line-height:1.5; }
+#workshop-modal fieldset { border:0; padding:0; margin:0 0 14px; display:flex; flex-direction:column; gap:9px; min-width:0; }
+#workshop-modal label { display:block; font-weight:600; font-size:13px; }
+#workshop-modal input:not([type=checkbox]):not([type=file]), #workshop-modal textarea, #workshop-modal select { width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--border,#6665); border-radius:7px; font:inherit; color:inherit; background:var(--bg); box-sizing:border-box; }
+#workshop-modal textarea { resize:vertical; }
+#workshop-modal button:not(.close-btn) { padding:8px 12px; border:1px solid var(--border,#6665); border-radius:7px; font:inherit; color:inherit; background:transparent; cursor:pointer; }
+#workshop-modal button:disabled { opacity:.45; cursor:not-allowed; }
+#workshop-modal button:not(:disabled):hover { background:#8882; }
+#workshop-modal #ws-build { background:var(--text,#ddd); color:var(--bg,#222); font-weight:650; padding:12px; }
+#workshop-modal .ws-actions, #workshop-modal .ws-examples { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+#workshop-modal .ws-examples { font-size:12px; margin:4px 0 8px; }
+#workshop-modal .ws-columns { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+#workshop-modal .ws-columns label { margin-bottom:8px; }
+#workshop-modal .ws-hint { font-size:12px; opacity:.75; }
+#workshop-modal details { font-size:13px; line-height:1.6; }
+#workshop-modal details p { margin:10px 0; }
+#workshop-modal summary { cursor:pointer; }
+#workshop-modal .ws-check { display:flex; align-items:flex-start; gap:8px; font-weight:400; margin:9px 0; }
+#workshop-modal [hidden] { display:none !important; }
+#workshop-modal #ws-scope { border:1px solid var(--border,#6665); padding:14px; border-radius:8px; }
+#workshop-modal .ws-zone { display:inline-block; border-radius:4px; padding:3px 7px; margin-bottom:8px; }
+#workshop-modal .ws-zone[data-zone=green] { background:#40895a25; }
+#workshop-modal .ws-zone[data-zone=yellow] { background:#d39b3325; }
+#workshop-modal .ws-zone[data-zone=red] { background:#cb565625; }
+#workshop-modal .ws-model { display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--border,#6665); padding-top:14px; }
+#workshop-modal #ws-status { font-size:13px; }
+@media(max-width:520px) { #workshop-modal .ws-body { padding:16px; } #workshop-modal .ws-columns { grid-template-columns:1fr; } }
+
+/* License Tracker shares the Settings shell and the active theme. */
+.license-tracker { font-size:13px; line-height:1.6; }
+.license-tracker p { margin:10px 0; }
+.license-tracker h3 { margin:0; font-size:17px; }
+.license-tracker-details { margin:16px 0; }
+.license-tracker-details > div { display:grid; grid-template-columns:140px minmax(0,1fr); gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+.license-tracker-details dt { font-weight:600; }
+.license-tracker-details dd { margin:0; overflow-wrap:anywhere; }
+.license-tracker a { color:var(--fg); text-decoration:underline; text-underline-offset:3px; overflow-wrap:anywhere; }
+.license-tracker-links { display:flex; flex-wrap:wrap; gap:8px 20px; }
+.license-tracker .license-tracker-notice { font-size:12px; line-height:1.6; }
+@media(max-width:520px) { .license-tracker-details > div { grid-template-columns:1fr; gap:2px; } }
+.upstream-project { border-top:1px solid var(--border); padding-top:16px; margin-top:16px; }
+.upstream-project h4 { font-size:14px; margin:20px 0 8px; }
+.upstream-project .upstream-button { background:var(--panel); color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:8px 12px; cursor:pointer; font:inherit; }
+.upstream-project .upstream-button:disabled { opacity:.55; cursor:default; }
+.upstream-change { margin:8px 0; padding:10px; border:1px solid var(--border); border-radius:6px; }
+.upstream-change summary { cursor:pointer; overflow-wrap:anywhere; }
+.upstream-notes { white-space:pre-wrap; overflow-wrap:anywhere; max-height:320px; overflow:auto; }
+.upstream-files { padding-left:20px; overflow-wrap:anywhere; }
+.upstream-change > a, .upstream-change > button { display:inline-block; margin:4px 10px 4px 0; }
+.upstream-status { overflow-wrap:anywhere; }
+
+/* Local companion-service shortcuts; no background probes or duplicate settings. */
+.local-services { font-size:13px; line-height:1.6; }
+.local-services h3 { font-size:17px; margin:0 0 10px; }
+.local-services p { margin:10px 0; }
+.local-services .local-service-note { font-size:12px; }
+.local-service-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:14px 0; }
+.local-service-actions a { color:var(--fg); text-decoration:underline; text-underline-offset:3px; }
+.local-service-actions .local-service-open { display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border:1px solid var(--border); border-radius:6px; background:var(--panel); text-decoration:none; min-height:36px; }
+.local-service-actions .local-service-open:hover { background:var(--bg); }
+.local-service-address { font-size:12px; overflow-wrap:anywhere; }
+.local-services code { font-size:inherit; overflow-wrap:anywhere; }
+:is(#local-services-section, #privacy-hub-section) .section-title { border:0; padding:0; background:transparent; font-family:inherit; text-align:left; }
+:is(#local-services-section, #privacy-hub-section) .list-item { width:100%; padding:8px; border:0; background:transparent; color:inherit; font:inherit; text-align:left; }
+:is(#local-services-section, #privacy-hub-section) .list-item svg { flex-shrink:0; opacity:.5; }
+#local-services-modal .modal-content { width:560px; max-width:calc(100% - 24px); max-height:calc(100% - 24px); }
+#local-services-modal .modal-body { padding:0 16px 16px; }
+#local-services-modal .modal-header h2 { margin:0; font-size:17px; }
+
+#code-launch[hidden], #code-models[hidden] { display: none !important; }
+
+/* Notes exports use the same theme and fit narrow/docked panels. */
+.notes-export-options:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.notes-export-link { color: var(--fg); text-decoration: underline; padding: 4px 0; }
+.notes-export-options small { opacity: .75; line-height: 1.4; }
+
+/* Original files live alongside the Library's editable documents. */
+.library-files-panel { flex: 1; min-height: 0; flex-direction: column; gap: 10px; overflow-y: auto; }
+.library-file-drop { padding: 24px 12px; border: 1px dashed var(--border); border-radius: 8px; background: var(--panel); color: var(--fg); font: inherit; cursor: pointer; flex-shrink: 0; }
+.library-file-drop.drag-over { outline: 2px solid var(--fg); background: var(--bg); }
+.library-file-help { opacity: .7; }
+.library-file-toolbar, .library-file-row, .library-file-actions { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.library-file-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.library-file-list { display: flex; flex-direction: column; gap: 8px; }
+.library-file-row { padding: 12px; border: 1px solid var(--border); border-radius: 6px; }
+.library-file-row > div:first-child { min-width: 0; }
+.library-file-row strong { font-size: 13px; overflow-wrap: anywhere; }
+.library-file-row small { display: block; font-size: 11px; opacity: .7; margin-top: 5px; overflow-wrap: anywhere; }
+.library-file-actions { flex-shrink: 0; font-size: 12px; }
+.library-file-actions a { color: var(--fg); }
+@media (max-width: 540px) { .library-file-row { align-items: flex-start; flex-direction: column; } }
+
+/* Quick add always works locally; AI assist is an explicit optional choice. */
+.cal-quickadd-ai { display:flex; align-items:center; gap:6px; padding:0 12px 8px; font-size:12px; color:var(--text-secondary); }
+
+/* Keep the horizontal Settings buttons clear of the scrollbar on narrow views. */
+@media (max-width: 600px) {
+  .settings-sidebar-content { min-height: 42px; align-items: center; scrollbar-width: thin; }
+  .settings-sidebar-content .settings-nav-item { flex: 0 0 auto; white-space: nowrap; }
+}
+@container settings-modal (max-width: 620px) {
+  .settings-sidebar-content { min-height: 42px; align-items: center; scrollbar-width: thin; }
+}
+
+/* Reserve logo space until the selected palette is decoded; no original-color flash. */
+.exodus-logo[data-logo-pending] { visibility: hidden; }

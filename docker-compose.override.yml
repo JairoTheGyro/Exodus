@@ -5,7 +5,6 @@ services:
   odysseus:
     volumes:
       - ./static/index.html:/app/static/index.html:ro
-      - ./static/style.css:/app/static/style.css:ro
       - ./static/sw.js:/app/static/sw.js:ro
       - ./static/js/settings.js:/app/static/js/settings.js:ro
       - ./static/js/settings:/app/static/js/settings:ro

@@ -132,11 +132,11 @@ export function createNotesReminders({
     return state.notes.filter(n => !n.archived && _isDueTodayOrOverdue(n.due_date, clock) && !_isNoteFullyDone(n)).length;
   }
 
-  function _countFiredReminders() {
+  function _countFiredReminders(notes = state.notes) {
     // Reminders whose time has actually passed (not just date-today),
     // and which fired after the last user dismissal.
     const now = clock.now();
-    return state.notes.filter(n => {
+    return notes.filter(n => {
       if (n.archived || _isNoteFullyDone(n)) return false;
       if (!n.due_date || !_hasTimeComponent(n.due_date)) return false;
       const t = new Date(n.due_date).getTime();
@@ -152,15 +152,12 @@ export function createNotesReminders({
   }
 
   async function refreshDueBadge(opts = {}) {
-    // Usually lightweight, but callers that just created a note reminder can
-    // force a refresh so the background reminder loop sees it immediately.
-    if (opts.force || state.notes.length === 0) {
-      try {
-        const wasArchived = state.showingArchived;
-        app.setShowingArchived(false);
-        await _fetchNotes();
-        app.setShowingArchived(wasArchived);
-      } catch {}
+    // Badge data is independent of the selected Notes view. Never temporarily
+    // switch the shared archive flag across an await or overwrite archived rows.
+    if (opts.force || state.notes.length === 0 || state.showingArchived) {
+      const notes = await _fetchNotes({ archived: false, apply: !state.showingArchived });
+      _updateRailBadge(notes);
+      return;
     }
     _updateRailBadge();
   }

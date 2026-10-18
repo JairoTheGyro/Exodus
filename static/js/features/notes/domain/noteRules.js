@@ -38,13 +38,22 @@ export function _nextGoalStep(note) {
 
 export function _noteTags(n) {
   const tags = [];
-  if (n?.label) tags.push(...n.label.trim().split(/\s+/).filter(Boolean));
+  if (Array.isArray(n?.tags)) tags.push(...n.tags);
+  else if (n?.label) tags.push(...n.label.trim().split(/\s+/).filter(Boolean));
   if (n?.due_date && _hasTimeComponent(n.due_date)) tags.push('reminder');
   return [...new Set(tags.map(t => t.replace(/^#+/, '').trim()).filter(Boolean))];
 }
 
 export function _visibleNoteTags(n) {
   return _noteTags(n).filter(t => t !== 'reminder');
+}
+
+export function _hasNoteReminder(n) {
+  return Boolean(n?.due_date && _hasTimeComponent(n.due_date));
+}
+
+export function _isDefaultNote(n) {
+  return !_hasNoteReminder(n) && _visibleNoteTags(n).length === 0;
 }
 
 export function _isPastReminder(n, clock) {

@@ -1,6 +1,5 @@
 /** Label chips, reminder/goal filters and collapsed tag-strip rendering. */
-import { _visibleNoteTags, _nextGoalStep } from '../domain/noteRules.js';
-import { _hasTimeComponent } from '../domain/recurrence.js';
+import { _visibleNoteTags, _nextGoalStep, _hasNoteReminder, _isDefaultNote } from '../domain/noteRules.js';
 export function createFilters({
   NOTES_LABELS_COLLAPSED_KEY,
   _clearPastReminders,
@@ -24,10 +23,10 @@ export function createFilters({
     const labels = new Set();
     for (const n of visibleNotes) for (const t of _visibleNoteTags(n)) labels.add(t);
     const sortedLabels = [...labels].sort();
-    // Count active reminders (not archived, has datetime due_date)
-    const reminderCount = visibleNotes.filter(n => !n.archived && n.due_date && _hasTimeComponent(n.due_date)).length;
+    // Count within the current active or archived view using the same filters as the list.
+    const reminderCount = visibleNotes.filter(_hasNoteReminder).length;
     const pastReminderCount = visibleNotes.filter(n => !n.archived && _isPastReminder(n)).length;
-    const defaultCount = visibleNotes.filter(n => !n.archived && _visibleNoteTags(n).length === 0).length;
+    const defaultCount = visibleNotes.filter(_isDefaultNote).length;
     // Active goals = non-archived goal notes. Today view lists pending steps
     // from each, so we surface the count next to the chip.
     const goalCount = visibleNotes.filter(n => n.note_type === 'goal' && !n.archived).length;
@@ -41,8 +40,8 @@ export function createFilters({
     }
     bar.style.display = '';
     const allActive = state.activeLabel === null && state.activeFilter === null;
-    let html = `<button class="notes-label-chip${allActive ? ' active' : ''}" data-action="all">All</button>`;
-    html += `<button class="notes-label-chip${state.activeFilter === 'default' ? ' active' : ''}" data-action="default" title="Show notes without tags">Default <span class="notes-label-chip-count">${defaultCount}</span></button>`;
+    let html = `<button class="notes-label-chip${allActive ? ' active' : ''}" data-action="all">All <span class="notes-label-chip-count">${visibleNotes.length}</span></button>`;
+    html += `<button class="notes-label-chip${state.activeFilter === 'default' ? ' active' : ''}" data-action="default" title="Show notes without reminders or custom tags">Default <span class="notes-label-chip-count">${defaultCount}</span></button>`;
     if (todayCount > 0) {
       const isOn = state.activeFilter === 'today';
       const icon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
@@ -66,7 +65,7 @@ export function createFilters({
       html += `<button class="notes-label-chip notes-label-clear-past" data-action="clear-past-reminders" title="Delete reminders whose time has passed"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear past <span class="notes-label-chip-count">${pastReminderCount}</span></button>`;
     }
     for (const lbl of sortedLabels) {
-      html += `<button class="notes-label-chip${state.activeLabel === lbl ? ' active' : ''}" data-label="${_esc(lbl)}">#${_esc(lbl)}</button>`;
+      html += `<button class="notes-label-chip${state.activeLabel === lbl ? ' active' : ''}" data-label="${_esc(lbl)}">#${_esc(lbl)} <span class="notes-label-chip-count">${visibleNotes.filter(n => _visibleNoteTags(n).includes(lbl)).length}</span></button>`;
     }
     bar.innerHTML = html;
     bar.querySelectorAll('.notes-label-chip').forEach(chip => {
@@ -86,8 +85,9 @@ export function createFilters({
         } else if (chip.dataset.action === 'reminders') {
           app.setActiveLabel(null);
           // Cycle: null → reminders → null → no-reminders → null → reminders → ...
-          if (state.activeFilter === null) {
-            app.setActiveFilter(state.reminderChipNext);
+          // From any other filter (Default, Goals, Today) go straight to reminders.
+          if (state.activeFilter !== 'reminders' && state.activeFilter !== 'no-reminders') {
+            app.setActiveFilter(state.activeFilter === null ? state.reminderChipNext : 'reminders');
             app.setReminderChipNext((state.reminderChipNext === 'reminders') ? 'no-reminders' : 'reminders');
           } else {
             app.setActiveFilter(null);

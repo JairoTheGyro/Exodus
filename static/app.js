@@ -1112,7 +1112,7 @@ function initializeEventListeners() {
   if (toolClockBtn) {
     toolClockBtn.addEventListener('click', async () => {
       try {
-        const { loadPanel } = await import('./js/panels.js');
+        const { loadPanel } = await import('./js/panels.js?v=20260909movepicklayer1');
         const clockModule = await loadPanel('clock');
         clockModule.toggleClock();
       } catch (e) {
@@ -1127,7 +1127,7 @@ function initializeEventListeners() {
     const saved = JSON.parse(localStorage.getItem('odysseus-clock-v1') || 'null');
     const pending = saved && ((saved.alarms || []).some(a => a && a.enabled) || (saved.timers || []).some(t => t && t.endsAt));
     if (pending) {
-      const startClock = () => import('./js/panels.js')
+      const startClock = () => import('./js/panels.js?v=20260909movepicklayer1')
         .then(({ loadPanel }) => loadPanel('clock'))
         .then(m => m.startClockBackground())
         .catch(e => console.warn('Clock background start failed', e));
@@ -1151,7 +1151,7 @@ function initializeEventListeners() {
   if (toolCalculatorBtn) {
     toolCalculatorBtn.addEventListener('click', async () => {
       try {
-        const { loadPanel } = await import('./js/panels.js');
+        const { loadPanel } = await import('./js/panels.js?v=20260909movepicklayer1');
         const calculatorModule = await loadPanel('calculator');
         calculatorModule.toggleCalculator();
       } catch (e) {

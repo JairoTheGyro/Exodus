@@ -13,6 +13,7 @@ export function createDraftEditor({
       color: form.dataset.noteColor || '',
       title: form.querySelector('.note-form-title')?.value || '',
       label: form.querySelector('.note-form-label')?.value || '',
+      ai_memory_enabled: form.querySelector('.note-form-ai-memory')?.checked !== false,
       due_date: form.querySelector('.note-form-due')?.value || null,
       repeat: form.querySelector('.note-form-repeat')?.value || 'none',
     };
@@ -57,7 +58,7 @@ export function createDraftEditor({
     const d = _loadDraft(id);
     if (!d) return { note, restored: false };
     const merged = { ...(note || {}) };
-    ['note_type', 'color', 'title', 'label', 'due_date', 'repeat', 'content', 'items'].forEach(k => {
+    ['note_type', 'color', 'title', 'label', 'due_date', 'repeat', 'content', 'items', 'ai_memory_enabled'].forEach(k => {
       if (d[k] !== undefined) merged[k] = d[k];
     });
     return { note: merged, restored: true };

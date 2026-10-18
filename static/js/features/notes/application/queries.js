@@ -1,6 +1,5 @@
 /** Application-owned filtering, searching and note ordering. */
-import { _noteTags, _visibleNoteTags, _nextGoalStep, _isCalendarReminderNote } from '../domain/noteRules.js';
-import { _hasTimeComponent } from '../domain/recurrence.js';
+import { _noteTags, _nextGoalStep, _isCalendarReminderNote, _hasNoteReminder, _isDefaultNote } from '../domain/noteRules.js';
 export function createQueries({
   _hasActiveReminder,
   state
@@ -9,11 +8,11 @@ export function createQueries({
     const displayNotes = _userVisibleNotes();
     let filtered = state.activeLabel ? displayNotes.filter(n => _noteTags(n).includes(state.activeLabel)) : displayNotes;
     if (state.activeFilter === 'reminders') {
-      filtered = filtered.filter(n => n.due_date && _hasTimeComponent(n.due_date));
+      filtered = filtered.filter(_hasNoteReminder);
     } else if (state.activeFilter === 'no-reminders') {
-      filtered = filtered.filter(n => !(n.due_date && _hasTimeComponent(n.due_date)));
+      filtered = filtered.filter(n => !_hasNoteReminder(n));
     } else if (state.activeFilter === 'default') {
-      filtered = filtered.filter(n => _visibleNoteTags(n).length === 0);
+      filtered = filtered.filter(_isDefaultNote);
     } else if (state.activeFilter === 'goals') {
       filtered = filtered.filter(n => n.note_type === 'goal' && !n.archived);
     } else if (state.activeFilter === 'today') {

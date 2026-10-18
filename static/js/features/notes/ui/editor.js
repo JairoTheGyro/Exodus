@@ -13,6 +13,7 @@ export function createEditor({
   _dotBg,
   _dotIsActive,
   _esc,
+  _fetchNotes,
   _isBgImage,
   _renderNotes,
   _safeImgSrc,
@@ -62,6 +63,10 @@ export function createEditor({
           : _buildChecklistHtml(items)}
     </div>
     <div class="note-form-reminder-tags"></div>
+    <div class="note-memory-policy">
+      <label><input type="checkbox" class="note-form-ai-memory" ${note?.ai_memory_enabled !== false ? 'checked' : ''}> Allow automatic AI memory</label>
+      <small>Off keeps this note out of automatic AI context. AI-free mode always skips memory. This does not erase earlier chat messages or prevent you from explicitly sharing the note with AI.</small>
+    </div>
     <div class="note-form-meta">
       <div class="note-form-type-seg${type === 'todo' ? ' is-todo' : type === 'draw' ? ' is-draw' : ''}" role="group">
         <button type="button" class="note-form-type-pill${type === 'note' ? ' active' : ''}" data-type="note">
@@ -84,7 +89,7 @@ export function createEditor({
       <div class="note-color-picker">
         ${COLORS.map(c => `<span class="note-color-dot${_dotIsActive(c.value, color) ? ' active' : ''}" data-color="${c.value}" style="background:${_dotBg(c.value, color)}" title="${c.name || 'default'}"></span>`).join('')}
       </div>
-      <input type="text" class="note-form-label" value="${_esc(note?.label || '')}" placeholder="#tag1 #tag2" title="Tag(s) — space-separated" />
+      <input type="text" class="note-form-label" value="${_esc(note?.label || '')}" placeholder="#tag1 #tag2" title="Tags — space-separated, for example Work Personal" aria-label="Tags" />
       <div class="note-form-actions-group">
         ${isEdit ? `
         <button type="button" class="note-form-text-btn note-form-archive-btn note-form-collapsible" title="Archive">
@@ -423,6 +428,8 @@ export function createEditor({
         note_type: currentType,
         color: currentColor,
         label: labelVal,
+        tags: _tags,
+        ai_memory_enabled: form.querySelector('.note-form-ai-memory')?.checked !== false,
         due_date: form.querySelector('.note-form-due').value || null,
         repeat: form.querySelector('.note-form-repeat')?.value || 'none',
         image_url: currentImageUrl || null,
@@ -459,7 +466,7 @@ export function createEditor({
     // archive-mode (visually + behaviorally) and flips to Update on the first
     // edit. Lets the user tap a note to skim, then tap ✓ to archive without ever
     // touching a separate Archive button.
-    if (isEdit && window.innerWidth <= 768) {
+    if (isEdit && !note.archived && window.innerWidth <= 768) {
       const _saveLabelEl = _saveBtnEl0.querySelector('.nft-label');
       const _isFinishedTodo = () => {
         if (currentType !== 'todo') return false;
@@ -498,9 +505,22 @@ export function createEditor({
     form.querySelector('.note-form-cancel').addEventListener('click', () => { form._flushDraft?.(); app.setEditingId(null); _renderNotes(); });
 
     // Archive / Delete : edit-mode-only buttons, mirror the (now-hidden) card actions.
-    form.querySelector('.note-form-archive-btn')?.addEventListener('click', () => {
+    const archiveNoteButton = form.querySelector('.note-form-archive-btn');
+    if (archiveNoteButton && note?.archived) {
+      archiveNoteButton.title = 'Unarchive';
+      const label = archiveNoteButton.querySelector('.nft-label');
+      if (label) label.textContent = 'Unarchive';
+    }
+    archiveNoteButton?.addEventListener('click', async () => {
       if (!isEdit) return;
-      _archiveNoteById(note.id);
+      if (!note.archived) { _archiveNoteById(note.id); return; }
+      try {
+        await api.patchNote(note.id, { is_archived: false });
+        app.setEditingId(null);
+        await _fetchNotes();
+        _renderNotes();
+        uiModule.showToast('Unarchived');
+      } catch { uiModule.showError('Failed to unarchive'); }
     });
     form.querySelector('.note-form-delete-btn')?.addEventListener('click', () => {
       if (!isEdit) return;

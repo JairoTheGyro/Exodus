@@ -43,6 +43,10 @@ from src.url_safety import OutboundAddressBlocked, connect_outbound_tcp
 logger = logging.getLogger(__name__)
 
 
+class EmailConfigurationError(RuntimeError):
+    """Account configuration could not be read safely; never select a fallback."""
+
+
 class EmailNotConfiguredError(RuntimeError):
     """Raised when an IMAP operation is attempted on an account that has no
     inbox configured (e.g. a send-only / SMTP-only account).
@@ -251,6 +255,17 @@ class _PolicySMTP_SSL(smtplib.SMTP_SSL):
         return self.context.wrap_socket(sock, server_hostname=self._host)
 
 
+def _verified_ssl_context(context=None):
+    """Use system trust roots; never accept a context that disables verification."""
+    if context is None:
+        context = ssl.create_default_context()
+        context.check_hostname = True
+        context.verify_mode = ssl.CERT_REQUIRED
+    if not context.check_hostname or context.verify_mode != ssl.CERT_REQUIRED:
+        raise ssl.SSLError("Email TLS requires certificate and hostname verification")
+    return context
+
+
 def _send_smtp_message(cfg: dict, from_addr: str, recipients: list[str], message: str | bytes, timeout: int = 30) -> None:
     """Send through SMTP using the configured transport security mode."""
     host = cfg["smtp_host"]
@@ -269,17 +284,20 @@ def _send_smtp_message(cfg: dict, from_addr: str, recipients: list[str], message
             smtp.login(user, password)
 
     security = _smtp_security_mode(cfg)
+    if security == "none":
+        raise ssl.SSLError("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
+    context = _verified_ssl_context()
     block_private = _mail_private_blocked(cfg.get("owner"))
 
     if security == "ssl":
-        with _PolicySMTP_SSL(host, port, timeout=timeout, block_private=block_private) as smtp:
+        with _PolicySMTP_SSL(host, port, timeout=timeout, block_private=block_private, context=context) as smtp:
             _auth_smtp(smtp)
             smtp.sendmail(from_addr, recipients, message)
         return
 
     with _PolicySMTP(host, port, timeout=timeout, block_private=block_private) as smtp:
         if security == "starttls":
-            smtp.starttls()
+            smtp.starttls(context=context)
         _auth_smtp(smtp)
         smtp.sendmail(from_addr, recipients, message)
 
@@ -309,7 +327,7 @@ def _friendly_email_auth_error(protocol: str, host: str, error: object) -> str:
     if microsoft_basic_auth_failure:
         return (
             "Microsoft no longer accepts normal mailbox passwords for "
-            "Outlook/Office 365 IMAP/SMTP in most accounts. Odysseus "
+            "Outlook/Office 365 IMAP/SMTP in most accounts. Exodus "
             "does not support Microsoft OAuth/Graph mail yet, so Outlook "
             "accounts cannot be added with this password form."
         )
@@ -1152,9 +1170,14 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
       1. If account_id given → that specific EmailAccount row.
       2. Else → the row with is_default=True (scoped to `owner` when given).
       3. Else → the first enabled row (scoped to `owner` when given).
-      4. Else → legacy flat keys in data/settings.json (kept for envs
-         where the migration hasn't run yet or accounts table is empty).
-      5. Else → env vars (SMTP_HOST / IMAP_HOST / ...).
+      4. Only with explicit operator opt-in AND a matching named owner →
+         legacy flat settings/env keys. This plaintext compatibility path is
+         disabled by default and never used after a database error.
+
+    An explicitly requested missing, disabled or foreign account fails closed;
+    it never selects a different account. Prefer encrypted Email Accounts in
+    Settings. Legacy opt-in requires EXODUS_ALLOW_LEGACY_EMAIL_CONFIG=true and
+    EXODUS_LEGACY_EMAIL_OWNER matching the authenticated caller exactly.
 
     Returned dict always has the same shape as before; an `account_id` key is
     added so callers can stamp derivative records (email_ai_replies etc.).
@@ -1164,9 +1187,6 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
     inherit whoever else's IMAP/SMTP creds happened to be the default. Pass
     `owner` from the route's auth dependency to scope the lookup.
     """
-    import os
-    from core.database import SessionLocal as _SL, EmailAccount as _EA
-
     def _owner_or_matching_legacy_account(query):
         if not owner:
             return query
@@ -1175,9 +1195,9 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
         same_mailbox = or_(_EA.imap_user == owner, _EA.from_address == owner)
         return query.filter(or_(_EA.owner == owner, and_(unowned, same_mailbox)))
 
-    resolved_id = None
     row = None
     try:
+        from core.database import SessionLocal as _SL, EmailAccount as _EA
         db = _SL()
         try:
             if account_id:
@@ -1190,6 +1210,8 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
                 # only visible on a mailbox match, same as the fallback below.
                 if row is not None and owner and not _account_visible_to_owner(row, owner):
                     row = None
+                if row is None:
+                    raise EmailNotConfiguredError("Requested email account is unavailable")
             # Fallback path — restrict to this owner's accounts so we don't
             # leak another user's default mailbox to an unconfigured user.
             if row is None:
@@ -1201,7 +1223,6 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
                 q = _owner_or_matching_legacy_account(q)
                 row = q.order_by(_EA.created_at.asc()).first()
             if row is not None:
-                resolved_id = row.id
                 cfg = {
                     "account_id": row.id,
                     "account_name": row.name,
@@ -1232,13 +1253,35 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
                 return cfg
         finally:
             db.close()
-    except Exception as e:
-        logger.debug(f"email_accounts lookup failed, falling back to settings.json: {e}")
+    except EmailNotConfiguredError:
+        raise
+    except Exception:
+        # DB/driver errors can contain bound credential values. Do not log or
+        # return the original exception, and never open a different mailbox.
+        logger.warning("Email account configuration could not be read safely")
+        raise EmailConfigurationError("Email account configuration is unavailable; retry or check the account settings") from None
 
-    # Legacy fallback — flat keys in settings.json / env vars
+    legacy_owner = os.environ.get("EXODUS_LEGACY_EMAIL_OWNER", "").strip()
+    legacy_allowed = os.environ.get("EXODUS_ALLOW_LEGACY_EMAIL_CONFIG", "").strip().lower() == "true"
+    if not legacy_allowed or not owner or not legacy_owner or owner != legacy_owner:
+        raise EmailNotConfiguredError("No email account configured for this user; add an Email Account in Settings")
+
+    # Deliberate temporary compatibility only. No credentials are copied,
+    # migrated or deleted here; the operator should reconnect through Settings.
+    try:
+        return _legacy_email_config()
+    except Exception:
+        logger.warning("Legacy email configuration could not be read safely")
+        raise EmailConfigurationError("Legacy email configuration is invalid; use Email Accounts in Settings") from None
+
+
+def _legacy_email_config() -> dict:
+    """Read plaintext legacy fields only after the opt-in/owner gate above."""
     settings = _load_settings()
+    if not isinstance(settings, dict):
+        raise ValueError("Invalid settings shape")
     cfg = {
-        "account_id": resolved_id,
+        "account_id": None,
         "account_name": "legacy",
         "owner": owner or "",
         "smtp_host": settings.get("smtp_host", os.environ.get("SMTP_HOST", "")),
@@ -1253,13 +1296,13 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
         "imap_port": int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993),
         "imap_user": settings.get("imap_user", os.environ.get("IMAP_USER", "")),
         "imap_password": settings.get("imap_password", os.environ.get("IMAP_PASSWORD", "")),
-        "imap_starttls": settings.get("imap_starttls", True),
+        "imap_starttls": str(settings.get("imap_starttls", int(settings.get("imap_port", os.environ.get("IMAP_PORT", "993")) or 993) == 143)).lower() in {"true", "1"},
         "from_address": settings.get("email_from", os.environ.get("EMAIL_FROM", "")),
     }
     if not (cfg["smtp_host"] and cfg["smtp_user"] and cfg["smtp_password"]):
-        logger.warning("SMTP not configured — add an Email Account in Settings or set env vars")
+        logger.warning("SMTP not configured — add an Email Account in Settings")
     if not (cfg["imap_host"] and cfg["imap_user"] and cfg["imap_password"]):
-        logger.warning("IMAP not configured — add an Email Account in Settings or set env vars")
+        logger.warning("IMAP not configured — add an Email Account in Settings")
     return cfg
 
 
@@ -1279,9 +1322,9 @@ def _list_email_accounts() -> list[dict]:
             return [_get_email_config(r.id) for r in rows]
         finally:
             db.close()
-    except Exception as e:
-        logger.debug(f"_list_email_accounts failed, returning [default]: {e}")
-        return [_get_email_config()]
+    except Exception:
+        logger.warning("Email account list could not be read safely")
+        raise EmailConfigurationError("Email account list is unavailable; retry or check the account settings") from None
 
 
 # ── IMAP helpers ──
@@ -1311,14 +1354,12 @@ def _open_imap_connection(
     `owner` is the principal the destination is judged for
     (see _mail_private_blocked)."""
     port = int(port or 993)
+    ssl_context = _verified_ssl_context(ssl_context)
     block_private = _mail_private_blocked(owner)
     if starttls:
         conn = _PolicyIMAP4(host, port, timeout=timeout, block_private=block_private)
         try:
-            if ssl_context:
-                conn.starttls(ssl_context=ssl_context)
-            else:
-                conn.starttls()
+            conn.starttls(ssl_context=ssl_context)
         except Exception:
             # Don't leak the open plain socket if the STARTTLS upgrade is
             # rejected; close it before propagating. (#3174)
@@ -1327,11 +1368,9 @@ def _open_imap_connection(
             except Exception:
                 pass
             raise
-    elif port == 993:
-        kwargs = {"ssl_context": ssl_context} if ssl_context else {}
-        conn = _PolicyIMAP4_SSL(host, port, timeout=timeout, block_private=block_private, **kwargs)
     else:
-        conn = _PolicyIMAP4(host, port, timeout=timeout, block_private=block_private)
+        # STARTTLS off always means implicit TLS, including custom TLS ports.
+        conn = _PolicyIMAP4_SSL(host, port, timeout=timeout, block_private=block_private, ssl_context=ssl_context)
     try:
         conn.sock.settimeout(timeout)
     except Exception:
@@ -1359,13 +1398,7 @@ def _imap_connect(account_id: str | None = None, owner: str = "",
         raise EmailNotConfiguredError(
             f"IMAP is not configured for account {cfg.get('account_name') or 'default'!r}"
         )
-    # Connection mode:
-    #   STARTTLS on → plain + upgrade
-    #   STARTTLS off + port 993 → implicit SSL (IMAPS)
-    #   STARTTLS off + any other port → plain (local Dovecot, custom ports)
-    # The last branch is critical: previously this fell into IMAP4_SSL
-    # for any non-STARTTLS port, which would fail the TLS handshake on
-    # plain local servers (Dovecot on 31143, etc.).
+    # STARTTLS upgrades before authentication; otherwise require implicit TLS.
     conn = _open_imap_connection(
         cfg["imap_host"],
         cfg["imap_port"],
@@ -2154,7 +2187,7 @@ class SendEmailRequest(BaseModel):
     # Exact IMAP draft to remove after successful delivery.
     draft_uid: Optional[str] = None
     draft_folder: Optional[str] = None
-    # Internal marker for Odysseus-generated mail (e.g. reminder, scheduled).
+    # Internal marker for Exodus-generated mail (e.g. reminder, scheduled).
     odysseus_kind: Optional[str] = None
     # If true, /send waits for SMTP + Sent append and returns the sent UID.
     wait_for_delivery: bool = False

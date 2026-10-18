@@ -33,7 +33,7 @@ export function initCodeDetails(body) {
   }
   refresh.addEventListener('click', update);
   body.querySelector('#code-model-settings').addEventListener('click', async () => {
-    const settings = await import('../settings.js?v=sovereign-essentials1');
+    const settings = await import('../settings.js?v=20260912writingstyle3');
     body.closest('.modal')?._dismiss?.();
     settings.open('services');
   });

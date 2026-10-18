@@ -121,7 +121,7 @@ const PRECACHE = [
   '/static/js/emailLibrary/unsubscribe.js',
   // Exodus additions.
   '/static/js/libraryFiles.js',
-  '/static/js/documentLibrary.js',
+  '/static/js/documentLibrary.js?v=20260911librarybulkdelete1',
   '/static/js/workshop.js',
   '/static/js/workshopRuntime.js',
   '/static/workshop-frame.html',

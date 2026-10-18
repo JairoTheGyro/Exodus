@@ -1,5 +1,5 @@
 /** Original files in Library. No preview processing, embeddings, or remote calls. */
-import uiModule from './ui.js';
+import uiModule from './ui.js?v=20260916largetoolscroll1';
 
 export function mountLibraryFiles(panel) {
   panel.innerHTML = `

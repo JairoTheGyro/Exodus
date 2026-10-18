@@ -631,8 +631,25 @@ async def _auto_summarize_pass(days_back: int = 1, account_id: str | None = None
 
 
 async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None = None, max_process: int | None = None, progress_cb=None, away_only: bool = False, override_url=None, override_model=None, override_headers=None) -> str:
-    """Single pass of the auto-summarize/reply scan for ONE account.
-    Reads current settings flags."""
+    """Run opted-in templates independently, then optional AI processing."""
+    from src.home_store import ai_free
+    kwargs = dict(days_back=days_back, account_id=account_id,
+                  max_process=max_process, progress_cb=progress_cb)
+    template_result = await _scan_email_account(
+        **kwargs, away_only=True, respect_away_start=not away_only)
+    if away_only or ai_free(_owner_for_email_account(account_id)):
+        return template_result
+    ai_result = await _scan_email_account(
+        **kwargs, away_only=False, override_url=override_url,
+        override_model=override_model, override_headers=override_headers)
+    return "\n".join(r for r in (template_result, ai_result) if r != "Nothing to do") or "Nothing to do"
+
+
+async def _scan_email_account(days_back: int = 1, account_id: str | None = None, max_process: int | None = None, progress_cb=None, away_only: bool = False, respect_away_start: bool = True, override_url=None, override_model=None, override_headers=None) -> str:
+    """Shared mailbox scan with mutually exclusive template and AI operations."""
+    from src.home_store import ai_free
+    if not away_only and ai_free(_owner_for_email_account(account_id)):
+        return "AI-free workspace: automatic AI email processing is disabled."
     import asyncio
     import sqlite3 as _sql3
     from src.llm_core import _uses_max_completion_tokens
@@ -641,7 +658,7 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
     auto_sum = settings.get("email_auto_summarize", False)
     auto_reply = settings.get("email_auto_reply", False)
     auto_reply_draft = bool(auto_reply and settings.get("_email_auto_reply_draft_only", False))
-    auto_reply_away = bool(auto_reply and not auto_reply_draft and _away_reply_active(settings, account_id))
+    auto_reply_away = bool(away_only and auto_reply and not auto_reply_draft and _away_reply_active(settings, account_id))
     auto_tag = settings.get("email_auto_tag", False)
     auto_spam = settings.get("email_auto_spam", False)
     auto_cal = settings.get("email_auto_calendar", False)
@@ -858,13 +875,15 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
                     auto_reply_away
                     and _folder.upper() == "INBOX"
                     and not _is_self_mail
-                    and (away_only or _message_after_away_enabled(settings, msg))
+                    and (not respect_away_start or _message_after_away_enabled(settings, msg))
                     and not _away_reply_already_sent(settings, account_owner, account_id, message_id, _from_addr_only)
                 )
                 need_class = (auto_tag or auto_spam) and message_id not in _tag_existing
                 has_calendar_attachment = bool(_calendar_attachment_payloads(msg))
+                # auto_cal is already off for template-only (away) scans; calendar
+                # attachments are still offered outside them.
                 need_cal = (
-                    (bool(settings.get("email_auto_calendar", False)) or has_calendar_attachment)
+                    (auto_cal or (has_calendar_attachment and not away_only))
                     and message_id not in _cal_existing
                 )
                 need_urgent = (auto_urgent and message_id not in _urgent_existing
@@ -1367,7 +1386,7 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
                                     cfg = _get_email_config(account_id, owner=account_owner)
                                     to_addr = cfg["from_address"]  # self-email
 
-                                    # Deep-link to open the original email in Odysseus (if public URL is configured).
+                                    # Deep-link to open the original email in Exodus (if public URL is configured).
                                     # Hash format `#email=FOLDER:UID` is handled by static/js/emailInbox.js:_maybeOpenFromHash.
                                     from src.settings import load_settings as _ls
                                     _pub = (_ls().get("app_public_url") or "").rstrip("/")
@@ -1379,7 +1398,7 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
                                     alert_body = (
                                         f"Your AI assistant flagged this email as {urgency.upper()} urgency.\n\n"
                                         f"Reason: {reason}\n\n"
-                                        + (f"Open in Odysseus: {open_url}\n\n" if open_url else "")
+                                        + (f"Open in Exodus: {open_url}\n\n" if open_url else "")
                                         + f"---\n"
                                         f"From: {sender}\n"
                                         f"Subject: {subject}\n"
@@ -1387,14 +1406,14 @@ async def _auto_summarize_pass_single(days_back: int = 1, account_id: str | None
                                         f"{body[:800]}"
                                         + ("..." if len(body or "") > 800 else "")
                                     )
-                                    # HTML alternative with a clickable "Open in Odysseus" button
+                                    # HTML alternative with a clickable "Open in Exodus" button
                                     import html as _h
                                     body_excerpt = _h.escape((body or "")[:800])
                                     open_html = (
                                         f'<p><a href="{_h.escape(open_url)}" '
                                         'style="display:inline-block;padding:8px 14px;background:#50fa7b;'
                                         'color:#000;text-decoration:none;border-radius:4px;font-weight:bold">'
-                                        'Open in Odysseus</a></p>'
+                                        'Open in Exodus</a></p>'
                                     ) if open_url else ""
                                     alert_html = (
                                         f'<div style="font-family:system-ui,sans-serif;max-width:640px">'

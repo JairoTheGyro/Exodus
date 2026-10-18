@@ -50,7 +50,7 @@ from .email_helpers import (
     _account_visible_to_owner,
     _q, _attach_compose_uploads, _cleanup_compose_uploads,
     _load_settings, _save_settings, _get_email_config,
-    _send_smtp_message, _smtp_security_mode,
+    _send_smtp_message, _smtp_security_mode, _verified_ssl_context,
     _IMAP_TIMEOUT_SECONDS, _open_imap_connection,
     _get_valid_google_token, _xoauth2_bytes, _xoauth2_raw,
     make_oauth_state, verify_oauth_state,
@@ -644,7 +644,7 @@ def _parse_list_unsubscribe_header(value: str | None) -> list[dict]:
     """Parse RFC List-Unsubscribe entries into safe reviewable actions.
 
     We return mailto/http entries but only the mailto kind is executable by the
-    first-pass Odysseus flow. HTTP unsubscribe links are useful evidence but
+    first-pass Exodus flow. HTTP unsubscribe links are useful evidence but
     often contain tracking tokens and should be opened manually unless/until we
     add a browser-confirmed flow.
     """
@@ -1212,6 +1212,8 @@ def _email_index_upsert(owner: str, account_id: str | None, folder: str, emails:
                 rows,
             )
             conn.commit()
+            from src.workspace_events import publish_workspace_event
+            publish_workspace_event(owner, 'inbox')
         finally:
             conn.close()
     except Exception as e:
@@ -1238,6 +1240,8 @@ def _email_index_update_flags(owner: str, account_id: str | None, folder: str, u
                 (" ".join(sorted(parts)), datetime.utcnow().isoformat() + "Z", owner or "", _account_cache_key(account_id, owner), folder, str(uid)),
             )
             conn.commit()
+            from src.workspace_events import publish_workspace_event
+            publish_workspace_event(owner, 'inbox')
         finally:
             conn.close()
     except Exception:
@@ -1259,6 +1263,8 @@ def _email_index_delete(owner: str, account_id: str | None, folder: str | None, 
                     (owner or "", _account_cache_key(account_id, owner), str(uid)),
                 )
             conn.commit()
+            from src.workspace_events import publish_workspace_event
+            publish_workspace_event(owner, 'inbox')
         finally:
             conn.close()
     except Exception:
@@ -2298,12 +2304,13 @@ def setup_email_routes():
                 # All emails NOT marked as answered/done (read or unread).
                 status, data = _imap_uid_search(conn, f"(UNANSWERED{from_clause})")
             elif filter_ == "reminders":
-                # Prefer the Odysseus marker header, but include the subject
-                # fallback too. The fallback uses a distinct Odysseus prefix
+                # Keep the stable Odysseus marker; accept either branding in
+                # the subject fallback for mail with stripped custom headers.
+                # Both subjects use a distinct reminder prefix
                 # so ordinary emails containing "Reminder" don't get mixed in.
                 status, data = _imap_uid_search(
                     conn,
-                    f'(OR HEADER X-Odysseus-Kind "reminder" SUBJECT "Reminder (Odysseus):"{from_clause})',
+                    f'(OR HEADER X-Odysseus-Kind "reminder" (OR SUBJECT "Reminder (Odysseus):" SUBJECT "Reminder (Exodus):"){from_clause})',
                 )
             elif filter_ == "pending_30d":
                 # "What's pending in the last month" — UNANSWERED + delivered
@@ -4891,7 +4898,7 @@ def setup_email_routes():
         permanent: bool = Query(False),
         owner: str = Depends(require_owner),
     ):
-        """Delete email messages stamped as Odysseus reminders."""
+        """Delete email messages stamped as Exodus reminders."""
         if account_id:
             _assert_owns_account(account_id, owner)
         deleted = 0
@@ -4930,11 +4937,13 @@ def setup_email_routes():
                         # explicit kind header, and subject fallback catches
                         # clients/providers that stripped custom headers.
                         uids.update(_search_uids(conn, f'(HEADER X-Odysseus-Kind {_search_quote("reminder")})'))
-                        uids.update(_search_uids(conn, f'(SUBJECT {_search_quote("Reminder (Odysseus):")})'))
+                        for prefix in ("Reminder (Odysseus):", "Reminder (Exodus):"):
+                            uids.update(_search_uids(conn, f'(SUBJECT {_search_quote(prefix)})'))
                         for addr in own_addrs:
                             addr_q = _search_quote(addr)
-                            uids.update(_search_uids(conn, f'(FROM {addr_q} SUBJECT {_search_quote("Reminder (Odysseus):")})'))
-                            # Legacy reminders created before the Odysseus
+                            for prefix in ("Reminder (Odysseus):", "Reminder (Exodus):"):
+                                uids.update(_search_uids(conn, f'(FROM {addr_q} SUBJECT {_search_quote(prefix)})'))
+                            # Legacy reminders created before the Exodus
                             # prefix still came from this mailbox as
                             # "Reminder: ..."; include them in Clear without
                             # sweeping unrelated external reminder emails.
@@ -5178,7 +5187,7 @@ def setup_email_routes():
 
     @router.post("/compose-from-odysseus")
     async def compose_from_odysseus(data: dict, owner: str = Depends(require_owner)):
-        """Stage an Odysseus document or gallery image as a compose upload."""
+        """Stage an Exodus document or gallery image as a compose upload."""
         kind = str(data.get("kind") or "").strip().lower()
         item_id = str(data.get("id") or "").strip()
         if kind not in {"document", "gallery"} or not item_id:
@@ -5197,12 +5206,12 @@ def setup_email_routes():
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Failed to stage Odysseus attachment {kind}/{item_id}: {e}")
+            logger.error(f"Failed to stage Exodus attachment {kind}/{item_id}: {e}")
             return {"success": False, "error": "Mail operation failed"}
 
     @router.post("/compose-from-odysseus-zip")
     async def compose_from_odysseus_zip(data: dict, owner: str = Depends(require_owner)):
-        """Stage several Odysseus documents/gallery images as one zip attachment."""
+        """Stage several Exodus documents/gallery images as one zip attachment."""
         raw_items = data.get("items") or []
         if not isinstance(raw_items, list) or not raw_items:
             raise HTTPException(status_code=400, detail="Expected items")
@@ -5249,7 +5258,7 @@ def setup_email_routes():
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Failed to stage Odysseus zip attachment: {e}")
+            logger.error(f"Failed to stage Exodus zip attachment: {e}")
             return {"success": False, "error": "Mail operation failed"}
 
     @router.post("/compose-from-attachment/{uid}/{index}")
@@ -6875,7 +6884,7 @@ def setup_email_routes():
                 imap_port=imap_port,
                 imap_user=(data.get("imap_user") or "").strip(),
                 imap_password=_enc(data.get("imap_password") or ""),
-                imap_starttls=bool(data.get("imap_starttls", True)),
+                imap_starttls=bool(data.get("imap_starttls", int(data.get("imap_port") or 993) == 143)),
                 smtp_host=(data.get("smtp_host") or "").strip(),
                 smtp_port=smtp_port,
                 smtp_security=_smtp_security_mode({"smtp_security": data.get("smtp_security"), "smtp_port": smtp_port}),
@@ -6994,16 +7003,12 @@ def setup_email_routes():
         imap_port, imap_port_err = _coerce_port(body.get("imap_port"), 993)
         imap_user = (body.get("imap_user") or "").strip()
         imap_pass = body.get("imap_password") or ""
-        imap_starttls = bool(body.get("imap_starttls"))
+        imap_starttls = bool(body.get("imap_starttls", imap_port == 143))
         oauth_provider = body.get("oauth_provider") or ""
 
         google_token = None
         google_token_loaded = False
-        google_ssl_context = (
-            ssl.create_default_context()
-            if oauth_provider == "google"
-            else None
-        )
+        mail_ssl_context = _verified_ssl_context()
 
         def _google_token():
             nonlocal google_token, google_token_loaded
@@ -7023,21 +7028,14 @@ def setup_email_routes():
         elif oauth_provider == "google" and not _google_oauth_imap_transport_allowed(imap_port, imap_starttls):
             imap_result = {"ok": False, "error": "Google OAuth IMAP requires TLS on port 993 or STARTTLS on port 143"}
         else:
-            # Connection mode resolution:
-            #   STARTTLS on  → plain IMAP4 + .starttls() (upgrade)
-            #   STARTTLS off + port 993 → IMAP4_SSL (implicit SSL, "IMAPS")
-            #   STARTTLS off + any other port → plain IMAP4 (no encryption)
-            # Without the last branch, local servers exposed on a non-993
-            # port (Dovecot on 31143, etc.) would always fail the SSL
-            # handshake because they're not actually wrapped in TLS.
+            # Test the same verified TLS transport used by normal mail reads.
             try:
                 imap_kwargs = {
                     "starttls": imap_starttls,
                     "timeout": _IMAP_TIMEOUT_SECONDS,
                     "owner": owner,
                 }
-                if google_ssl_context:
-                    imap_kwargs["ssl_context"] = google_ssl_context
+                imap_kwargs["ssl_context"] = mail_ssl_context
                 conn = _open_imap_connection(
                     imap_host,
                     imap_port,
@@ -7077,36 +7075,29 @@ def setup_email_routes():
             smtp_pass = body.get("smtp_password") or imap_pass
             smtp = None
             try:
+                if smtp_security == "none":
+                    raise ssl.SSLError("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
                 if smtp_security == "ssl":
-                    smtp_kwargs = (
-                        {"context": google_ssl_context}
-                        if google_ssl_context
-                        else {}
-                    )
                     smtp = _PolicySMTP_SSL(
                         smtp_host,
                         smtp_port,
                         timeout=10,
                         block_private=_mail_private_blocked(owner),
-                        **smtp_kwargs,
+                        context=mail_ssl_context,
                     )
                 else:
                     smtp = _PolicySMTP(smtp_host, smtp_port, timeout=10, block_private=_mail_private_blocked(owner))
-                    if smtp_security == "starttls":
+                    try:
+                        smtp.starttls(context=mail_ssl_context)
+                    except Exception:
+                        # STARTTLS failed before the auth cleanup block.
+                        # Close the still-open plaintext socket explicitly.
                         try:
-                            if google_ssl_context:
-                                smtp.starttls(context=google_ssl_context)
-                            else:
-                                smtp.starttls()
+                            smtp.close()
                         except Exception:
-                            # STARTTLS failed before the auth cleanup block.
-                            # Close the still-open plaintext socket explicitly.
-                            try:
-                                smtp.close()
-                            except Exception:
-                                pass
-                            smtp = None
-                            raise
+                            pass
+                        smtp = None
+                        raise
                 if oauth_provider == "google":
                     token = _google_token()
                     smtp.ehlo()

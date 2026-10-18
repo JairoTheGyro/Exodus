@@ -2178,7 +2178,11 @@ export function openEmailLibrary(opts = {}) {
   }
   state._libViewInlineImages = _readEmailInlineImagesPreference();
   if (opts.folder) state._libFolder = opts.folder;
-  state._libPendingExpandUid = opts.uid || null;
+  state._libPendingExpandUid = null;
+  state._libDirectRead = false;
+  // Invalidate list requests from the previously opened mailbox.
+  ++_libLoadSeq;
+  const openGeneration = _emailMailboxGeneration;
 
   const sameMailbox = previousLibraryWasOpen
     && previousAccountId === (state._libAccountId || '')
@@ -2270,7 +2274,7 @@ export function openEmailLibrary(opts = {}) {
               <button class="memory-toolbar-btn email-filter-settings-btn" id="email-lib-settings-btn" title="Email settings" aria-label="Email settings" aria-expanded="false">
                 ${_EMAIL_SETTINGS_ICON}
               </button>
-              <button class="memory-toolbar-btn email-reminders-clear-btn hidden" id="email-reminders-clear-btn" title="Permanently delete Odysseus reminder emails">
+              <button class="memory-toolbar-btn email-reminders-clear-btn hidden" id="email-reminders-clear-btn" title="Permanently delete Exodus reminder emails">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
                 Clear
               </button>
@@ -2532,7 +2536,7 @@ export function openEmailLibrary(opts = {}) {
   document.addEventListener('click', state._emailSearchOptionsDismiss);
   _syncSearchOptionsMenu();
   document.getElementById('email-reminders-clear-btn')?.addEventListener('click', async () => {
-    const ok = await styledConfirm('Permanently delete all Odysseus reminder emails?', {
+    const ok = await styledConfirm('Permanently delete all Exodus reminder emails?', {
       confirmText: 'Delete',
       cancelText: 'Cancel',
       danger: true,
@@ -2862,7 +2866,7 @@ export function openEmailLibrary(opts = {}) {
     _renderAccountsLoading();
   }
   const fastAccountAtOpen = state._libAccountId || '';
-  if (fastAccountAtOpen) {
+  if (fastAccountAtOpen && !opts.uid) {
     _loadEmails({ useCache: true });
   }
   // If we already know the previous/default account, paint that inbox first
@@ -2871,8 +2875,25 @@ export function openEmailLibrary(opts = {}) {
   (async () => {
     await _loadAccounts();
     _refreshUnreadBadge().catch(() => {});
+    if (!state._libOpen || openGeneration !== _emailMailboxGeneration) return;
     _loadFolders();
     _loadEmailReminderBellVisibility();
+    if (opts.uid) {
+      // Open the requested message directly, even if it is outside page one.
+      // Never redirect an explicit account link into the default mailbox.
+      if (opts.account_id && opts.account_id !== state._libAccountId) {
+        grid.innerHTML = '<div class="email-loading">This email account is unavailable.</div>';
+        return;
+      }
+      const message = {...(opts.message || {}), uid:String(opts.uid), folder:opts.folder || 'INBOX', account_id:state._libAccountId};
+      state._libEmails = [message];
+      state._libDirectRead = true;
+      grid.innerHTML = '';
+      const card = _createCard(message);
+      grid.appendChild(card);
+      await _toggleCardPreview(card, message);
+      return;
+    }
     if (!fastAccountAtOpen || fastAccountAtOpen !== (state._libAccountId || '')) {
       _loadEmails({ useCache: true });
     }
@@ -4795,6 +4816,7 @@ export async function _refreshUnreadBadge({ unreadCountOverride = null, preserve
 }
 
 export async function _loadEmails({ force = false, useCache = true } = {}) {
+  state._libDirectRead = false;
   const seq = ++_libLoadSeq;
   state._libLoading = true;
   const accountAtStart = state._libAccountId || '';
@@ -5688,6 +5710,10 @@ export async function _toggleCardPreview(card, em) {
     modal?.style.removeProperty('--email-reading-modal-min-h');
     const reader = card.querySelector('.email-card-reader');
     if (reader) reader.remove();
+    if (state._libDirectRead) {
+      state._libEmails = [];
+      await _loadEmails({ useCache:true });
+    }
     return;
   }
 

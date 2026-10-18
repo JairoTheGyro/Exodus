@@ -494,7 +494,7 @@ export function _emailWritingStyleHtml(style) {
       <div class="email-settings-section-head">
         <div>
           <div class="email-settings-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Email Reply Writing Style</span></div>
-          <div class="email-settings-section-desc email-settings-support-copy">Used when Odysseus drafts replies for you.</div>
+          <div class="email-settings-section-desc email-settings-support-copy">Used when Exodus drafts replies for you.</div>
         </div>
       </div>
       <div id="email-settings-style-body" class="email-settings-section-body">

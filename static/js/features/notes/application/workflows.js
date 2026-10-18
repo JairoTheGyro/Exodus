@@ -7,7 +7,17 @@ export function createNotesWorkflows({
   const state = app.state;
   const _undoStack = [];
   const _renderNotes = effects.render;
-  const _patchNote = api.patchNote;
+  let _notesFetchSequence = 0;
+  let _archiveRefreshRunning = false;
+  let _archiveRefreshPending = false;
+
+  async function _patchNote(id, patch) {
+    const saved = await api.patchNote(id, patch);
+    if (Object.hasOwn(patch, 'archived') || Object.hasOwn(patch, 'is_archived')) {
+      void _refreshAfterArchiveChange();
+    }
+    return saved;
+  }
   const uiModule = effects;
   function _pushUndo(entry) {
     _undoStack.push(entry);
@@ -55,18 +65,45 @@ export function createNotesWorkflows({
     return true;
   }
 
-  async function _fetchNotes() {
-    app.setLoading(true);
+  // A fetch only replaces the shared list when it is the newest request and
+  // still matches the selected (active/archived) view, so a slow response from
+  // a previous view can never overwrite the current one. `apply: false` reads
+  // without touching shared state (e.g. badge counts while viewing the archive).
+  async function _fetchNotes({ archived = state.showingArchived, apply = true } = {}) {
+    const sequence = apply ? ++_notesFetchSequence : null;
+    const current = () => apply && sequence === _notesFetchSequence && archived === state.showingArchived;
+    if (apply) app.setLoading(true);
     try {
-      const res = await api.listNotes(state.showingArchived);
-      if (!res.ok) { app.replaceNotes([]); return; }
+      const res = await api.listNotes(archived);
+      if (!res.ok) { if (current()) app.replaceNotes([]); return []; }
       const data = await res.json();
-      app.replaceNotes(data.notes || data || []);
+      const notes = data.notes || data || [];
+      if (current()) app.replaceNotes(notes);
+      return notes;
     } catch (e) {
       console.error('Failed to fetch notes:', e);
-      app.replaceNotes([]);
+      if (current()) app.replaceNotes([]);
+      return [];
     } finally {
-      app.setLoading(false);
+      if (apply && sequence === _notesFetchSequence) app.setLoading(false);
+    }
+  }
+
+  async function _refreshAfterArchiveChange() {
+    // A view toggle may have read before the write committed. Coalesce completion
+    // refreshes (including bulk actions) and always reread the currently selected view.
+    _archiveRefreshPending = true;
+    if (_archiveRefreshRunning) return;
+    _archiveRefreshRunning = true;
+    try {
+      while (_archiveRefreshPending && state.open) {
+        _archiveRefreshPending = false;
+        await _fetchNotes();
+        if (state.open && !(effects.isEditing && effects.isEditing())) _renderNotes();
+      }
+    } finally {
+      _archiveRefreshRunning = false;
+      _archiveRefreshPending = false;
     }
   }
 
@@ -74,5 +111,5 @@ export function createNotesWorkflows({
 
   function _deleteNoteApi(id) { return api.deleteNote(id); }
 
-  return { _pushUndo, _popAndRunUndo, _undoArchive, _archiveNoteById, _fetchNotes, _saveNote, _deleteNoteApi, _patchNote, undoCount: () => _undoStack.length };
+  return { _pushUndo, _popAndRunUndo, _undoArchive, _archiveNoteById, _fetchNotes, _refreshAfterArchiveChange, _saveNote, _deleteNoteApi, _patchNote, undoCount: () => _undoStack.length };
 }

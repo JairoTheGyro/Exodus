@@ -32,13 +32,13 @@ function showHome(){if(window.documentModule?.isPanelOpen())window.documentModul
 function hideHome(){home.hidden=true;document.body.classList.remove('home-active');}
 async function launch(kind,id){
   if(kind==='home')return showHome();
-  if(kind==='settings'){const m=await import('./settings.js?v=sovereign-essentials1'); m.default.open(profile.mode==='ai-free'?'appearance':'services'); return;}
+  if(kind==='settings'){const m=await import('./settings.js?v=20260912writingstyle3'); m.default.open(profile.mode==='ai-free'?'appearance':'services'); return;}
   if(kind==='theme'){ $('tool-theme-btn')?.click(); return; }
-  if(kind==='file'){ const m=await import('./document.js?v=20260929workspace1'); await m.default.loadDocument(id);return;}
-  if(kind==='note'||kind==='task'){const m=await import('./notes.js');await m.openNote(id);return;}
+  if(kind==='file'){ const m=await import('./document.js?v=20260916docctx2'); await m.default.loadDocument(id);return;}
+  if(kind==='note'||kind==='task'){const m=await import('./notes.js?v=20260911notesselectioncancel1');await m.openNote(id);return;}
   const targets={notes:'tool-notes-btn',calendar:'tool-calendar-btn',library:'tool-library-btn',email:'email-section-title',code:'tool-code-btn',workshop:'tool-workshop-btn',vault:'privacy-vaultwarden-btn',search:'local-searxng-btn'};
-  if(kind==='library'){const m=await import('./document.js?v=20260929workspace1');m.default.openLibrary();return;}
-  if(kind==='email'){const m=await import('./emailLibrary.js?v=20260929workspace1');m.openEmailLibrary(id&&typeof id==='object'?{uid:id.uid,folder:id.folder||'INBOX',account_id:id.account_id,message:id}:{});return;}
+  if(kind==='library'){const m=await import('./document.js?v=20260916docctx2');m.default.openLibrary();return;}
+  if(kind==='email'){const m=await import('./emailLibrary.js?v=20260915trashmove2');m.openEmailLibrary(id&&typeof id==='object'?{uid:id.uid,folder:id.folder||'INBOX',account_id:id.account_id,message:id}:{});return;}
   if(kind==='vault'||kind==='search'){const m=await import('./settings/localServices.js');m.openLocalServices(kind==='vault'?'vaultwarden':'searxng');return;}
   const btn=$(targets[kind]); if(btn){if(kind==='code'||kind==='workshop')hideHome();btn.click();}
 }
@@ -75,8 +75,8 @@ function installSettings(){
   const bar=document.createElement('div');bar.id='workspace-mode-settings';
   bar.innerHTML='<strong>Workspace mode</strong><span id="workspace-mode-label"></span><button type="button" id="workspace-mode-change">Change my mode</button><button type="button" id="workspace-home-settings">Home layout</button>';
   anchor.before(bar);$('workspace-mode-label').textContent=profile.mode==='ai-free'?'AI-free · this account':'Full Exodus · this account';
-  $('workspace-mode-change').onclick=async()=>{(await import('./settings.js?v=sovereign-essentials1')).close();showHome();$('home-choice').hidden=false;};
-  $('workspace-home-settings').onclick=async()=>{(await import('./settings.js?v=sovereign-essentials1')).close();showHome();$('home-customize').hidden=false;renderCustomize();};
+  $('workspace-mode-change').onclick=async()=>{(await import('./settings.js?v=20260912writingstyle3')).close();showHome();$('home-choice').hidden=false;};
+  $('workspace-home-settings').onclick=async()=>{(await import('./settings.js?v=20260912writingstyle3')).close();showHome();$('home-customize').hidden=false;renderCustomize();};
   const policy=document.createElement('div');policy.className='home-memory-policy';
   policy.innerHTML='<label><input type="checkbox" id="workspace-archived-memory"> Allow AI to use my archived notes</label><small>Off by default. Applies only in Full mode, and only to notes with automatic AI memory enabled.</small><span role="status"></span>';
   bar.append(policy);

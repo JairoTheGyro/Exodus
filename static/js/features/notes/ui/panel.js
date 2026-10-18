@@ -1,6 +1,7 @@
 /** Panel mounting, keyboard handlers, minimization and note navigation. */
 export function createPanel({
   wireToolbar,
+  cancelPendingSearch,
   wireSelectionActions,
   _wireNotesWindow,
   _restoreNotesSidebarDock,
@@ -160,7 +161,21 @@ export function createPanel({
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span class="notes-header-btn-label">Toggle</span>
       </button>
+      <button id="notes-export-toggle" type="button" class="doc-action-icon-btn notes-header-text-btn" title="Export or import notes" aria-label="Export or import notes" aria-expanded="false" aria-controls="notes-export-options" style="gap:5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>
+        <span class="notes-header-btn-label">Export / import</span>
+      </button>
       <button id="notes-minimize-btn" class="modal-minimize-btn" title="Minimize" aria-label="Minimize notes" style="position:relative;left:2px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="18" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="notes-export-options" class="notes-export-options" hidden>
+      <a class="notes-export-link" href="/api/notes/export/zip" download="exodus-notes.zip">Markdown ZIP — all active notes</a>
+      <a class="notes-export-link" href="/api/notes/export/zip?include_archived=true" download="exodus-notes.zip">Markdown ZIP — active + archived notes</a>
+      <a class="notes-export-link" href="/api/notes/export/json" download="exodus-notes.json">JSON backup — active + archived notes</a>
+      <small>Exports your saved notes, regardless of filters. Downloads are not encrypted: keep them somewhere private. Attachment links are included; image files are not bundled.</small>
+      <button id="notes-import-select" type="button" class="notes-export-link" style="text-align:left;background:none;border:0;font:inherit;cursor:pointer;">Import JSON backup…</button>
+      <input id="notes-import-file" type="file" accept=".json,application/json" hidden />
+      <small>Creates new copies in your account; existing notes stay unchanged. Choose an Exodus JSON backup (up to 10 MiB, 5,000 notes and 20,000 checklist items total). Attachment files and chat links are not restored. Saved reminder dates and AI memory preferences follow your current settings.</small>
+      <small id="notes-import-status" role="status" aria-live="polite"></small>
     </div>
     <div class="notes-search-bar">
       <input type="text" id="notes-search" class="memory-search-input" placeholder="Search notes…" autocomplete="off" />
@@ -319,6 +334,7 @@ export function createPanel({
   }
 
   function closePanel(direction) {
+    cancelPendingSearch?.();
     if (!state.open) return;
     app.setOpen(false);
     app.setEditingId(null);
