@@ -40,6 +40,8 @@ FAMILY_TOOLS = {
     "transcription": frozenset({"transcribe_media"}),
     "media_inspection": frozenset({"inspect_media"}),
     "ocr": frozenset({"extract_text"}),
+    # Exodus: completion alerts to the configured ntfy topic.
+    "notifications": frozenset({"notify_user"}),
 }
 
 # Retrieval is selection, not authorization. A normal agent turn must retain
@@ -119,6 +121,7 @@ _FAMILY_WORDS = {
     "contacts": r"\bcontacts?\b",
     "sessions": r"\b(?:sessions?|chats?|conversations?)\b",
     "ui": r"\b(?:panels?|themes?|toggles?|sidebar)\b",
+    "notifications": r"\b(?:ntfy|notify\s+me|ping\s+me|alert\s+me|notification)\b",
     "ocr": r"\b(?:ocr|extract|read|recognize|transcribe)\b.{0,32}\b(?:text|words?|labels?|numbers?|digits?|screenshot|scan|image)\b|文字|文本|字幕|编号|数字|标签|票据",
 }
 _FUZZY_FAMILY_TERMS = {

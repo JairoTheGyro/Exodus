@@ -10,6 +10,18 @@ from src.agent_tools.web_tools import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _exercise_comprehensive_search_path(monkeypatch):
+    """Exodus routes SearXNG through a compact single-request path
+    (SOVEREIGN_PRINCIPLES.md, "Internal SearXNG grounding"); these upstream
+    tests cover the comprehensive path that other providers still use."""
+    import services.search.providers as providers
+    original = providers._get_search_settings
+    monkeypatch.setattr(providers, "_get_search_settings",
+                        lambda: {**original(), "search_provider": "comprehensive"})
+
+
+
 def test_long_report_preserves_late_source_through_tool_and_runtime(monkeypatch):
     from src.clean_agent_preview import preview_tool_result_text
     sources = [{'title': f'Page {i}', 'url': f'https://example.org/{i}'} for i in range(1, 6)]

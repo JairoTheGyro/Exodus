@@ -73,8 +73,8 @@ export function createReminderDisplay({
     }
   }
 
-  function _updateRailBadge() {
-    const fired = _countFiredReminders();
+  function _updateRailBadge(notes) {
+    const fired = _countFiredReminders(notes);
     // Rail (mini sidebar) : only show the count when reminders have ACTUALLY
     // fired since the last dismissal (i.e. you haven't opened notes yet).
     // Showing every overdue note forever made the badge feel permanent.

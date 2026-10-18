@@ -1,61 +1,83 @@
+// Exodus archive-race guarantees, exercised on the real Notes state, workflow
+// and reminder modules with a controllable fake API.
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import vm from 'node:vm';
-const source=readFileSync('static/js/notes.js','utf8');
-const section=(start,end)=>source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start)));
-const functions=section('function _archiveNoteById(','async function _saveNote(')+
-  section('async function _patchNote(','// ---- Helpers ----')+
-  section('export async function refreshDueBadge(','// ---- Panel ----').replace('export async','async');
-function fixture(){
-  const requests=[],badges=[],renders=[];
-  let api;
-  const context={API_BASE:'http://local.test',console,
-    fetch:(url,options)=>new Promise(resolve=>requests.push({url,options,resolve})),
-    _renderNotes:()=>renders.push(api.ids()),_updateRailBadge:notes=>badges.push(notes),
-    _pushUndo:()=>{},_undoArchive:()=>{},_hasItems:()=>false,
-    uiModule:{showToast:()=>{},showError:()=>{}},
-    document:{querySelector:()=>null}};
-  vm.runInNewContext(`let _notes=[],_showingArchived=false,_open=true,_editingId=null,_loading=false;
-    let _notesFetchSequence=0,_archiveRefreshRunning=false,_archiveRefreshPending=false;
-    const _NOTE_UNDO_ICON='';
-    ${functions}
-    globalThis.api={fetch:_fetchNotes,archive:_archiveNoteById,badge:refreshDueBadge,
-      ids:()=>_notes.map(n=>n.id).join(','),view:()=>_showingArchived,
-      setView:value=>{_showingArchived=value;},setNotes:value=>{_notes=value;}};`,context);
-  api=context.api;
-  return {api,requests,badges,renders};
+import { createNotesState } from '../../static/js/features/notes/application/state.js';
+import { createNotesWorkflows } from '../../static/js/features/notes/application/workflows.js';
+import { createNotesReminders } from '../../static/js/features/notes/application/reminders.js';
+
+function fixture() {
+  const requests = [], badges = [], renders = [];
+  const app = createNotesState({});
+  app.setOpen(true);
+  const ids = () => app.state.notes.map(n => n.id).join(',');
+  const pending = (kind, detail) => new Promise(resolve => requests.push({ kind, ...detail, resolve }));
+  const api = {
+    listNotes: archived => pending('list', { archived }),
+    patchNote: (id, patch) => pending('patch', { id, patch }),
+    saveNote: () => Promise.resolve({}),
+    deleteNote: () => Promise.resolve(),
+  };
+  const workflows = createNotesWorkflows({
+    app, api,
+    effects: {
+      render: () => renders.push(ids()), isEditing: () => false,
+      showError: () => {}, archived: () => {}, celebrateArchive: () => {},
+    },
+  });
+  const reminders = createNotesReminders({
+    app, api,
+    persistence: { getItem: () => null, setItem: () => {}, _loadFiredReminders: () => new Set(), _saveFiredReminders: () => {} },
+    notifications: {}, clock: { now: () => Date.now() },
+    scheduler: { setTimeout: () => 0, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {} },
+    effects: { badge: notes => badges.push(notes) },
+    fetchNotes: opts => workflows._fetchNotes(opts),
+    isNoteFullyDone: () => false, hasItems: () => false, dismissedKey: 'test-dismissed',
+  });
+  return { app, ids, workflows, reminders, requests, badges, renders };
 }
-const response=(data)=>({ok:true,json:async()=>data});
-const flush=()=>new Promise(resolve=>setImmediate(resolve));
+const listResponse = notes => ({ ok: true, json: async () => ({ notes }) });
+const flush = () => new Promise(resolve => setImmediate(resolve));
 
 // Late active-list GET must not replace a newer Archive result.
-const a=fixture();const first=a.api.fetch();a.api.setView(true);const second=a.api.fetch();
-a.requests[1].resolve(response({notes:[{id:'archived',archived:true}]}));await second;
-a.requests[0].resolve(response({notes:[{id:'active'}]}));await first;
-assert.equal(a.api.ids(),'archived');assert.equal(a.api.view(),true);
+const a = fixture();
+const first = a.workflows._fetchNotes();
+a.app.setShowingArchived(true);
+const second = a.workflows._fetchNotes();
+a.requests[1].resolve(listResponse([{ id: 'archived', archived: true }])); await second;
+a.requests[0].resolve(listResponse([{ id: 'active' }])); await first;
+assert.equal(a.ids(), 'archived'); assert.equal(a.app.state.showingArchived, true);
 
 // Most recent request wins even within the same view.
-const b=fixture();const older=b.api.fetch(),newer=b.api.fetch();
-b.requests[1].resolve(response({notes:[{id:'new'}]}));await newer;
-b.requests[0].resolve(response({notes:[{id:'old'}]}));await older;
-assert.equal(b.api.ids(),'new');
+const b = fixture();
+const older = b.workflows._fetchNotes(), newer = b.workflows._fetchNotes();
+b.requests[1].resolve(listResponse([{ id: 'new' }])); await newer;
+b.requests[0].resolve(listResponse([{ id: 'old' }])); await older;
+assert.equal(b.ids(), 'new');
 
-// Archive toggled before PUT completes: pre-write empty GET then post-write refresh.
-const c=fixture();c.api.setNotes([{id:'groceries',title:'Groceries'}]);
-assert.equal(c.api.archive('groceries'),true);
-assert.equal(c.requests[0].options.method,'PUT');
-c.api.setView(true);const prematurelyRead=c.api.fetch();
-c.requests[1].resolve(response({notes:[]}));await prematurelyRead;
-assert.equal(c.api.ids(),'');
-c.requests[0].resolve(response({id:'groceries',archived:true}));await flush();
-assert.equal(c.requests[2].url,'http://local.test/api/notes?archived=true');
-c.requests[2].resolve(response({notes:[{id:'groceries',archived:true}]}));await flush();
-assert.equal(c.api.ids(),'groceries');assert.equal(c.renders.at(-1),'groceries');
+// Archive toggled before the PUT completes: a premature empty GET, then a
+// post-write refresh of the currently selected (archive) view.
+const c = fixture();
+c.app.replaceNotes([{ id: 'groceries', title: 'Groceries' }]);
+assert.equal(c.workflows._archiveNoteById('groceries'), true);
+assert.equal(c.requests[0].kind, 'patch');
+assert.deepEqual(c.requests[0].patch, { archived: true });
+c.app.setShowingArchived(true);
+const prematurelyRead = c.workflows._fetchNotes();
+c.requests[1].resolve(listResponse([])); await prematurelyRead;
+assert.equal(c.ids(), '');
+c.requests[0].resolve({ id: 'groceries', archived: true }); await flush();
+assert.equal(c.requests[2].kind, 'list'); assert.equal(c.requests[2].archived, true);
+c.requests[2].resolve(listResponse([{ id: 'groceries', archived: true }])); await flush();
+assert.equal(c.ids(), 'groceries'); assert.equal(c.renders.at(-1), 'groceries');
 
-// Badge refresh fetches active reminders without changing/replacing Archive.
-const d=fixture();d.api.setView(true);d.api.setNotes([{id:'keep-archived',archived:true}]);
-const badge=d.api.badge({force:true});assert.equal(d.api.view(),true);
-d.requests[0].resolve(response({notes:[{id:'active-reminder'}]}));await badge;
-assert.equal(d.api.view(),true);assert.equal(d.api.ids(),'keep-archived');
-assert.equal(d.badges[0][0].id,'active-reminder');
+// Badge refresh reads active reminders without switching or replacing Archive.
+const d = fixture();
+d.app.setShowingArchived(true);
+d.app.replaceNotes([{ id: 'keep-archived', archived: true }]);
+const badge = d.reminders.refreshDueBadge({ force: true });
+assert.equal(d.app.state.showingArchived, true);
+assert.equal(d.requests[0].archived, false);
+d.requests[0].resolve(listResponse([{ id: 'active-reminder' }])); await badge;
+assert.equal(d.app.state.showingArchived, true); assert.equal(d.ids(), 'keep-archived');
+assert.equal(d.badges[0][0].id, 'active-reminder');
 console.log('PASS: Archive post-save refresh, stale list request protection, same-view ordering, badge/view independence.');

@@ -1,3 +1,4 @@
+import pytest
 import asyncio
 import json
 
@@ -11,6 +12,18 @@ from src.tool_schemas import FUNCTION_TOOL_SCHEMAS
 from src.tool_types import ToolBlock
 from src.tool_execution import NO_TOOL_SECURITY_CONTEXT, execute_tool_block
 from tests.runtime_evidence_helpers import server_authorized_executor
+
+
+@pytest.fixture(autouse=True)
+def _exercise_comprehensive_search_path(monkeypatch):
+    """Exodus routes SearXNG through a compact single-request path
+    (SOVEREIGN_PRINCIPLES.md, "Internal SearXNG grounding"); these upstream
+    tests cover the comprehensive path that other providers still use."""
+    import services.search.providers as providers
+    original = providers._get_search_settings
+    monkeypatch.setattr(providers, "_get_search_settings",
+                        lambda: {**original(), "search_provider": "comprehensive"})
+
 
 execute_tool_block = server_authorized_executor(execute_tool_block)
 from src.turn_contract import FAMILY_TOOLS

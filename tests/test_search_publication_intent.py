@@ -5,6 +5,18 @@ from src.search_intent import inferred_search_publication_window, reference_look
 from src.clean_agent_preview import preserve_requested_web_recency
 
 
+@pytest.fixture(autouse=True)
+def _exercise_comprehensive_search_path(monkeypatch):
+    """Exodus routes SearXNG through a compact single-request path
+    (SOVEREIGN_PRINCIPLES.md, "Internal SearXNG grounding"); these upstream
+    tests cover the comprehensive path that other providers still use."""
+    import services.search.providers as providers
+    original = providers._get_search_settings
+    monkeypatch.setattr(providers, "_get_search_settings",
+                        lambda: {**original(), "search_provider": "comprehensive"})
+
+
+
 @pytest.mark.parametrize('query,expected', [
     ('latest Python version', None),
     ('current Firefox privacy features', None),

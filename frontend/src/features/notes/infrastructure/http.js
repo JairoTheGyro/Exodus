@@ -18,6 +18,7 @@ export function createNotesApi({ origin, request }) {
   return {
     saveNote, patchNote, deleteNote,
     listNotes: archived => request(`${origin}/api/notes${archived ? '?archived=true' : ''}`, { credentials: 'same-origin' }),
+    importJson: file => request(`${origin}/api/notes/import/json`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: file }),
     reorder: ids => request(`${origin}/api/notes/reorder`, json('POST', { ids })),
     upload: body => request(`${origin}/api/upload`, { method: 'POST', body, credentials: 'same-origin' }),
     uploadUrl: id => `${origin}/api/upload/${id}`,

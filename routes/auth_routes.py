@@ -940,7 +940,7 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
     @router.post("/integrations")
     async def create_integration(request: Request):
         """Create a new integration (admin only)."""
-        _require_admin_user(request)
+        user = _require_admin_user(request)
         body = await request.json()
         from src.ai_policy import require_integration_mode
         require_integration_mode(user, body)
@@ -950,7 +950,7 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
     @router.put("/integrations/{integration_id}")
     async def update_integration_route(integration_id: str, request: Request):
         """Update an existing integration (admin only)."""
-        _require_admin_user(request)
+        user = _require_admin_user(request)
         body = await request.json()
         from src.ai_policy import require_integration_mode
         existing = get_integration(integration_id)
@@ -974,7 +974,7 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
     @router.post("/integrations/{integration_id}/test")
     async def test_integration_route(integration_id: str, request: Request):
         """Test connectivity to an integration (admin only)."""
-        _require_admin_user(request)
+        user = _require_admin_user(request)
         integ = get_integration(integration_id)
         if not integ:
             raise HTTPException(404, "Integration not found")

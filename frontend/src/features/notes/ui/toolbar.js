@@ -3,17 +3,90 @@ export function createToolbar({
   app,
   state,
   persistence,
+  api,
+  showToast,
   _renderNotes,
   _fetchNotes,
   _applyMasonry
 }) {
+  let _searchTimer = null;
+  function cancelPendingSearch() {
+    clearTimeout(_searchTimer);
+    _searchTimer = null;
+  }
+
+  function wireExportImport(pane) {
+    const exportBtn = pane.querySelector('#notes-export-toggle');
+    const exportOptions = pane.querySelector('#notes-export-options');
+    if (!exportBtn || !exportOptions) return;
+    const closeExport = () => {
+      exportOptions.hidden = true;
+      exportBtn.setAttribute('aria-expanded', 'false');
+    };
+    exportBtn.addEventListener('click', () => {
+      exportOptions.hidden = !exportOptions.hidden;
+      exportBtn.setAttribute('aria-expanded', String(!exportOptions.hidden));
+    });
+    exportOptions.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        closeExport();
+        exportBtn.focus();
+      }
+    });
+    // Native attachment downloads stream to the browser without a JS Blob or reload.
+    exportOptions.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+      closeExport();
+      exportBtn.focus();
+    }));
+
+    const importBtn = pane.querySelector('#notes-import-select');
+    const importFile = pane.querySelector('#notes-import-file');
+    const importStatus = pane.querySelector('#notes-import-status');
+    if (!importBtn || !importFile || !importStatus) return;
+    importBtn.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', async () => {
+      const file = importFile.files?.[0];
+      if (!file || importBtn.disabled) return;
+      importBtn.disabled = true;
+      importStatus.textContent = 'Importing notes…';
+      try {
+        if (file.size > 10 * 1024 * 1024) throw new Error('Choose a JSON backup no larger than 10 MiB.');
+        const response = await api.importJson(file);
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Notes were not imported. Check the backup and try again.');
+        const summary = `Imported ${result.imported} note${result.imported === 1 ? '' : 's'} as new copies${result.archived ? ` (${result.archived} archived)` : ''}.`;
+        importStatus.textContent = [summary, ...(result.warnings || []).map(w => `${w.message} (${w.count})`)].join(' ');
+        await _fetchNotes();
+        // Keep an open unsaved note editor intact while refreshing the backing list.
+        if (state.open && !pane.querySelector('.note-form')) _renderNotes();
+        showToast(summary);
+      } catch (error) {
+        importStatus.textContent = error.message || 'Notes were not imported.';
+      } finally {
+        importBtn.disabled = false;
+        importFile.value = '';
+      }
+    });
+  }
+
   function wireToolbar(pane) {
-    // Search
+    wireExportImport(pane);
+
+    // Search: filter the complete loaded list locally after a short pause;
+    // clearing applies immediately and never waits or fetches.
     const searchEl = document.getElementById('notes-search');
     if (searchEl) {
       searchEl.addEventListener('input', () => {
-        app.setSearchQuery(searchEl.value.trim().toLowerCase());
-        _renderNotes();
+        cancelPendingSearch();
+        const query = searchEl.value.trim().toLowerCase();
+        const applySearch = () => {
+          _searchTimer = null;
+          app.setSearchQuery(query);
+          _renderNotes();
+        };
+        if (!query) applySearch();
+        else _searchTimer = setTimeout(applySearch, 250);
       });
     }
 
@@ -35,6 +108,9 @@ export function createToolbar({
       syncArchiveBtn();
       archiveBtn.addEventListener('click', async () => {
         app.setShowingArchived(!state.showingArchived);
+        // Label and reminder filters belong to one view; start the other view unfiltered.
+        app.setActiveLabel(null);
+        app.setActiveFilter(null);
         app.clearSelection();
         syncArchiveBtn();
         // Brief fade so the body content swap doesn't snap : the bg-tint
@@ -74,5 +150,5 @@ export function createToolbar({
     }
 
   }
-  return { wireToolbar };
+  return { wireToolbar, cancelPendingSearch };
 }

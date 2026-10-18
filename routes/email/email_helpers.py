@@ -285,7 +285,7 @@ def _send_smtp_message(cfg: dict, from_addr: str, recipients: list[str], message
 
     security = _smtp_security_mode(cfg)
     if security == "none":
-        raise ssl.SSLError("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
+        raise UnencryptedMailDisabled("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
     context = _verified_ssl_context()
     block_private = _mail_private_blocked(cfg.get("owner"))
 
@@ -338,6 +338,10 @@ def _friendly_email_auth_error(protocol: str, host: str, error: object) -> str:
 _IMAP_ABORT = imaplib.IMAP4.abort
 
 
+class UnencryptedMailDisabled(ssl.SSLError):
+    """Exodus refuses plaintext SMTP/IMAP; raised before any connection is made."""
+
+
 def _mail_connection_test_error(protocol: str, host: str, error: BaseException) -> str:
     """User-facing result for a failed IMAP/SMTP connection test.
 
@@ -348,6 +352,8 @@ def _mail_connection_test_error(protocol: str, host: str, error: BaseException) 
     rejections) keep their text via _friendly_email_auth_error, since that is
     what the user needs to fix their settings.
     """
+    if isinstance(error, UnencryptedMailDisabled):
+        return f"Unencrypted {protocol} is disabled; select SSL/TLS or STARTTLS"
     if isinstance(error, MailServerAddressBlocked):
         return f"{protocol} server address is not allowed by this server's network policy"
     if isinstance(error, (_IMAP_ABORT, smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected)):
@@ -1269,13 +1275,13 @@ def _get_email_config(account_id: str | None = None, owner: str = "") -> dict:
     # Deliberate temporary compatibility only. No credentials are copied,
     # migrated or deleted here; the operator should reconnect through Settings.
     try:
-        return _legacy_email_config()
+        return _legacy_email_config(owner)
     except Exception:
         logger.warning("Legacy email configuration could not be read safely")
         raise EmailConfigurationError("Legacy email configuration is invalid; use Email Accounts in Settings") from None
 
 
-def _legacy_email_config() -> dict:
+def _legacy_email_config(owner: str = "") -> dict:
     """Read plaintext legacy fields only after the opt-in/owner gate above."""
     settings = _load_settings()
     if not isinstance(settings, dict):

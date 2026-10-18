@@ -3,9 +3,9 @@ import re
 
 THEME_PRESETS = ('dark', 'light', 'midnight', 'cyberpunk', 'retrowave', 'forest',
                  'ocean', 'ume', 'terminal', 'organs', 'gpt', 'claude', 'cute',
-                 'eclipse', 'porcelain', 'arcade', 'blueprint', 'monolith', 'yoyo',
                  # Exodus keeps the themes upstream retired and adds Temple.
-                 'paper', 'copper', 'lavender', 'temple')
+                 'paper', 'copper', 'lavender', 'temple',
+                 'eclipse', 'porcelain', 'arcade', 'blueprint', 'monolith', 'yoyo')
 
 BACKGROUND_PATTERNS = ('none', 'dots', 'synapse', 'rain', 'constellations',
                        'perlin-flow', 'petals', 'sparkles', 'embers',

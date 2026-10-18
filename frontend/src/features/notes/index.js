@@ -70,11 +70,11 @@ const reminders = createNotesReminders({
   notifications,
   clock,
   scheduler,
-  fetchNotes: () => _fetchNotes(),
+  fetchNotes: opts => _fetchNotes(opts),
   isNoteFullyDone: note => _isNoteFullyDone(note),
   hasItems: note => _hasItems(note),
   dismissedKey: REMINDER_DISMISSED_AT_KEY,
-  effects: { badge: () => _updateRailBadge(), highlight: id => {
+  effects: { badge: notes => _updateRailBadge(notes), highlight: id => {
  _setReminderCardGlow(id, true);
  const card = document.querySelector(`.note-card[data-note-id="${id}"]`);
  if (card) { card.classList.add('note-card-reminder-fired'); setTimeout(() => card.classList.remove('note-card-reminder-fired'), 3000); }
@@ -86,6 +86,7 @@ const workflows = createNotesWorkflows({
   api,
   effects: {
  render: () => _renderNotes(),
+ isEditing: () => !!document.querySelector('#notes-pane .note-form'),
  showError: (...args) => uiModule.showError(...args),
  archived: undo => uiModule.showToast('Archived', { duration: 6000, action: 'Undo', actionIcon: _NOTE_UNDO_ICON, onAction: undo, actionHint: 'Ctrl+Z' }),
  celebrateArchive: (note, card) => { if (_hasItems(note) && !(note.items || []).some(i => !i.done)) { const r = card.getBoundingClientRect(); spawnConfetti(r.left + r.width / 2, r.top + r.height / 2, 80); } },
@@ -96,7 +97,10 @@ function _pushUndo(entry) { return workflows._pushUndo(entry); }
 function _popAndRunUndo() { return workflows._popAndRunUndo(); }
 function _undoArchive(note, prevIdx) { return workflows._undoArchive(note, prevIdx); }
 function _archiveNoteById(id, options) { return workflows._archiveNoteById(id, options); }
-function _fetchNotes() { return workflows._fetchNotes(); }
+function _fetchNotes(opts) { return workflows._fetchNotes(opts); }
+// Archive/unarchive writes from any module go through the workflow's patch so
+// the selected view is re-read once the write commits (Exodus archive-race fix).
+const archiveAwareApi = { ...api, patchNote: (id, patch) => workflows._patchNote(id, patch) };
 
 function _deleteNoteApi(id) { return workflows._deleteNoteApi(id); }
 function _patchNote(id, patch) { return workflows._patchNote(id, patch); }
@@ -113,7 +117,7 @@ function _ensureNotificationPermission() { return notifications.ensurePermission
 
 function _startReminderLoop() { return reminders._startReminderLoop(); }
 
-function _countFiredReminders() { return reminders._countFiredReminders(); }
+function _countFiredReminders(notes) { return reminders._countFiredReminders(notes); }
 
 function _hasActiveReminder(...args) { return noteRules._hasActiveReminder(...args, clock); }
 const _isNoteFullyDone = noteRules._isNoteFullyDone;
@@ -204,12 +208,15 @@ const toolbar = createToolbar({
   app,
   state,
   persistence,
+  api,
+  showToast: (...args) => uiModule.showToast(...args),
   _renderNotes,
   _fetchNotes,
   _applyMasonry
 });
 const panel = createPanel({
   wireToolbar: toolbar.wireToolbar,
+  cancelPendingSearch: toolbar.cancelPendingSearch,
   wireSelectionActions: () => selection.wireSelectionActions(),
   _wireNotesWindow: windowLayout._wireNotesWindow,
   _restoreNotesSidebarDock: windowLayout._restoreNotesSidebarDock,
@@ -253,7 +260,7 @@ const reminderDisplay = createReminderDisplay({
 });
 const selectionOperations = createSelectionOperations({
   app,
-  api,
+  api: archiveAwareApi,
   fetchNotes: _fetchNotes,
   exitSelection: _exitSelectMode,
   sendContext: detail => window.dispatchEvent(new CustomEvent('odysseus:notes-context-selected', { detail })),
@@ -318,7 +325,7 @@ const quickAdd = createQuickAdd({
 });
 const cardOperations = createCardOperations({
   app,
-  api,
+  api: archiveAwareApi,
   pushUndo: _pushUndo,
   undoArchive: _undoArchive,
   effects: { render: _renderNotes, showError: (...args) => uiModule.showError(...args), showToast: (...args) => uiModule.showToast(...args), archived: undo => uiModule.showToast('Archived', { duration: 6000, action: 'Undo', actionIcon: _NOTE_UNDO_ICON, onAction: undo, actionHint: 'Ctrl+Z' }) }
@@ -387,6 +394,7 @@ const editor = createEditor({
   _dotBg,
   _dotIsActive,
   _esc,
+  _fetchNotes,
   _isBgImage,
   _renderNotes,
   _safeImgSrc,
@@ -398,7 +406,7 @@ const editor = createEditor({
   _wireFormColors,
   _wireGoalForm,
   _wireReminderPicker,
-  api,
+  api: archiveAwareApi,
   app,
   state,
   uiModule

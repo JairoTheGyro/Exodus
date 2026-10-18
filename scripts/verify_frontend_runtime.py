@@ -58,6 +58,8 @@ def main() -> int:
             ODYSSEUS_DATA_DIR=str(target / "data"),
             DATABASE_URL="sqlite:///:memory:",
             AUTH_ENABLED="false",
+            # Exodus refuses invitation-only team mode without auth (docs/TEAM_ACCOUNTS.md).
+            EXODUS_INVITE_ONLY="false",
             ODYSSEUS_STARTUP_WARMUPS="0",
             ODYSSEUS_TOOL_INDEX_PREWARM="0",
             CHROMADB_HOST="127.0.0.1",

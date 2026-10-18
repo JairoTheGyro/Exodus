@@ -62,6 +62,7 @@ from .email_helpers import (
     _EMAIL_REPLY_SYS_PROMPT_BASE, _POOL_HOOKS,
     _friendly_email_auth_error, _email_summary_failure_log_detail,
     _mail_connection_test_error, _mail_private_blocked, _PolicySMTP, _PolicySMTP_SSL,
+    UnencryptedMailDisabled,
     _generate_email_summary, EMAIL_SUMMARY_ERROR_CODE, EMAIL_SUMMARY_ERROR_MESSAGE,
     SendEmailRequest, ExtractStyleRequest,
     ATTACHMENTS_DIR, COMPOSE_UPLOADS_DIR, SCHEDULED_DB,
@@ -7076,7 +7077,7 @@ def setup_email_routes():
             smtp = None
             try:
                 if smtp_security == "none":
-                    raise ssl.SSLError("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
+                    raise UnencryptedMailDisabled("Unencrypted SMTP is disabled; select SSL/TLS or STARTTLS")
                 if smtp_security == "ssl":
                     smtp = _PolicySMTP_SSL(
                         smtp_host,
