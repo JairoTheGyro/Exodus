@@ -16,6 +16,9 @@
 
 const LOADERS = {
   editor: () => import('./galleryEditor.js'),
+  // Calculator has no import-time side effects: its window and keyboard
+  // listeners are created on the first openCalculator() call.
+  calculator: () => import('./calculator/index.js'),
 };
 
 /**

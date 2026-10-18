@@ -1,0 +1,582 @@
+/* Calculator tool window — recreation of macOS Calculator inside an Exodus
+   window. Every colour derives from the active Exodus theme tokens
+   (--panel, --fg, --red = theme accent), so it follows any preset, custom,
+   light, frosted or Temple theme. Calculator.app's orange operator keys map to
+   the theme accent, the way Clock maps its orange. Geometry (key sizes, gaps,
+   window widths per mode) matches Calculator 12.0. */
+
+#calculator-modal {
+  --calc-surface: var(--panel);
+  --calc-text: var(--fg);
+  --calc-muted: color-mix(in srgb, var(--fg) 58%, transparent);
+  --calc-faint: color-mix(in srgb, var(--fg) 34%, transparent);
+  --calc-sep: color-mix(in srgb, var(--fg) 14%, transparent);
+  --calc-key-digit: color-mix(in srgb, var(--fg) 24%, var(--panel));
+  --calc-key-fn: color-mix(in srgb, var(--fg) 15%, var(--panel));
+  --calc-key-fn-on: color-mix(in srgb, var(--fg) 34%, var(--panel));
+  --calc-key-util: color-mix(in srgb, var(--fg) 40%, var(--panel));
+  --calc-key-op: var(--red, #e06c75);
+  --calc-on-op: var(--calc-on-accent, #fff);   /* set from the accent's contrast in index.js */
+  --calc-sidebar: color-mix(in srgb, var(--fg) 5%, var(--panel));
+  --calc-font: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', 'Inter', system-ui, sans-serif;
+}
+
+/* style.css gives every <button> a fixed 32px height; Calculator sizes its own. */
+#calculator-modal button,
+.calc-menu button,
+.calc-picker button { height: auto; }
+
+@media (min-width: 769px) {
+  #calculator-modal {
+    left: calc(var(--icon-rail-w, 48px) + var(--sidebar-w, 0px));
+    width: calc(100% - (var(--icon-rail-w, 48px) + var(--sidebar-w, 0px)));
+    box-sizing: border-box;
+    transition: left 0.25s ease, width 0.25s ease;
+  }
+}
+
+#calculator-modal .calc-content {
+  width: auto;
+  max-width: 96vw;
+  max-height: 94vh;
+  padding: 0;
+  overflow: hidden;
+  background: var(--calc-surface);
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+/* ── Header: title · history · mode menu · minimize · close ── */
+#calculator-modal .calc-header {
+  margin: 0;
+  padding: 8px 10px;
+  min-height: 46px;
+  gap: 6px;
+  border-bottom: 1px solid var(--calc-sep);
+}
+#calculator-modal .calc-header h4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  margin-right: auto;
+}
+#calculator-modal .calc-tool {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--calc-sep);
+  background: var(--calc-key-fn);
+  color: var(--calc-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#calculator-modal .calc-tool:hover { background: var(--calc-key-fn-on); }
+#calculator-modal .calc-tool[aria-pressed="true"] { background: var(--calc-key-fn-on); }
+#calculator-modal .calc-tool[hidden] { display: none; }
+#calculator-modal button:focus-visible,
+.calc-menu button:focus-visible,
+.calc-picker :is(button, input):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--calc-key-op) 70%, transparent);
+  outline-offset: 2px;
+}
+
+/* ── Body: optional history sidebar + calculator pane ── */
+/* The history column is taken out of flow so it scrolls within the pane's
+   height instead of stretching the window to the length of the history. */
+#calculator-modal .calc-main { display: flex; min-height: 0; position: relative; }
+#calculator-modal .calc-main.calc-with-history { padding-left: 220px; }
+#calculator-modal .calc-pane {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  font-family: var(--calc-font);
+  color: var(--calc-text);
+}
+/* Calculator.app's widths, shrinking (keys scale with the pane) when the
+   Exodus workspace beside the sidebar is narrower than the Mac window. */
+#calculator-modal .calc-main {
+  --calc-avail: calc(100vw - var(--icon-rail-w, 48px) - var(--sidebar-w, 0px) - 24px);
+}
+#calculator-modal .calc-main.calc-with-history { --calc-avail: calc(100vw - var(--icon-rail-w, 48px) - var(--sidebar-w, 0px) - 244px); }
+#calculator-modal .calc-pane[data-mode="basic"] { width: 230px; }
+#calculator-modal .calc-pane[data-mode="scientific"] { width: min(674px, var(--calc-avail)); min-width: 360px; container-type: inline-size; }
+#calculator-modal .calc-pane[data-mode="programmer"] { width: min(488px, var(--calc-avail)); min-width: 330px; container-type: inline-size; }
+
+/* ── Display ── */
+#calculator-modal .calc-display {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  min-height: 92px;
+  padding: 6px 12px 6px;
+  user-select: text;
+}
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-display { min-height: 86px; }
+#calculator-modal .calc-expr,
+#calculator-modal .calc-main-line {
+  white-space: nowrap;
+  text-align: right;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+#calculator-modal .calc-expr {
+  color: var(--calc-muted);
+  font-size: 23px;
+  line-height: 1.25;
+  min-height: 0;
+  direction: rtl;                      /* keep the end visible when it overflows */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 12%);
+}
+#calculator-modal .calc-expr > span { direction: ltr; unicode-bidi: isolate; }
+#calculator-modal .calc-main-line {
+  font-size: 34px;
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--calc-text);
+}
+#calculator-modal sup.calc-sup { font-size: 0.62em; vertical-align: 0.62em; line-height: 0; }
+#calculator-modal sub.calc-sub { font-size: 0.52em; vertical-align: -0.12em; line-height: 0; font-weight: 600; }
+#calculator-modal .calc-italic { font-family: Georgia, 'Times New Roman', serif; font-style: italic; }
+#calculator-modal .calc-badges {
+  position: absolute;
+  left: 12px;
+  bottom: 6px;
+  display: flex;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--calc-muted);
+}
+#calculator-modal .calc-char {
+  min-width: 14px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--calc-key-fn);
+  color: var(--calc-text);
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* RPN stack rows */
+#calculator-modal .calc-rpn-row {
+  border-top: 1px solid var(--calc-sep);
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 30px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Convert: value / unit chip / swap / converted value / unit chip */
+#calculator-modal .calc-convert-row { display: flex; flex-direction: column; align-items: flex-end; }
+#calculator-modal .calc-convert-result { color: var(--calc-muted); }
+#calculator-modal .calc-unit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  color: var(--calc-muted);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#calculator-modal .calc-unit-chip .calc-chevrons {
+  width: 11px;
+  height: 13px;
+  border-radius: 3px;
+  background: var(--calc-key-fn-on);
+  color: var(--calc-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#calculator-modal .calc-swap-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+#calculator-modal .calc-swap {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--calc-key-op);
+  cursor: pointer;
+  display: inline-flex;
+}
+#calculator-modal .calc-swap-row hr { flex: 1; border: 0; border-top: 1px solid var(--calc-sep); margin: 0; }
+
+/* ── Keys ── */
+#calculator-modal .calc-keys {
+  display: grid;
+  gap: 6px;
+  padding: 4px 10px 11px;
+}
+#calculator-modal .calc-pane[data-mode="basic"] .calc-keys { grid-template-columns: repeat(4, 48px); grid-auto-rows: 48px; }
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-keys { grid-template-columns: repeat(10, minmax(0, 1fr)); grid-auto-rows: 48px; padding-bottom: 10px; }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-keys { grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: 48px; padding-bottom: 9px; }
+#calculator-modal .calc-key {
+  appearance: none;
+  position: relative;
+  border: 0;
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--calc-key-digit);
+  color: var(--calc-text);
+  font-family: var(--calc-font);
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent),
+              inset 0 -1px 0 color-mix(in srgb, #000 14%, transparent),
+              0 1px 2px rgba(0, 0, 0, 0.22);
+  transition: filter 0.35s ease-out;
+}
+#calculator-modal .calc-key:hover { filter: brightness(1.08); }
+#calculator-modal .calc-key:active,
+#calculator-modal .calc-key.calc-pressed { filter: brightness(1.32); transition: none; }
+#calculator-modal .calc-key[data-style="fn"] { background: var(--calc-key-fn); font-size: 17.5px; }
+#calculator-modal .calc-key[data-style="fn-on"] { background: var(--calc-key-fn-on); font-size: 17.5px; }
+#calculator-modal .calc-key[data-style="util"] { background: var(--calc-key-util); }
+#calculator-modal .calc-key[data-style="op"] { background: var(--calc-key-op); color: var(--calc-on-op); font-size: 26px; }
+#calculator-modal .calc-key[data-style="bar"] { background: var(--calc-key-fn); font-size: 15px; }
+#calculator-modal .calc-key[data-wide] { font-size: 22px; }
+#calculator-modal .calc-key:disabled { opacity: 0.4; cursor: default; filter: none; }
+/* Label sizes track the pane width (cqw) so a narrowed keypad still fits;
+   at full width they equal Calculator.app's sizes. */
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-key { font-size: min(25px, 3.7cqw); }
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-key:is([data-style="fn"], [data-style="fn-on"]) { font-size: min(17.5px, 2.6cqw); }
+#calculator-modal .calc-pane[data-mode="scientific"] .calc-key[data-style="op"] { font-size: min(26px, 3.86cqw); }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-key { font-size: min(25px, 5.1cqw); }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-key:is([data-style="fn"], [data-style="fn-on"]) { font-size: min(17.5px, 3.6cqw); }
+#calculator-modal .calc-pane[data-mode="programmer"] .calc-key[data-style="op"] { font-size: min(26px, 5.3cqw); }
+#calculator-modal .calc-key svg { width: 1em; height: 1em; }
+
+/* RPN toolbar: a row under the stack (Basic), a column beside it (Scientific) */
+#calculator-modal .calc-rpn-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 48px);
+  grid-auto-rows: 26px;
+  gap: 6px;
+  padding: 2px 10px 6px;
+}
+#calculator-modal .calc-display-wrap { display: flex; align-items: flex-end; }
+#calculator-modal .calc-display-wrap > .calc-display { flex: 1; min-width: 0; }
+#calculator-modal .calc-display-wrap > .calc-rpn-bar {
+  grid-template-columns: 50px;
+  grid-auto-rows: 28px;
+  padding: 0 10px 8px 0;
+}
+
+/* ── Programmer controls and bit grid ── */
+#calculator-modal .calc-prog-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--calc-sep);
+}
+#calculator-modal .calc-seg {
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 6px;
+  background: var(--calc-key-fn);
+  height: 24px;
+}
+#calculator-modal .calc-seg button,
+#calculator-modal .calc-pill {
+  border: 0;
+  background: transparent;
+  color: var(--calc-text);
+  font-family: var(--calc-font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 11px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+#calculator-modal .calc-seg button[aria-pressed="true"] { background: var(--calc-key-op); color: var(--calc-on-op); }
+#calculator-modal .calc-pill { background: var(--calc-key-fn); border-radius: 6px; height: 24px; }
+#calculator-modal .calc-bits {
+  display: grid;
+  grid-template-columns: repeat(8, auto);
+  justify-content: space-between;
+  row-gap: 2px;
+  padding: 12px 10px 4px;
+  font-family: var(--calc-font);
+}
+#calculator-modal .calc-nibble { display: inline-flex; gap: 1.5px; }
+#calculator-modal .calc-bit {
+  border: 0;
+  background: none;
+  padding: 0 1px;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--calc-muted);
+  cursor: pointer;
+}
+#calculator-modal .calc-bit[aria-pressed="true"] { color: var(--calc-text); font-weight: 600; }
+#calculator-modal .calc-bit-label { font-size: 10px; font-weight: 600; color: var(--calc-muted); margin-bottom: 6px; }
+#calculator-modal .calc-bit-label.calc-end { text-align: right; }
+
+/* ── History sidebar ── */
+#calculator-modal .calc-history {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 220px;
+  border-right: 1px solid var(--calc-sep);
+  background: var(--calc-sidebar);
+  overflow-y: auto;
+  padding: 0 16px 12px;
+  font-family: var(--calc-font);
+}
+#calculator-modal .calc-history[hidden] { display: none; }
+#calculator-modal .calc-history-empty {
+  height: 100%;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--calc-muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+#calculator-modal .calc-history h5 {
+  margin: 16px 0 0;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--calc-sep);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--calc-muted);
+}
+#calculator-modal .calc-record {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--calc-sep);
+  background: none;
+  color: var(--calc-text);
+  padding: 16px 0;
+  cursor: pointer;
+  font-family: var(--calc-font);
+}
+#calculator-modal .calc-record:hover { background: color-mix(in srgb, var(--fg) 4%, transparent); }
+#calculator-modal .calc-record-expr {
+  display: block;
+  font-size: 12.5px;
+  color: var(--calc-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#calculator-modal .calc-record-result {
+  display: block;
+  margin-top: 2px;
+  font-size: 15.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Portaled menus: mode menu, history context menu ── */
+.calc-menu {
+  position: fixed;
+  width: 236px;
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+  background: color-mix(in srgb, var(--fg) 4%, var(--panel));
+  color: var(--fg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 13px;
+}
+.calc-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.calc-menu-item:hover:not(:disabled) { background: var(--red); color: var(--calc-on-accent, #fff); }
+.calc-menu-item:disabled { opacity: 0.45; cursor: default; }
+.calc-menu-item.calc-danger { color: var(--color-error, #ff4444); }
+.calc-menu-item.calc-danger:hover { color: var(--calc-on-accent, #fff); }
+.calc-menu-check { width: 12px; flex-shrink: 0; text-align: center; }
+.calc-menu-icon { width: 16px; flex-shrink: 0; display: inline-flex; justify-content: center; opacity: 0.85; }
+.calc-menu-sep { height: 1px; margin: 5px 8px; background: color-mix(in srgb, var(--fg) 14%, transparent); }
+.calc-menu-label { padding: 4px 8px 2px; font-size: 11px; font-weight: 600; opacity: 0.6; }
+.calc-menu-places { display: flex; flex-wrap: wrap; gap: 3px; padding: 2px 6px 4px; }
+.calc-menu-places button {
+  min-width: 26px;
+  padding: 3px 5px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.calc-menu-places button[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: var(--calc-on-accent, #fff); }
+
+/* ── Unit picker (portaled popover) ── */
+.calc-picker {
+  position: fixed;
+  width: 330px;
+  height: 460px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+  background: color-mix(in srgb, var(--fg) 4%, var(--panel));
+  color: var(--fg);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, system-ui, sans-serif;
+}
+.calc-picker-search {
+  margin: 10px 10px 0;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  background: color-mix(in srgb, var(--fg) 7%, var(--panel));
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  padding: 0 12px;
+}
+.calc-picker-chips { display: flex; gap: 4px; overflow-x: auto; padding: 8px 10px; scrollbar-width: none; flex-shrink: 0; }
+.calc-picker-chips::-webkit-scrollbar { display: none; }
+.calc-chip {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: none;
+  color: var(--red);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.calc-chip[aria-pressed="true"] { background: var(--red); color: var(--calc-on-accent, #fff); }
+.calc-picker-list { flex: 1; overflow-y: auto; border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); }
+.calc-unit {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  padding: 7px 10px 7px 6px;
+  cursor: pointer;
+}
+.calc-unit:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.calc-unit-name { font-size: 15px; }
+.calc-unit-abbr { display: block; font-size: 12px; opacity: 0.6; }
+.calc-unit[aria-selected="true"] { color: var(--red); }
+.calc-unit-check { color: var(--red); text-align: center; }
+.calc-picker-empty { padding: 40px 24px; text-align: center; font-size: 14px; }
+.calc-picker-empty p { opacity: 0.6; font-size: 13px; }
+.calc-picker-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 11px;
+  opacity: 0.7;
+  border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+/* ── In-window confirmation sheet ── */
+#calculator-modal .calc-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+#calculator-modal .calc-sheet {
+  margin-top: 46px;
+  width: min(300px, 90%);
+  padding: 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fg) 6%, var(--panel));
+  border: 1px solid var(--calc-sep);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  font-family: var(--calc-font);
+}
+#calculator-modal .calc-sheet h5 { margin: 0 0 6px; font-size: 14px; }
+#calculator-modal .calc-sheet p { margin: 0 0 14px; font-size: 12.5px; color: var(--calc-muted); }
+#calculator-modal .calc-sheet-actions { display: flex; justify-content: flex-end; gap: 8px; }
+#calculator-modal .calc-sheet-actions button {
+  border-radius: 7px;
+  border: 1px solid var(--calc-sep);
+  background: var(--calc-key-fn);
+  color: var(--calc-text);
+  padding: 5px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+#calculator-modal .calc-sheet-actions .calc-danger-btn { background: var(--color-danger, #c0392b); border-color: transparent; color: #fff; }
+
+/* Temple presentation flattens every button to white-on-blue text; give the
+   keys TempleOS cell borders and invert the operators so the keypad reads
+   as a keypad. Colours are Temple's own palette tokens. */
+html.theme-temple #calculator-modal .calc-key { border: 1px solid var(--temple-blue) !important; }
+html.theme-temple #calculator-modal .calc-key[data-style="op"] { background: var(--temple-blue) !important; color: var(--temple-white) !important; }
+html.theme-temple #calculator-modal .calc-key[data-style="util"],
+html.theme-temple #calculator-modal .calc-key[data-style="fn-on"] { background: var(--temple-light-cyan) !important; }
+
+/* Small screens: the window is a full-width sheet; keys stretch to fit. */
+@media (max-width: 768px) {
+  #calculator-modal .calc-pane { width: 100% !important; }
+  #calculator-modal .calc-pane .calc-keys { grid-template-columns: repeat(var(--calc-cols), 1fr) !important; }
+  #calculator-modal .calc-history { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #calculator-modal .calc-key { transition: none; }
+}
