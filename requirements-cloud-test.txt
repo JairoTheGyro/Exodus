@@ -1,12 +1,12 @@
 # Focused offline development tests only; not the complete app runtime.
 # Validated on Python 3.11 without Docker, models, vector libraries, or npm.
 # Keep requirements.txt as the runtime source of truth.
-fastapi==0.142.2
+fastapi==0.143.2
 uvicorn==0.54.0
 httpx==0.28.1
 httpx2==2.13.1
-pydantic==2.13.5
-SQLAlchemy==2.1.1
+pydantic==2.14.1
+SQLAlchemy==2.1.4
 cryptography==50.0.2
 python-multipart==0.0.32
 python-dotenv==1.2.4
