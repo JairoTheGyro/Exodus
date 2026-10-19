@@ -172,6 +172,10 @@
         {
           "specifier": "/static/js/tourHintDismiss.js",
           "reason": "Existing shared UI/platform identity, injected at Notes composition. Remove when that shared responsibility migrates to maintained source."
+        },
+        {
+          "specifier": "/static/js/workspaceEvents.js",
+          "reason": "Exodus: shared workspace change bus (Home, AI, other tabs) that refreshes an open Notes panel; also owned by home.js. Remove when it migrates to maintained source."
         }
       ]
     },
