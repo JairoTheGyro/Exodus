@@ -49,6 +49,7 @@ import { applyEdgeDock, clearDockSide } from '/static/js/modalSnap.js';
 import { topToolWindowZ, topPortalZ } from '/static/js/toolWindowZOrder.js';
 import { bindMenuDismiss, dismissOrRemove } from '/static/js/escMenuStack.js';
 import { bindTourHintDismiss } from '/static/js/tourHintDismiss.js';
+import * as WorkspaceEvents from '/static/js/workspaceEvents.js';
 
 const api = createNotesApi({ origin: window.location.origin, request: (...args) => fetch(...args) });
 const persistence = createNotesPersistence({ storage: typeof localStorage === 'undefined' ? undefined : localStorage });
@@ -488,6 +489,16 @@ const deletion = createDeletion({
   effects: { styledConfirm: uiModule.styledConfirm, confirm: message => confirm(message), showToast: (...args) => uiModule.showToast(...args), showError: (...args) => uiModule.showError(...args) },
   state
 });
+// Exodus: refresh an open panel when Home, the AI or another tab changes
+// notes. Skipped while a note editor is open so unsaved text is never replaced.
+const _isEditingNote = () => !!document.querySelector('#notes-pane .note-form');
+async function _refreshFromWorkspace() {
+  if (!app.state.open || _isEditingNote()) return;
+  await _fetchNotes();
+  if (app.state.open && !_isEditingNote()) _renderNotes();
+}
+WorkspaceEvents.subscribe('notes', _refreshFromWorkspace);
+
 const notesModule = { openPanel: panel.openPanel, closePanel: panel.closePanel, togglePanel: panel.togglePanel, isPanelOpen: panel.isPanelOpen, openNote: panel.openNote, newNote: quickAdd.newNote, openNotes: panel.openPanel, closeNotes: panel.closePanel, isNotesOpen: panel.isPanelOpen, refreshDueBadge: reminders.refreshDueBadge };
 const publicOpenPanel = panel.openPanel, publicClosePanel = panel.closePanel, publicTogglePanel = panel.togglePanel, publicIsPanelOpen = panel.isPanelOpen, publicOpenNote = panel.openNote, publicNewNote = quickAdd.newNote, publicRefreshDueBadge = reminders.refreshDueBadge, publicDismissFiredReminderDot = reminders.dismissFiredReminderDot;
 export { publicOpenPanel as openPanel, publicClosePanel as closePanel, publicTogglePanel as togglePanel, publicIsPanelOpen as isPanelOpen, publicOpenNote as openNote, publicNewNote as newNote, publicRefreshDueBadge as refreshDueBadge, publicDismissFiredReminderDot as dismissFiredReminderDot, publicOpenPanel as openNotes, publicClosePanel as closeNotes, publicIsPanelOpen as isNotesOpen };
