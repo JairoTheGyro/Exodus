@@ -14,9 +14,9 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Working on it
 
-- **Stage 1 · License Tracker screen:** the checks themselves are verified (see
-  Finished). Still to do: look at the Settings → License Tracker screen in the
-  browser once Jairo signs the browser pane back in.
+- **License Tracker screen on Jairo's own account:** the screen itself works
+  (see Finished; tested as a throwaway admin). One last look on the real account
+  once Jairo is signed in to the browser pane.
 
 ## Needs to get started
 
@@ -36,8 +36,8 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 - **Check the "notify me" AI tool in a real chat.** Upstream now offers tools per
   turn by intent; Exodus added a notifications family so phrases like "ping me"
   or "ntfy" bring up `notify_user`, but a live chat should confirm it.
-- **Two Notes browser tests need the Playwright package** installed for local
-  runs (they pass on GitHub's checks only if it's available there).
+- **Next small catch-up:** the License Tracker already shows Odysseus `dev` moved
+  past the new baseline (88772b32 → 268636c9 on 2026-10-19).
 
 ### Stage 3 · Foundations
 - **App list and look settings:** adding an app touches one list plus its own
@@ -94,7 +94,17 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Finished
 
-- 2026-10-19 · **Caught up with the original Odysseus** (470 upstream changes:
+- 2026-10-19 · **Hand test after the catch-up** (throwaway copy with a test
+  admin, then the real app rebuilt): Home, Settings, License Tracker (live
+  GitHub check, new baseline shown), Calendar, Tasks, Library, Workshop,
+  Gallery, Memory, Email, Clock and Calculator (12 + 30 = 42) all open with no
+  errors; Notes import, archive and unarchive work. Two bugs found and fixed:
+  an open Notes panel now shows notes saved from Home right away
+  ([#37](https://github.com/JairoTheGyro/Exodus/pull/37)), and Settings no longer
+  causes a server error for accounts without email
+  ([#39](https://github.com/JairoTheGyro/Exodus/pull/39)).
+- 2026-10-19 · **Caught up with the original Odysseus**
+  ([#35](https://github.com/JairoTheGyro/Exodus/pull/35); 470 upstream changes:
   split CSS, rebuilt Notes, new email safety layer, request authority, per-turn
   tool selection and more). Every Exodus change was kept: branding, invite-only
   teams, AI-Free mode, Vaultwarden, Workshop, Calculator, Clock, strict email
