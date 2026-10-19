@@ -15,12 +15,12 @@
     "name": "Vaultwarden",
     "repository": "dani-garcia/vaultwarden",
     "branch": "main",
-    "used_commit": "eb212e23fad88e6136723f43e5b73543fa7026d3",
-    "used_date": "2026-09-28",
-    "used_version": "1.37.3",
-    "used_note": "Official Vaultwarden container observed locally as 1.37.3 on 2026-10-06; OCI labels match this source revision. Compose currently uses vaultwarden/server:latest with pull_policy: missing, not a digest pin. The recorded image digest identifies the audited image; checking updates never pulls or replaces it.",
-    "observed_at": "2026-10-06",
-    "used_image": "vaultwarden/server@sha256:1587c45feaa479f1f5e8af3b00eded36bff77bcf1880cf8dbf0541706dd470e0"
+    "used_commit": "7c188967e7a467b19b2757bc3326f9cf3ccae327",
+    "used_date": "2026-10-05",
+    "used_version": "1.37.4",
+    "used_note": "Official Vaultwarden 1.37.4 container, installed 2026-10-19 after a stopped-service backup of data/vaultwarden; OCI labels match this source revision. Compose pins vaultwarden/server:1.37.4 by digest, so restarts never pull a different image. The previous 1.37.3 image is kept locally as vaultwarden/server:rollback-1.37.3.",
+    "observed_at": "2026-10-19",
+    "used_image": "vaultwarden/server@sha256:efb3cde962015fcc036b2ea625242248611943b27212ebf4392841fb30fad055"
   },
   {
     "id": "deepseek-harness",

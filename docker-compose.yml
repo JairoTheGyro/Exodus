@@ -248,7 +248,7 @@ services:
   # Privacy Hub: upgrade deliberately after a consistent backup. Do not pull
   # latest on every restart. Preparation migrates the old named volume safely.
   vaultwarden:
-    image: vaultwarden/server:latest
+    image: vaultwarden/server:1.37.4@sha256:efb3cde962015fcc036b2ea625242248611943b27212ebf4392841fb30fad055
     pull_policy: missing
     entrypoint:
       - /bin/sh
