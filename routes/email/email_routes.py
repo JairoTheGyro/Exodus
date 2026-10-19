@@ -6683,7 +6683,19 @@ def setup_email_routes():
             account_id = None
         if account_id:
             _assert_owns_account(account_id, owner)
-        cfg = _get_email_config(account_id, owner=owner)
+        try:
+            cfg = _get_email_config(account_id, owner=owner)
+        except EmailNotConfiguredError:
+            if account_id:
+                raise HTTPException(404, "Email account not found")
+            # Exodus has no plaintext legacy fallback, so an account without a
+            # mailbox is a normal state: answer with blank settings, not a 500.
+            cfg = {
+                "configured": False, "account_id": "", "account_name": "",
+                "smtp_host": "", "smtp_port": 465, "smtp_user": "", "smtp_password": "",
+                "imap_host": "", "imap_port": 993, "imap_user": "", "imap_password": "",
+                "imap_starttls": False, "from_address": "", "oauth_provider": "", "display_name": "",
+            }
         cfg["smtp_password"] = "***" if cfg["smtp_password"] else ""
         cfg["imap_password"] = "***" if cfg["imap_password"] else ""
         # `_get_email_config` includes encrypted OAuth fields for the server's

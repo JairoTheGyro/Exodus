@@ -916,3 +916,31 @@ async def test_config_response_does_not_expose_oauth_storage_fields():
     assert "oauth_token_expiry" not in result
     assert encrypted_access not in json.dumps(result)
     assert encrypted_refresh not in json.dumps(result)
+
+
+@pytest.mark.asyncio
+async def test_email_config_without_a_mailbox_returns_blank_settings_not_500():
+    """Exodus: an account with no mailbox yet gets blank settings, not a server error."""
+    from fastapi import HTTPException
+    from routes.email_helpers import EmailNotConfiguredError
+    from routes.email_routes import setup_email_routes
+
+    router = setup_email_routes()
+    get_config = next(
+        route.endpoint for route in router.routes
+        if route.path == "/api/email/config" and "GET" in getattr(route, "methods", set())
+    )
+    missing = mock.Mock(side_effect=EmailNotConfiguredError("none"))
+    with mock.patch("routes.email_routes._get_email_config", missing), \
+         mock.patch("routes.email_routes._load_settings", return_value={}):
+        result = await get_config(owner="alice")
+    assert result["configured"] is False
+    assert result["smtp_password"] == "" and result["imap_password"] == ""
+    assert result["imap_host"] == ""
+
+    with mock.patch("routes.email_routes._get_email_config", missing), \
+         mock.patch("routes.email_routes._assert_owns_account"), \
+         mock.patch("routes.email_routes._load_settings", return_value={}):
+        with pytest.raises(HTTPException) as exc:
+            await get_config(account_id="gone", owner="alice")
+    assert exc.value.status_code == 404
