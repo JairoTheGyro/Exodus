@@ -61,11 +61,11 @@
     "name": "ntfy",
     "repository": "binwiederhier/ntfy",
     "branch": "main",
-    "used_commit": "4c2b69e0591b51d7ed7b2e71954f0f7be936b47f",
-    "used_date": "2026-08-04",
-    "used_version": "2.27.0",
-    "observed_at": "2026-10-06",
-    "used_image": "binwiederhier/ntfy@sha256:f2419f405127afa868f10985c1a41449e673477cee1eb19994339a5ae8b592e7",
-    "used_note": "The installed ntfy executable reports 2.27.0; this comparison uses the official v2.27.0 release revision. Compose uses the floating default tag. The recorded image digest identifies the installation audited on 2026-10-06; it is not an enforced pin or a record of the original installation date."
+    "used_commit": "9d0b6d933d6a6ddc5265bfecadaec1fb1538d89b",
+    "used_date": "2026-10-18",
+    "used_version": "2.32.0",
+    "observed_at": "2026-10-19",
+    "used_image": "binwiederhier/ntfy@sha256:59250e1d8be2ee2186c4560322f625faef22ace380331f05b63f8842dbd62602",
+    "used_note": "Official ntfy v2.32.0 image, installed 2026-10-19; the executable reports 2.32.0 and a test publish/poll succeeded. Compose pins this tag by digest. The previous 2.27.0 image is kept locally as binwiederhier/ntfy:rollback-2.27.0."
   }
 ]
