@@ -4,11 +4,11 @@
     "name": "Odysseus",
     "repository": "odysseus-dev/odysseus",
     "branch": "dev",
-    "used_commit": "3b6c169162330cd35c4ce6d14949ef15fd3208a2",
-    "used_date": "2026-09-14",
+    "used_commit": "88772b3278183949413e9da7d57e741057302e5e",
+    "used_date": "2026-10-19",
     "used_version": "1.0.3",
     "version_file": "src/constants.py",
-    "used_note": "Exodus is based on this upstream revision, with local modifications. This is not an unmodified Odysseus installation."
+    "used_note": "Exodus caught up with this upstream dev revision on 2026-10-19 (sync/odysseus-2026-10-18), keeping Exodus's local modifications. This is not an unmodified Odysseus installation."
   },
   {
     "id": "vaultwarden",

@@ -20,21 +20,24 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Needs to get started
 
-### Stage 1 · Stabilise and finish what's open
-
 ### Service updates found by the License Tracker (2026-10-18)
 - **Vaultwarden 1.37.3 → 1.37.4** (password manager; patch release, do first).
 - **ntfy 2.27.0 → 2.32.0** (notifications).
 - **ChromaDB 1.4.4 → 1.5.9** (AI memory store; check data compatibility first).
 - **DeepSeek Harness 0.1.7-rc.2 → 0.2.1-rc.2** (preview releases; test carefully).
-- SearXNG: 392 newer changes since the installed dated image.
+- SearXNG: the Odysseus catch-up pins a newer image (2026.9.25); it downloads
+  the next time the search service is recreated.
 - Each one: update its image or pin, keep the old one for rollback, restart only
   that service, check it in Exodus, then update `config/upstream_projects.json`.
 
-### Stage 2 · Catch up with the original Odysseus
-- Merge the ~469 new upstream Odysseus changes on a sync branch. Keep every
-  Exodus change, run all tests, rebuild, hand test, update the tracker's baseline.
-- From then on, small regular catch-ups.
+### Odysseus catch-up follow-ups (2026-10-19)
+- **Small regular catch-ups** from now on: when the License Tracker shows new
+  upstream changes, merge them on a `sync/odysseus-<date>` branch.
+- **Check the "notify me" AI tool in a real chat.** Upstream now offers tools per
+  turn by intent; Exodus added a notifications family so phrases like "ping me"
+  or "ntfy" bring up `notify_user`, but a live chat should confirm it.
+- **Two Notes browser tests need the Playwright package** installed for local
+  runs (they pass on GitHub's checks only if it's available there).
 
 ### Stage 3 · Foundations
 - **App list and look settings:** adding an app touches one list plus its own
@@ -91,6 +94,13 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Finished
 
+- 2026-10-19 · **Caught up with the original Odysseus** (470 upstream changes:
+  split CSS, rebuilt Notes, new email safety layer, request authority, per-turn
+  tool selection and more). Every Exodus change was kept: branding, invite-only
+  teams, AI-Free mode, Vaultwarden, Workshop, Calculator, Clock, strict email
+  encryption, the compact SearXNG search, Notes import/export and archive fixes,
+  and the paper/copper/lavender/Temple themes. Exodus is pinned to its own
+  Docker image so upstream's published image can't replace it.
 - 2026-10-18 · **License Tracker checks verified:** all six projects checked
   live, and every result matched GitHub (Odysseus 469 changes ahead, Vaultwarden
   35, Harness 2,373, SearXNG 392, ChromaDB 324, ntfy 307, plus their newest
