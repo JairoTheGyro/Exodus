@@ -3,7 +3,8 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const source=readFileSync('static/js/home.js','utf8');
-const library=readFileSync('static/js/emailLibrary.js','utf8');
+// The email library moved to static/js/emailLibrary/ (emailLibrary.js is a re-export).
+const library=readFileSync('static/js/emailLibrary/index.js','utf8');
 const calls=[], opened=[], notices=[];
 let responses, accountFailure=false;
 const accounts=[{id:'a',name:'Account A'},{id:'b',name:'Account B'}];

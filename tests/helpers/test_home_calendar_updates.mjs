@@ -32,7 +32,7 @@ await updates.flush();
 assert.deepEqual(refreshes, ['schedule']);
 
 pending = vm.runInContext('_updateEvent("saved", {summary:"Edited"})', context);
-respond({ok:true});
+respond({ok:true, json:async () => ({})});
 await pending;await updates.flush();
 assert.equal(refreshes.length, 2);
 

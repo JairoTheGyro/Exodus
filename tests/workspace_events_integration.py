@@ -43,8 +43,9 @@ app.add_middleware(WorkspacePolicyMiddleware)
 async def identity(request, call_next):
     request.state.current_user = request.headers.get('x-test-user')
     return await call_next(request)
+from routes.local_document_routes import router as library_files_router
 for router in (setup_note_routes(), setup_calendar_routes(), setup_document_routes(None),
-               setup_home_routes(), setup_workspace_event_routes()):
+               library_files_router, setup_home_routes(), setup_workspace_event_routes()):
     app.include_router(router)
 
 
