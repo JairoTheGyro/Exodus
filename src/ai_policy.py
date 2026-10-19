@@ -211,7 +211,9 @@ def scheduled_owner(fn):
         with SessionLocal() as db:
             task = db.get(ScheduledTask, task_id)
             owner = task.owner if task else None
-            uses_ai = task is None or task_uses_ai(task.task_type, task.action, task.output_target)
+            uses_ai = task is None or task_uses_ai(
+                getattr(task, 'task_type', None), getattr(task, 'action', None),
+                getattr(task, 'output_target', None))
         token = AI_OWNER.set(owner)
         current = asyncio.current_task()
         if uses_ai:

@@ -74,7 +74,7 @@ def test_reminder_list_accepts_both_names_and_preserves_sender_scope(sender, exp
     namespace = {'_pooled_connect': Mock(return_value=(conn, False)), '_q': lambda s: s,
                  '_imap_uid_search': search, '_pooled_release': release,
                  'logger': logging.getLogger(__name__), 'EmailNotConfiguredError': type('NotConfigured', (Exception,), {})}
-    function = load_function('routes/email_routes.py', '_list_emails_sync', namespace)
+    function = load_function('routes/email/email_routes.py', '_list_emails_sync', namespace)
     result = function('INBOX', 50, 0, 'reminders', 'test-account', from_addr=sender, owner='alice')
     assert 'error' not in result
     assert {uid for uid, mail in MAIL.items() if matches(queries[0], mail)} == expected
@@ -96,7 +96,7 @@ def test_reminder_cleanup_handles_old_new_and_marker_without_unrelated_mail():
         assert account_id == 'test-account' and owner == 'alice'
         yield conn
     owner_check = Mock()
-    function = load_function('routes/email_routes.py', 'delete_odysseus_reminder_emails', {
+    function = load_function('routes/email/email_routes.py', 'delete_odysseus_reminder_emails', {
         '_imap': imap, '_assert_owns_account': owner_check,
         '_get_email_config': lambda *a, **k: {'from_address': 'me@example.invalid'},
         '_detect_sent_folder': lambda c: None, '_q': lambda s: s,
@@ -120,6 +120,7 @@ def test_specialized_model_identity_remains_compatible(name, args):
         '_extract_last_user_message': lambda m: 'hello',
         '_minimal_saved_memory_message': lambda m: None,
         '_minimal_recent_notes_tool_context_message': lambda m: None,
+        '_minimal_datetime_context_message': lambda m: None,
     })
     messages = function(*args)
     assert messages[0]['content'].startswith('You are Odysseus.')

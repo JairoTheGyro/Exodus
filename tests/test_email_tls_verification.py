@@ -13,6 +13,13 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
 
+@pytest.fixture(autouse=True)
+def _allow_loopback_test_server(monkeypatch):
+    """The disposable TLS server listens on loopback, which the mail policy
+    denies by default; the documented operator opt-in allows it."""
+    monkeypatch.setenv("EMAIL_ALLOW_PRIVATE_IPS", "true")
+
+
 @contextmanager
 def mail_server(tmp_path, protocol, starttls, certificate):
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -152,8 +159,8 @@ async def test_password_account_test_reports_tls_failure_without_auth(monkeypatc
     smtp.starttls.side_effect = ssl.SSLCertVerificationError('certificate verify failed')
     ssl_smtp = Mock(side_effect=ssl.SSLCertVerificationError('certificate verify failed'))
     plain_smtp = Mock(return_value=smtp)
-    monkeypatch.setattr(r.smtplib, 'SMTP_SSL', ssl_smtp)
-    monkeypatch.setattr(r.smtplib, 'SMTP', plain_smtp)
+    monkeypatch.setattr(r, '_PolicySMTP_SSL', ssl_smtp)
+    monkeypatch.setattr(r, '_PolicySMTP', plain_smtp)
     class Request:
         async def json(self):
             return {'smtp_host': 'smtp.example.test', 'smtp_port': port, 'smtp_security': security,
@@ -170,4 +177,5 @@ async def test_password_account_test_reports_tls_failure_without_auth(monkeypatc
         ctx = ssl_smtp.call_args.kwargs['context'] if security == 'ssl' else smtp.starttls.call_args.kwargs['context']
         assert ctx.check_hostname is True
         assert ctx.verify_mode == ssl.CERT_REQUIRED
-        assert 'certificate verify failed' in result['smtp']['error']
+        # Upstream reports transport failures by category, never peer text.
+        assert 'TLS certificate verification failed' in result['smtp']['error']

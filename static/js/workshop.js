@@ -1,5 +1,5 @@
-import documentModule from './document.js?v=20260929workspace1';
-import settingsModule from './settings.js?v=sovereign-essentials1';
+import documentModule from './document.js?v=20260916docctx2';
+import settingsModule from './settings.js?v=20260912writingstyle3';
 import { isWorkshopSource, workshopRequest } from './workshopRuntime.js';
 
 const examples = {

@@ -15,7 +15,7 @@
  */
 
 const LOADERS = {
-  editor: () => import('./galleryEditor.js'),
+  editor: () => import('./galleryEditor.js?v=20260909movepicklayer1'),
   // Clock has no import-time side effects: its alarm/timer ticker only starts
   // when openClock() or startClockBackground() is called.
   clock: () => import('./clock.js'),

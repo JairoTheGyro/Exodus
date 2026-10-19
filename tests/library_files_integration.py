@@ -28,6 +28,7 @@ async def identity(request,call_next):
     request.state.current_user=request.headers.get('x-test-user')
     return await call_next(request)
 app.include_router(setup_document_routes(None))
+app.include_router(files.router)
 
 class LibraryFileChecks(unittest.TestCase):
     def setUp(self):

@@ -5,7 +5,6 @@ services:
   odysseus:
     volumes:
       - ./static/index.html:/app/static/index.html:ro
-      - ./static/style.css:/app/static/style.css:ro
       - ./static/sw.js:/app/static/sw.js:ro
       - ./static/js/settings.js:/app/static/js/settings.js:ro
       - ./static/js/settings:/app/static/js/settings:ro
@@ -152,7 +151,7 @@ services:
       - ./routes/personal_routes.py:/app/routes/personal_routes.py:ro
       - ./services/search/providers.py:/app/services/search/providers.py:ro
       - ./services/hwfit/models.py:/app/services/hwfit/models.py:ro
-      - ./services/hwfit/catalogs:/app/services/hwfit/catalogs:ro
+      - ./services/hwfit/data:/app/services/hwfit/data:ro
       - ./src/agent_tools/web_tools.py:/app/src/agent_tools/web_tools.py:ro
       - ./scripts/test_searxng.py:/app/scripts/test_searxng.py:ro
       - ./routes/local_document_routes.py:/app/routes/local_document_routes.py:ro

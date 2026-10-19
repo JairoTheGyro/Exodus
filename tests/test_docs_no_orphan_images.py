@@ -1,10 +1,11 @@
 """Repository asset ownership guards for issues #1335 and #6175.
 
 Public Markdown and landing-page media belong in website/, while shared
-README/packaging imagery belongs in assets/branding/. Images in either managed
-root must be referenced by tracked text, and every tracked website video must
-be referenced by the site's entry point. Explicitly maintained operator guides
-may live in docs/ without becoming part of the public Pages site.
+optional README/packaging imagery belongs in assets/branding/. Retained images
+in either managed root must be referenced by tracked text, and every retained
+website video must be referenced by the site's entry point. Publication can
+operate with no imagery or videos. Explicitly maintained operator guides may
+live in docs/ without becoming part of the public Pages site.
 """
 import re
 import subprocess
@@ -20,6 +21,7 @@ PUBLIC_GUIDES = {
     "agent-migration.md",
     "attachments.md",
     "backup-restore.md",
+    "configuration-reference.md",
     "email-outlook.md",
     "pr-blocker-audit.md",
     "security-ci.md",
@@ -38,6 +40,45 @@ OPERATIONAL_GUIDES = {
     "TEAM_ACCOUNTS.md",
     "VAULTWARDEN.md",
 }
+# Upstream Odysseus engineering records under docs/ (as of the 2026-10-18 sync).
+UPSTREAM_DOCS_FALLBACK = {
+    "AGENT_TURN_CONTRACT.md",
+    "BACKGROUND_TOOL_JOBS.md",
+    "CODE_REVIEW_2026-09-16.md",
+    "HISTORICAL_ODYSSEUS_QA_QUEUE.md",
+    "ODYSSEUS_FIX_WORKSTREAMS.md",
+    "ODYSSEUS_SFT_ALEX_CORPUS.md",
+    "ODYSSEUS_TOOL_INSTRUCTIONS_EXAMPLE.md",
+    "REVIEW_FIX_PROGRESS.md",
+    "TYPO_ROUTING_AUDIT_20260909.md",
+    "chromadb-volume-migration.md",
+    "frontend-architecture/ADR-001-source-and-deployment.md",
+    "frontend-architecture/assessment.md",
+    "frontend-architecture/handbook.md",
+    "frontend-architecture/notes-case-study.md",
+    "frontend-architecture/notes-changed-files.md",
+    "frontend-architecture/notes-module-inventory.md",
+    "frontend-architecture/notes-roadmap.md",
+    "frontend-architecture/notes-validation.md",
+    "frontend-architecture/validation.md",
+    "ref-parity-audit.md",
+    "runtime-decomposition/COMPARISON_PROTOCOL.md",
+    "runtime-decomposition/WAVE_1_1_RECONCILIATION.md",
+    "runtime-decomposition/validation/wave-3-corrective-pass.md",
+    "runtime-decomposition/wave-2-request-authority.md",
+    "runtime-decomposition/wave-2-validation-full.md",
+    "runtime-decomposition/wave-3-browser-authority.md",
+    "runtime-decomposition/wave-3-checkpoint-a.md",
+    "runtime-decomposition/wave-3-independent-adapters.md",
+    "runtime-decomposition/wave-3-resource-identity.md",
+    "runtime-decomposition/wave-3-s-delivery-2026-10-01.md",
+    "runtime-decomposition/wave-4-effects-provenance-integration.md",
+    "runtime-decomposition/wave-5a-browser-lifecycle.md",
+    "search-quality-audit-20260917.md",
+    "skills-audit-architecture.md",
+    "skills-audit-second-review.md",
+    "skills-lifecycle.md",
+}
 # Files a referenced image name could legitimately appear in.
 TEXT_EXTS = {".md", ".html", ".htm", ".js", ".ts", ".css", ".py", ".sh",
              ".json", ".yml", ".yaml", ".txt"}
@@ -54,7 +95,8 @@ def _tracked(*paths_under):
         return None
     if out.returncode != 0:
         return None
-    return [REPO / line for line in out.stdout.splitlines() if line.strip()]
+    return [REPO / line for line in out.stdout.splitlines()
+            if line.strip() and (REPO / line).is_file()]
 
 
 def test_no_orphan_documentation_or_branding_images():
@@ -62,9 +104,6 @@ def test_no_orphan_documentation_or_branding_images():
     if managed_files is None:
         pytest.skip("not a git checkout")
     managed_images = [p for p in managed_files if p.suffix.lower() in IMAGE_EXTS]
-    assert any("assets/branding" in p.as_posix() for p in managed_images), (
-        "expected assets/branding/ to contain the shared project imagery"
-    )
 
     # All tracked text we might reference an image from.
     all_tracked = _tracked(".") or []
@@ -89,6 +128,22 @@ def test_no_orphan_documentation_or_branding_images():
     )
 
 
+def _upstream_docs():
+    """Markdown under docs/ that exists on the upstream Odysseus remote, if known."""
+    try:
+        out = subprocess.run(
+            ["git", "ls-tree", "-r", "--name-only", "upstream/dev", "--", "docs"],
+            cwd=REPO, capture_output=True, text=True, check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        out = ""
+    names = {line for line in out.splitlines() if line.endswith(".md")}
+    # Without an upstream remote (e.g. CI), fall back to the docs that are not
+    # Exodus's own: anything outside the explicit Exodus allowlist that is
+    # tracked must then be reviewed by hand.
+    return names or {f"docs/{n}" for n in UPSTREAM_DOCS_FALLBACK}
+
+
 def test_pages_site_owns_its_entrypoint_and_media():
     docs_files = _tracked("docs")
     website_files = _tracked("website")
@@ -97,15 +152,20 @@ def test_pages_site_owns_its_entrypoint_and_media():
 
     assert REPO / "website/index.html" in website_files
     assert REPO / "docs/index.html" not in docs_files
+    # Upstream keeps its own engineering records in docs/; Exodus's allowlist
+    # only governs Markdown that Exodus adds on top of upstream's tree.
+    upstream_docs = _upstream_docs()
     unexpected_docs_assets = [
         p for p in docs_files
         if p.suffix.lower() in VIDEO_EXTS
         or (p.suffix.lower() == ".md"
-            and p.relative_to(REPO / "docs").as_posix() not in OPERATIONAL_GUIDES)
+            and p.relative_to(REPO / "docs").as_posix() not in OPERATIONAL_GUIDES
+            and p.relative_to(REPO).as_posix() not in upstream_docs)
     ]
     assert not unexpected_docs_assets, unexpected_docs_assets
     for guide in OPERATIONAL_GUIDES:
         assert (REPO / "docs" / guide).is_file(), guide
+    assert not [p for p in docs_files if p.name in PUBLIC_GUIDES]
 
     website_paths = {p.relative_to(REPO / "website").as_posix() for p in website_files}
     assert PUBLIC_GUIDES <= website_paths
@@ -114,7 +174,6 @@ def test_pages_site_owns_its_entrypoint_and_media():
         assert text.startswith("---\nlayout: default\n---\n"), guide
 
     website_videos = [p for p in website_files if p.suffix.lower() in VIDEO_EXTS]
-    assert website_videos, "expected website/ to contain the landing-page videos"
 
     entrypoint = (REPO / "website/index.html").read_text(encoding="utf-8")
     unreferenced = [
