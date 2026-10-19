@@ -20,16 +20,6 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Needs to get started
 
-### Service updates found by the License Tracker (2026-10-18)
-- **Vaultwarden 1.37.3 → 1.37.4** (password manager; patch release, do first).
-- **ntfy 2.27.0 → 2.32.0** (notifications).
-- **ChromaDB 1.4.4 → 1.5.9** (AI memory store; check data compatibility first).
-- **DeepSeek Harness 0.1.7-rc.2 → 0.2.1-rc.2** (preview releases; test carefully).
-- SearXNG: the Odysseus catch-up pins a newer image (2026.9.25); it downloads
-  the next time the search service is recreated.
-- Each one: update its image or pin, keep the old one for rollback, restart only
-  that service, check it in Exodus, then update `config/upstream_projects.json`.
-
 ### Odysseus catch-up follow-ups (2026-10-19)
 - **Small regular catch-ups** from now on: when the License Tracker shows new
   upstream changes, merge them on a `sync/odysseus-<date>` branch.
@@ -94,6 +84,16 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Finished
 
+- 2026-10-19 · **Service updates** (one PR, each service backed up first and its
+  old image kept for rollback): Vaultwarden 1.37.3 → 1.37.4, ntfy 2.27.0 →
+  2.32.0 (test message sent and received), DeepSeek Harness 0.1.7-rc.2 →
+  0.2.1-rc.2 (it now refuses to listen on every address, so Exodus binds it to
+  the container's own address; its new analytics stay off). ChromaDB was
+  already 1.5.9: the tracker had recorded its bundled tool's version (1.4.4),
+  which is the same source. Vaultwarden, ntfy and ChromaDB are now pinned to
+  exact versions instead of `latest`, so a restart can never change them.
+  SearXNG's newer image is still pinned by the catch-up and downloads the next
+  time it's recreated.
 - 2026-10-19 · **Hand test after the catch-up** (throwaway copy with a test
   admin, then the real app rebuilt): Home, Settings, License Tracker (live
   GitHub check, new baseline shown), Calendar, Tasks, Library, Workshop,
