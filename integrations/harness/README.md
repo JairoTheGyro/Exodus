@@ -1,7 +1,7 @@
 # Exodus Code
 
 Official source: https://github.com/deepseek-ai/deepseek-harness
-Published package: @deepseek-ai/dsh 0.1.7-rc.2, MIT, developer preview.
+Published package: @deepseek-ai/dsh 0.2.1-rc.2, MIT, developer preview.
 
 Start from the Sovereign Hub directory:
 

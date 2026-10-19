@@ -160,7 +160,7 @@ services:
               capabilities: [gpu]
 
   chromadb:
-    image: docker.io/chromadb/chroma:latest
+    image: docker.io/chromadb/chroma:1.5.9@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
     ports:
       - "${CHROMADB_BIND:-127.0.0.1}:8100:8000"
     volumes:
@@ -229,7 +229,7 @@ services:
     restart: unless-stopped
 
   ntfy:
-    image: docker.io/binwiederhier/ntfy
+    image: docker.io/binwiederhier/ntfy:v2.32.0@sha256:59250e1d8be2ee2186c4560322f625faef22ace380331f05b63f8842dbd62602
     command: serve
     ports:
       - "${NTFY_BIND:-127.0.0.1}:8091:80"
@@ -243,7 +243,7 @@ services:
   # vault, Docker socket, or Exodus database. Only a scoped model token is shared.
   harness:
     build: ./integrations/harness
-    image: sovereign-hub-harness:0.1.7-rc.2
+    image: sovereign-hub-harness:0.2.1-rc.2
     init: true
     ports:
       - "127.0.0.1:8093:3080"
@@ -270,7 +270,7 @@ services:
   # Privacy Hub: upgrade deliberately after a consistent backup. Do not pull
   # latest on every restart. Preparation migrates the old named volume safely.
   vaultwarden:
-    image: vaultwarden/server:latest
+    image: vaultwarden/server:1.37.4@sha256:efb3cde962015fcc036b2ea625242248611943b27212ebf4392841fb30fad055
     pull_policy: missing
     entrypoint:
       - /bin/sh

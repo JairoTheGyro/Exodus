@@ -6,12 +6,20 @@ import { createInterface } from 'node:readline';
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+import { networkInterfaces } from 'node:os';
 const upstream = createRequire('/usr/local/lib/node_modules/@deepseek-ai/dsh/package.json');
 const {parseDocument, isSeq, isMap} = upstream('yaml');
 const {withFileLock, writeFileAtomic} = await import(pathToFileURL(upstream.resolve('@deepseek-ai/dsh-atomic-write')));
 
+// dsh 0.2+ refuses wildcard binds. Use the container's own address: Docker
+// publishes the host loopback port to it and Exodus reaches `harness` there.
+export function containerAddress(interfaces = networkInterfaces()) {
+  const found = Object.values(interfaces).flat().find(x => x && x.family === 'IPv4' && !x.internal);
+  return found ? found.address : '127.0.0.1';
+}
+
 export function modelPatch(models) {
-  return [{id: 'webserver', config: {host: '0.0.0.0', port: 3080, compression: 'gzip', compressionLevel: 1, compressionThresholdBytes: 1024}}, {id: 'llm-pi-ai', config: {providers: models.length ? {exodus: {
+  return [{id: 'webserver', config: {host: containerAddress(), port: 3080, compression: 'gzip', compressionLevel: 1, compressionThresholdBytes: 1024}}, {id: 'llm-pi-ai', config: {providers: models.length ? {exodus: {
       displayName: 'Exodus', apiKeyEnv: 'EXODUS_CODE_TOKEN', api: 'openai-completions',
       baseURL: 'http://odysseus:7000/api/code/bridge/v1',
       defaultContextWindow: 8192, defaultMaxTokens: 2048,

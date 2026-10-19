@@ -218,7 +218,7 @@ sync. Setup, backups, trust, onboarding and tests are in docs/VAULTWARDEN.md.
 
 Tools → Code opens the shared companion dialog and launches Harness with its
 own browser-session exchange. The current image installs the official npm
-`@deepseek-ai/dsh@0.1.7-rc.2` package (npm latest when integrated), a developer
+`@deepseek-ai/dsh@0.2.1-rc.2` package (npm latest when updated on 2026-10-19), a developer
 preview. The MIT license and release-source baseline are in License Tracker.
 Newer prereleases are not installed automatically.
 

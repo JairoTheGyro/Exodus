@@ -221,7 +221,7 @@ services:
   # vault, Docker socket, or Exodus database. Only a scoped model token is shared.
   harness:
     build: ./integrations/harness
-    image: sovereign-hub-harness:0.1.7-rc.2
+    image: sovereign-hub-harness:0.2.1-rc.2
     init: true
     ports:
       - "127.0.0.1:8093:3080"
