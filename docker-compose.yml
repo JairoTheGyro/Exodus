@@ -138,7 +138,7 @@ services:
     restart: unless-stopped
 
   chromadb:
-    image: docker.io/chromadb/chroma:latest
+    image: docker.io/chromadb/chroma:1.5.9@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6
     ports:
       - "${CHROMADB_BIND:-127.0.0.1}:8100:8000"
     volumes:

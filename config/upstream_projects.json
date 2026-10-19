@@ -51,10 +51,10 @@
     "branch": "main",
     "used_commit": "11f3c7435e71024aa0a2b53710a28d3289d922d1",
     "used_date": "2026-05-04",
-    "used_version": "CLI 1.4.4",
-    "observed_at": "2026-10-06",
+    "used_version": "1.5.9",
+    "observed_at": "2026-10-19",
     "used_image": "chromadb/chroma@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6",
-    "used_note": "The installed chroma executable reports 1.4.4; this comparison uses its official cli-1.4.4 release revision. The server version API separately reports 1.0.0. The image has no source-revision label, so this release match is not a verified build provenance claim. Compose uses latest; the recorded image digest identifies the installation audited on 2026-10-06, not an enforced pin or original install date."
+    "used_note": "Official chromadb/chroma:1.5.9 image. Its release tag and the cli-1.4.4 tag point at the same source revision, which is why the bundled chroma executable reports 1.4.4 while the image and the Exodus chromadb-client are 1.5.9 (the server version API reports 1.0.0). The image has no source-revision label, so this is a release match, not verified build provenance. Compose pins 1.5.9 by digest since 2026-10-19; it was the same image that latest had already installed."
   },
   {
     "id": "ntfy",
