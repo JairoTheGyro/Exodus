@@ -15,6 +15,7 @@ import * as Modals from '../modalManager.js';
 import { makeWindowDraggable } from '../windowDrag.js';
 import { topPortalZ } from '../toolWindowZOrder.js';
 import { bindMenuDismiss } from '../escMenuStack.js';
+import { applyLook } from '../apps/looks.js';
 import { Dec, PI, E } from './decimal.js';
 import { AlgebraicCalculator, RPNCalculator, NumberFormat, render, plainText, integerString } from './engine.js';
 import { CATEGORIES, UNITS, convert, unitsIn, findUnit, currencyUnits, cachedRates, refreshRates } from './units.js';
@@ -467,6 +468,7 @@ function buildModal() {
   ensureCss();
   watchTheme();
   modal = h(`div#${MODAL_ID}.modal`, { style: 'display:none' });
+  applyLook(modal, 'calculator');
   historyBtn = h('button.calc-tool', {
     type: 'button', html: ICONS.sidebar, title: 'Show History', 'aria-label': 'Show History',
     on: { click: () => { state.showHistory = !state.showHistory; save(); update(); } },

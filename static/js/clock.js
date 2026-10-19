@@ -10,6 +10,7 @@
 
 import * as Modals from './modalManager.js';
 import { makeWindowDraggable } from './windowDrag.js';
+import { applyLook } from './apps/looks.js';
 import { h, ICONS, closeTopSheet, openSheet, ensureClockCss } from './clock/dom.js';
 import { getState, update, subscribe, hasPendingWork } from './clock/store.js';
 import { startEngine } from './clock/engine.js';
@@ -110,6 +111,7 @@ function registerWindow() {
 function buildModal() {
   ensureClockCss();
   modal = h(`div#${MODAL_ID}.modal`, { style: { display: 'none' } });
+  applyLook(modal, 'clock');
   const tablist = h('div.clk-tabs', { role: 'tablist', 'aria-label': 'Clock sections' });
   for (const t of TABS) {
     const b = h('button.clk-tab', { type: 'button', role: 'tab', text: t.label, on: { click: () => selectTab(t.id) } });

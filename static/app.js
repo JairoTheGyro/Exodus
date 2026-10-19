@@ -15,6 +15,7 @@ import compareModule from './js/compare/index.js?v=20260909mobilepaneaddscroll1'
 import documentModule from './js/document.js?v=20260916docctx2';
 import searchChatModule from './js/search-chat.js';
 import { makeWindowDraggable } from './js/windowDrag.js';
+import { installApps } from './js/apps/launcher.js';
 import {
   revealApplicationShellAfterPaint,
   runDeferredRouteOpener,
@@ -1107,34 +1108,12 @@ function initializeEventListeners() {
     });
   }
 
-  // Clock tool button — the module loads on first use (js/panels.js).
-  const toolClockBtn = el('tool-clock-btn');
-  if (toolClockBtn) {
-    toolClockBtn.addEventListener('click', async () => {
-      try {
-        const { loadPanel } = await import('./js/panels.js?v=20260909movepicklayer1');
-        const clockModule = await loadPanel('clock');
-        clockModule.toggleClock();
-      } catch (e) {
-        console.error('Clock failed to load', e);
-        uiModule.showToast?.('Clock could not load. Check your connection and try again.');
-      }
-    });
-  }
-  // Saved alarms and running timers should still ring when the Clock window
-  // was never opened this session, so load it in the background only then.
-  try {
-    const saved = JSON.parse(localStorage.getItem('odysseus-clock-v1') || 'null');
-    const pending = saved && ((saved.alarms || []).some(a => a && a.enabled) || (saved.timers || []).some(t => t && t.endsAt));
-    if (pending) {
-      const startClock = () => import('./js/panels.js?v=20260909movepicklayer1')
-        .then(({ loadPanel }) => loadPanel('clock'))
-        .then(m => m.startClockBackground())
-        .catch(e => console.warn('Clock background start failed', e));
-      if ('requestIdleCallback' in window) requestIdleCallback(startClock, { timeout: 4000 });
-      else setTimeout(startClock, 1500);
-    }
-  } catch (_) {}
+  // Built-in apps (Clock, Calculator, ...): Tools-menu entries, click handlers
+  // and background starts all come from the app registry (js/apps/registry.js).
+  installApps({
+    loadPanel: name => import('./js/panels.js?v=20260909movepicklayer1').then(({ loadPanel }) => loadPanel(name)),
+    toast: message => uiModule.showToast?.(message),
+  });
 
   // Notes tool button
   const toolNotesBtn = el('tool-notes-btn');
@@ -1146,20 +1125,6 @@ function initializeEventListeners() {
     });
   }
 
-  // Calculator tool button — the module loads on first use (js/panels.js).
-  const toolCalculatorBtn = el('tool-calculator-btn');
-  if (toolCalculatorBtn) {
-    toolCalculatorBtn.addEventListener('click', async () => {
-      try {
-        const { loadPanel } = await import('./js/panels.js?v=20260909movepicklayer1');
-        const calculatorModule = await loadPanel('calculator');
-        calculatorModule.toggleCalculator();
-      } catch (e) {
-        console.error('Calculator failed to load', e);
-        uiModule.showToast?.('Calculator could not load. Check your connection and try again.');
-      }
-    });
-  }
   const notesNewNoteBtn = el('notes-new-note-btn');
   if (notesNewNoteBtn) {
     notesNewNoteBtn.addEventListener('click', (event) => {

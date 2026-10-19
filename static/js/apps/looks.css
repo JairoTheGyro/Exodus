@@ -1,0 +1,24 @@
+/* Look hooks for built-in app windows (see js/apps/looks.js).
+ *
+ * Every app reads these with its own native value as the fallback, e.g.
+ *   border-radius: var(--look-button-radius, 999px);
+ * so a look only lists what it changes. Settings:
+ *   --look-font            primary UI font
+ *   --look-button-radius   round/pill buttons and keys
+ *   --look-control-radius  segmented controls, chips, small fields
+ *   --look-card-radius     cards and grouped panels
+ *   --look-header-padding  title-bar padding
+ *   --look-header-height   title-bar minimum height
+ *
+ * "apple" (the default) sets nothing: the apps were recreated from macOS, so
+ * their native values are the Apple-like look. Windows- and Material-like
+ * looks get added here once there are three or more apps (roadmap, Stage 5). */
+
+[data-look="exodus"] {
+  --look-font: var(--font-family, 'Fira Code', monospace);
+  --look-button-radius: 8px;
+  --look-control-radius: 4px;
+  --look-card-radius: 8px;
+  --look-header-padding: 6px 10px;
+  --look-header-height: 40px;
+}
