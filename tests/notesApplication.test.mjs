@@ -44,7 +44,9 @@ test('fetch preserves archived query, failures clear notes, and successful fallb
   assert.equal(app.state.notes[0].id, 'b');
 });
 
-test('fetch completions retain the original last-completion ordering', async () => {
+// Exodus: the newest request wins, so a slow stale response cannot replace
+// newer notes (e.g. a late active-list GET after switching to Archive).
+test('fetch completions ignore a stale earlier request', async () => {
   const app = createNotesState(), releases = [];
   const workflows = createNotesWorkflows({ app, api: { listNotes: () => new Promise(resolve => releases.push(resolve)) }, effects: {} });
   const first = workflows._fetchNotes(), second = workflows._fetchNotes();
@@ -53,7 +55,7 @@ test('fetch completions retain the original last-completion ordering', async () 
   assert.equal(app.state.notes[0].id, 'second');
   releases[0]({ ok: true, json: async () => ({ notes: [{ id: 'first' }] }) });
   await first;
-  assert.equal(app.state.notes[0].id, 'first');
+  assert.equal(app.state.notes[0].id, 'second');
 });
 
 test('writes built from views store raw data, not read-only views', () => {
