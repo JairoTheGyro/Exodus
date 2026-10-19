@@ -354,6 +354,13 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Skip the HTTP cache so mounted code edits show up at once. A navigation
+// request can't take a RequestInit, so fetch it as-is (else the offline
+// fallback below never runs for a directly opened /static/ file).
+function freshFetch(request) {
+  return request.mode === 'navigate' ? fetch(request) : fetch(request, { cache: 'no-cache' });
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
@@ -371,7 +378,7 @@ self.addEventListener('fetch', (e) => {
   // on a normal reload; fall back to cache only when offline.
   if (url.pathname.startsWith('/static/') && /\.(js|css)(\?|$)/.test(url.pathname + url.search)) {
     e.respondWith(
-      fetch(e.request, { cache: 'no-cache' }).then(res => {
+      freshFetch(e.request).then(res => {
         if (res && res.ok) {
           const copy = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
@@ -387,7 +394,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
         const cached = await cache.match(e.request);
-        const fetching = fetch(e.request, { cache: 'no-cache' }).then(res => {
+        const fetching = freshFetch(e.request).then(res => {
           if (res && res.ok) cache.put(e.request, res.clone());
           return res;
         }).catch(() => cached);

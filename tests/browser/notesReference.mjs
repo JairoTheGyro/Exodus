@@ -62,9 +62,12 @@ try {
     await page.locator('.note-card').first().waitFor();
     assert.equal(await page.locator('.note-card').count(), 3);
     if (evidence) await page.screenshot({ path: path.join(evidence, `notes-${device}.png`), fullPage: true, animations: 'disabled' });
+    // Exodus waits 250 ms after typing before filtering.
+    const cardCount = n => page.waitForFunction(n => document.querySelectorAll('.note-card').length === n, n, { timeout: 5000 });
     await page.locator('#notes-search').fill('checklist');
-    assert.equal(await page.locator('.note-card').count(), 1);
+    await cardCount(1);
     await page.locator('#notes-search').fill('');
+    await cardCount(3);
     await page.locator('#notes-select-btn').click();
     await page.locator('.note-card-cb').first().check({ force: mobile });
     await page.locator('#notes-send-agent').click();
