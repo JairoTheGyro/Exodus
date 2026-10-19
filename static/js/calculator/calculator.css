@@ -36,6 +36,8 @@
 }
 
 #calculator-modal .calc-content {
+  /* Window text: Exodus's window font unless a look changes it (js/apps/looks.css). */
+  font-family: var(--look-text-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   width: auto;
   max-width: 96vw;
   max-height: 94vh;

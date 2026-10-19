@@ -3,7 +3,8 @@
  * Every app reads these with its own native value as the fallback, e.g.
  *   border-radius: var(--look-button-radius, 999px);
  * so a look only lists what it changes. Settings:
- *   --look-font            primary UI font
+ *   --look-font            the app's display font (keys, digits)
+ *   --look-text-font       labels and other window text
  *   --look-button-radius   round/pill buttons and keys
  *   --look-control-radius  segmented controls, chips, small fields
  *   --look-card-radius     cards and grouped panels
@@ -16,6 +17,7 @@
 
 [data-look="exodus"] {
   --look-font: var(--font-family, 'Fira Code', monospace);
+  --look-text-font: var(--font-family, 'Fira Code', monospace);
   --look-button-radius: 8px;
   --look-control-radius: 4px;
   --look-card-radius: 8px;
