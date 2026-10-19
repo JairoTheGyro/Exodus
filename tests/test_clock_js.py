@@ -171,6 +171,8 @@ def _clock_module_graph() -> set[str]:
         source = (_JS_DIR / current).read_text(encoding="utf-8")
         for spec in _STATIC_IMPORT.findall(source):
             if spec.startswith("."):
+                # Shared modules carry ?v= cache-bust queries; the file is the path.
+                spec = spec.split("?", 1)[0]
                 stack.append(os.path.normpath(os.path.join(os.path.dirname(current), spec)))
     return seen
 

@@ -88,3 +88,13 @@ The original SHA-256 hashes are recorded below. Ambiguous third-party assets (su
 - RESTORE-012: `static/icons/icon-192.png` (SHA-256: `d9f54e07d2a8dca6302125d84436176a26a056745c5adb29ef521345c161e359`): Project PWA icon (192x192) contributed in PR #428 (commit 615134851d5c17897b96bba43b7961a00770d45b), generated from the project logo SVG.
 - RESTORE-013: `static/icons/icon-512.png` (SHA-256: `785872b140da58087f23539ed187fe0f69de6eb9690abf995b10c93b5b518388`): Project PWA icon (512x512) contributed in PR #428 (commit 615134851d5c17897b96bba43b7961a00770d45b), generated from the project logo SVG.
 - RESTORE-014: `static/icons/icon-maskable-512.png` (SHA-256: `7ed567fe0de6b6b451eec35c8fb2b465d84a3b23945135c19c4fa388ac976449`): Project PWA maskable icon (512x512) contributed in PR #428 (commit 615134851d5c17897b96bba43b7961a00770d45b), generated from the project logo SVG.
+
+## Exodus replacements
+
+Exodus (this fork) ships its own app icons instead of the restored Odysseus
+icons above. The original Odysseus icons remain credited in RESTORE-012 to
+RESTORE-014; these entries record the Exodus artwork that replaces them.
+
+- EXODUS-001: `static/icons/icon-192.png` (SHA-256: `7e10e2b2fbf257440a026290548f3c023a317d5b1cc37a0e084a2538fbf412da`): Exodus app icon (192x192), replaces RESTORE-012. Declared with purpose "any": the artwork is not padded for maskable crops.
+- EXODUS-002: `static/icons/icon-512.png` (SHA-256: `6b99d1cb9dee6284e46d156ce8c11df62802b93b954434866204db6b3a254890`): Exodus app icon (512x512), replaces RESTORE-013. Declared with purpose "any".
+- EXODUS-003: `static/icons/icon-maskable-512.png` (SHA-256: `b5c75559b916f9c5b93f4a0d37c748eafb0101d4c461009b5970749ec903d941`): Exodus maskable app icon (512x512), replaces RESTORE-014.

@@ -822,6 +822,9 @@ logger.info("STT service initialized (provider managed via settings)")
 from routes.document.document_routes import setup_document_routes
 document_router = setup_document_routes(session_manager, upload_handler)
 app.include_router(document_router)
+# Exodus Library original files (registered directly, not nested in documents).
+from routes.local_document_routes import router as local_files_router
+app.include_router(local_files_router)
 
 from routes.workshop_routes import setup_workshop_routes
 app.include_router(setup_workshop_routes())

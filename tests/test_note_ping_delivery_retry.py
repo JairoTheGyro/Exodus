@@ -31,7 +31,11 @@ def reminder_scan(tmp_path, monkeypatch):
         return httpx.Response(statuses.pop(0))
 
     real_client = httpx.AsyncClient
-    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real_client(transport=httpx.MockTransport(deliver), **kw))
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real_client(**{**kw, "transport": httpx.MockTransport(deliver)}))
+    # Exodus sends ntfy reminders through src.notifications, which pins the
+    # destination to verified IPs; the mock transport stands in for that.
+    from src import notifications
+    monkeypatch.setattr(notifications, "_validated_transport", lambda url: httpx.MockTransport(deliver))
     monkeypatch.setattr(settings, "load_settings", lambda: channel)
     monkeypatch.setattr(integrations, "load_integrations", lambda: [{"id": "audit", "preset": "ntfy", "base_url": "https://reminder.example.test", "enabled": True}])
     monkeypatch.setattr(note_routes, "_scheduler_ref", SimpleNamespace(add_notification=lambda **kw: notices.append(kw)))

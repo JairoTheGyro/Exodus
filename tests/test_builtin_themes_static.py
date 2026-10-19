@@ -28,8 +28,11 @@ def test_new_themes_define_complete_core_palettes() -> None:
 
 
 def test_retired_theme_names_are_replaced() -> None:
+    # Exodus keeps paper/copper/lavender as themes (never remove features); the
+    # upstream replacement map stays and applies only if a theme is removed.
     for name in ("paper:", "copper:", "lavender:"):
-        assert not re.search(rf"^\s*{name}\s*\{{", THEME_JS, re.MULTILINE)
+        assert re.search(rf"^\s*{name}\s*\{{", THEME_JS, re.M), name
+    assert "!THEMES[obj.name]" in THEME_JS
     assert "paper: 'monolith'" in THEME_JS
     assert "copper: 'arcade'" in THEME_JS
     assert "lavender: 'porcelain'" in THEME_JS

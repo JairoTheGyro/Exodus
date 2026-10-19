@@ -6256,6 +6256,10 @@ async def test_empty_search_retry_preserves_evidence_dedupe_and_execution_budget
     monkeypatch.setattr(module.httpx, 'AsyncClient', Client)
     monkeypatch.setattr(module, 'execute_tool_block', execute)
     monkeypatch.setattr(search, 'comprehensive_web_search', provider)
+    # Exodus routes SearXNG through a compact path; exercise the comprehensive one.
+    import services.search.providers as _providers
+    _original_settings = _providers._get_search_settings
+    monkeypatch.setattr(_providers, '_get_search_settings', lambda: {**_original_settings(), 'search_provider': 'comprehensive'})
     schema = next(s for s in FUNCTION_TOOL_SCHEMAS if s['function']['name'] == 'web_search')
     contract = replace(resolve_full_inventory_contract(schemas=[schema], policy=ToolPolicy()),
         routing_experiment='recent_model_choice')

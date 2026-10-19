@@ -37,7 +37,10 @@ def test_removed_resource_ledger_has_no_runtime_references():
     assert len(restore_entries) == 14
 
     restored_paths = {path for path, _ in restore_entries}
+    # Exodus records its own replacement artwork for some restored paths.
+    exodus_replacements = dict(re.findall(r'^- EXODUS-\d+: `([^`]+)` \(SHA-256: `([a-f0-9]{64})`\)', ledger, re.M))
     for path, expected_sha in restore_entries:
+        expected_sha = exodus_replacements.get(path, expected_sha)
         target = ROOT / path
         assert target.is_file(), f"restored asset missing on disk: {path}"
         actual_sha = hashlib.sha256(target.read_bytes()).hexdigest()
@@ -142,8 +145,9 @@ def test_distribution_paths_include_all_notices():
     assert manifest.get('icons')
     assert manifest['display'] == 'standalone'
     expected_icons = [
-        {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-        {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+        # Exodus icons are not padded for maskable crops (EXODUS-001/002).
+        {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+        {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
         {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
     ]
     assert manifest['icons'] == expected_icons

@@ -437,7 +437,9 @@ async def test_scheduled_email_summary_uses_shared_helper_and_caches(tmp_path, m
     assert helper_calls["headers"]["Authorization"] == "Bearer test"
     assert helper_calls["headers"]["Content-Type"] == "application/json"
     assert helper_calls["owner"] == "alice"
-    assert fake_conn.logout_calls == 1
+    # Exodus scans in two passes (templates, then AI); each opens and closes
+    # its own IMAP connection, so nothing is leaked.
+    assert fake_conn.logout_calls == 2
 
     conn = sqlite3.connect(db_path)
     try:

@@ -525,7 +525,8 @@ export function getSaved() {
   if (obj && obj.name === 'sakura') obj.name = 'ume';
   // Migrate retired built-ins to their replacement themes, including colors.
   const replacement = { paper: 'monolith', copper: 'arcade', lavender: 'porcelain' };
-  if (obj && replacement[obj.name] && THEMES[replacement[obj.name]]) {
+  // Exodus keeps these themes, so this only applies if one is ever removed.
+  if (obj && replacement[obj.name] && !THEMES[obj.name] && THEMES[replacement[obj.name]]) {
     obj.name = replacement[obj.name];
     obj.colors = { ...THEMES[obj.name] };
   }
@@ -2313,7 +2314,7 @@ async function _initWithSync() {
     if (serverTheme && serverTheme.colors) {
       if (serverTheme.name === 'sakura') serverTheme.name = 'ume';
       const replacement = { paper: 'monolith', copper: 'arcade', lavender: 'porcelain' };
-      if (replacement[serverTheme.name] && THEMES[replacement[serverTheme.name]]) {
+      if (replacement[serverTheme.name] && !THEMES[serverTheme.name] && THEMES[replacement[serverTheme.name]]) {
         serverTheme.name = replacement[serverTheme.name];
         serverTheme.colors = { ...THEMES[serverTheme.name] };
       }

@@ -263,7 +263,7 @@ def test_memory_prefix_is_owner_scoped_exact_and_revision_sensitive(monkeypatch)
 def test_private_vault_identity_binds_owner_endpoint_and_exact_uuid_without_credentials(monkeypatch, change):
     from src.tools import vault
     cfg = {"owner": "alice", "server_url": "https://vault.test", "session": "SECRET_SESSION", "unlocked_at": "observed"}
-    monkeypatch.setattr(vault, "_load_vault_config", lambda: cfg)
+    monkeypatch.setattr(vault, "_load_vault_config", lambda owner=None: cfg)  # Exodus: per-owner vault config
     observe_vault_records("alice", cfg, [{"id": "12345678-1234-1234-1234-123456789abc", "name": "bank", "login": {"password": "PRIVATE_PASSWORD"}}])
     tool = ExactOperation.normalize("vault_get", '{"item_id":"12345678-1234-1234-1234-123456789abc","reason":"requested"}')
     bound = resolve_owned_operation(tool, owner="alice", thread_id="s")
@@ -391,7 +391,7 @@ async def test_vault_search_producer_supplies_exact_owned_item_identity_and_alia
     from src import tool_execution as execution
     cfg = {"owner": "alice", "server_url": "https://vault.test", "session": "SECRET_SESSION", "unlocked_at": "observed"}
     item = {"id": "12345678-1234-1234-1234-123456789abc", "name": "bank", "login": {"password": "PRIVATE_PASSWORD"}}
-    monkeypatch.setattr(vault, "_load_vault_config", lambda: cfg)
+    monkeypatch.setattr(vault, "_load_vault_config", lambda owner=None: cfg)  # Exodus: per-owner vault config
     monkeypatch.setattr(execution, "_owner_is_admin", lambda owner: True)
     cli = AsyncMock(side_effect=[(json.dumps([item]), "", 0), (json.dumps(item), "", 0)])
     monkeypatch.setattr(vault, "_run_bw", cli)
@@ -418,7 +418,7 @@ def test_vault_producer_revision_change_invalidates_sealed_item_and_cannot_cross
     from src.tools import vault
     cfg = {"owner": "alice", "server_url": "https://vault.test", "session": "SECRET"}
     item = {"id": "12345678-1234-1234-1234-123456789abc", "name": "bank", "revisionDate": "one"}
-    monkeypatch.setattr(vault, "_load_vault_config", lambda: cfg)
+    monkeypatch.setattr(vault, "_load_vault_config", lambda owner=None: cfg)  # Exodus: per-owner vault config
     observe_vault_records("alice", cfg, [item])
     bound = resolve_owned_operation(ExactOperation.normalize("vault_get", '{"item_id":"12345678","reason":"requested"}'), owner="alice", thread_id="s")
     assert json.loads(bound.execution_input)["item_id"] == item["id"]
