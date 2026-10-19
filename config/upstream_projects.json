@@ -27,10 +27,10 @@
     "name": "DeepSeek Harness",
     "repository": "deepseek-ai/deepseek-harness",
     "branch": "master",
-    "used_commit": "477b4f420553e8a52c2fbccc464d7561b239c443",
-    "used_date": "2026-09-28",
-    "used_version": "0.1.7-rc.2",
-    "used_note": "Published @deepseek-ai/dsh package pinned to 0.1.7-rc.2 (npm latest at installation). Developer preview, with an Exodus model gateway and separate coding workspace. Newer prereleases are not installed automatically."
+    "used_commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+    "used_date": "2026-10-17",
+    "used_version": "0.2.1-rc.2",
+    "used_note": "Published @deepseek-ai/dsh package pinned to 0.2.1-rc.2 (npm latest on 2026-10-19). Developer preview, with an Exodus model gateway and separate coding workspace. 0.2 refuses wildcard binds, so the supervisor binds the container address. Its new product-analytics plugins only run in the desktop profile and Exodus keeps DSH_TELEMETRY_DISABLED. The 0.1.7-rc.2 image stays local for rollback. Newer prereleases are not installed automatically."
   },
   {
     "id": "searxng",
