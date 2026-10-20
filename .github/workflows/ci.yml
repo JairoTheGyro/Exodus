@@ -110,6 +110,10 @@ jobs:
 
   python-tests:
     name: Python tests (pytest ${{ matrix.shard }})
+    # Private repos have limited Actions minutes. The pull request already ran
+    # this suite on the exact merge result, so skip the repeat on push to
+    # main. Public repos (free minutes) keep both runs.
+    if: github.event_name != 'push' || !github.event.repository.private
     # Keep the namespace/AppArmor setup tied to the audited Ubuntu release.
     runs-on: ubuntu-24.04
     # Make Python test validation authoritative for the configured scope.

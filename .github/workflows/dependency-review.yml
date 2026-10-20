@@ -51,6 +51,8 @@ jobs:
 
   pip-audit:
     name: pip-audit (advisory)
+    # Already ran on the pull request; skip the repeat on push while private.
+    if: github.event_name != 'push' || !github.event.repository.private
     runs-on: ubuntu-latest
     # Advisory: report known-vulnerable Python deps without blocking the merge.
     continue-on-error: true

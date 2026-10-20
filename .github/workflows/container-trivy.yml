@@ -48,7 +48,9 @@ jobs:
   # not hold any write scope, and it does not upload to the Security tab.
   scan:
     name: Trivy (image scan, advisory)
-    if: github.event_name != 'push'
+    # Advisory and the most expensive job (it builds the whole image). On a
+    # private repo with limited minutes it runs only when started by hand.
+    if: github.event_name != 'push' && (github.event_name == 'workflow_dispatch' || !github.event.repository.private)
     runs-on: ubuntu-latest
     # Advisory: a CVE in an upstream package must not block a PR.
     continue-on-error: true
@@ -104,7 +106,8 @@ jobs:
   # security-events:write.
   publish:
     name: Trivy (image scan + SARIF upload)
-    if: github.event_name == 'push'
+    # SARIF upload needs code scanning, which private repos on this plan lack.
+    if: github.event_name == 'push' && !github.event.repository.private
     runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
