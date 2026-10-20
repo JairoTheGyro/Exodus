@@ -218,17 +218,19 @@ def test_unit_conversion():
 
 
 def test_panel_registration_precache_and_sidebar():
+    registry = (_REPO / "static" / "js" / "apps" / "registry.js").read_text()
+    assert "load: () => import('../calculator/index.js')" in registry
+    assert "toggle: 'toggleCalculator'" in registry
     panels = (_REPO / "static" / "js" / "panels.js").read_text()
-    assert "calculator: () => import('./calculator/index.js')" in panels
+    assert "...appLoaders()" in panels
 
     sw = (_REPO / "static" / "sw.js").read_text()
     for path in sorted(_CALC_DIR.iterdir()):
         assert f"'/static/js/calculator/{path.name}'" in sw, f"{path.name} missing from PANEL_PRECACHE"
 
-    html = (_REPO / "static" / "index.html").read_text()
-    assert 'id="tool-calculator-btn"' in html
+    # The Tools-menu entry is built from the registry by js/apps/launcher.js.
     app = (_REPO / "static" / "app.js").read_text()
-    assert "loadPanel('calculator')" in app and "toggleCalculator()" in app
+    assert "installApps(" in app
 
 
 def test_docker_override_mounts_calculator_sources():
@@ -236,6 +238,7 @@ def test_docker_override_mounts_calculator_sources():
     for mount in (
         "./static/js/panels.js:/app/static/js/panels.js:ro",
         "./static/js/calculator:/app/static/js/calculator:ro",
+        "./static/js/apps:/app/static/js/apps:ro",
         "./routes/calculator_routes.py:/app/routes/calculator_routes.py:ro",
     ):
         assert mount in override

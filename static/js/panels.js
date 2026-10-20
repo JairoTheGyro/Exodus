@@ -14,14 +14,13 @@
  * sw.js) — they are off the critical path, not off the offline manifest.
  */
 
+import { appLoaders } from './apps/registry.js';
+
 const LOADERS = {
   editor: () => import('./galleryEditor.js?v=20260909movepicklayer1'),
-  // Clock has no import-time side effects: its alarm/timer ticker only starts
-  // when openClock() or startClockBackground() is called.
-  clock: () => import('./clock.js'),
-  // Calculator has no import-time side effects: its window and keyboard
-  // listeners are created on the first openCalculator() call.
-  calculator: () => import('./calculator/index.js'),
+  // Built-in apps (Clock, Calculator, ...) come from the app registry; each
+  // entry there is checked for import-time side effects.
+  ...appLoaders(),
 };
 
 /**

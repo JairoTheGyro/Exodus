@@ -37,24 +37,40 @@ repo). When unsure, copy what it does.
 - **Generic and original:** generic name, no trademarks, no copied code, icons,
   sounds or fonts from the original. Use open fonts and our own icons.
 
-## Where to plug it in (today)
+## Where to plug it in
 
-Until the planned app registry exists (Stage 3 in the roadmap), an app touches
-these spots. Add your line next to the existing ones and keep everyone else's.
+Add **one entry** to `static/js/apps/registry.js`: id, name, short description,
+which Tools-menu item it goes after (`menuAfter`), an SVG icon body, the lazy
+`load: () => import('../<app>/index.js')` and the name of its `toggle<App>`
+export. The launcher (`static/js/apps/launcher.js`) builds the menu entry and
+click handler from it, and `js/panels.js` loads it on first use. An app that
+must start work in the background (like Clock's saved alarms) adds
+`background: { pending, start }`.
+
+Then only the app's own pieces remain:
 
 | File | What to add |
 |---|---|
-| `static/js/panels.js` | A lazy loader: `<app>: () => import('./<app>/index.js')` |
-| `static/index.html` | The Tools-menu entry (`id="tool-<app>-btn"`, small SVG icon) |
-| `static/app.js` | Click handler: `loadPanel('<app>')` → `toggle<App>()`, with a friendly toast on failure |
 | `static/sw.js` | Precache the app's files and bump `CACHE_NAME` |
-| `docker-compose.override.yml` | Read-only mounts for `static/js/<app>` and any new route file |
+| `docker-compose.override.yml` | A read-only mount for `static/js/<app>` and any new route file |
 | `app.py` | Only if the app has a server route |
+
+## Looks
+
+Call `applyLook(modal, '<app>')` from `static/js/apps/looks.js` right after
+creating the window. In the app's CSS, read the shared look settings with the
+app's own value as the fallback, for example
+`border-radius: var(--look-button-radius, 999px)` or
+`font-family: var(--look-font, <your stack>)`. The settings are listed at the
+top of `static/js/apps/looks.css`. The default "Apple-like" look sets nothing,
+so the fallbacks are what people see; other looks (Exodus now, Windows- and
+Material-like later) override them. `tests/test_app_registry_js.py` checks that
+every `--look-*` read has a fallback.
 
 ## Tests and checks
 
 - `tests/test_<app>_js.py`: runs the engine's behaviour cases in Node through
-  pytest. Cases come from observing the original app.
+  pytest. `tests/test_app_registry_js.py` already covers the registry entry. Cases come from observing the original app.
 - A route test if there's a server route (see `tests/test_calculator_routes.py`).
 - A practice check row in `docs/PRACTICE_TESTS.md`.
 - A hand test in the running Exodus: open from the menu, every mode, two themes,

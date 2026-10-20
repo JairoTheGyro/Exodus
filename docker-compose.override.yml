@@ -169,4 +169,5 @@ services:
       - ./static/js/teamInvitations.js:/app/static/js/teamInvitations.js:ro
       - ./static/js/panels.js:/app/static/js/panels.js:ro
       - ./static/js/calculator:/app/static/js/calculator:ro
+      - ./static/js/apps:/app/static/js/apps:ro
       - ./routes/calculator_routes.py:/app/routes/calculator_routes.py:ro

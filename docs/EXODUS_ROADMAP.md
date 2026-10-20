@@ -14,9 +14,7 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Working on it
 
-- **License Tracker screen on Jairo's own account:** the screen itself works
-  (see Finished; tested as a throwaway admin). One last look on the real account
-  once Jairo is signed in to the browser pane.
+_Nothing in progress._
 
 ## Needs to get started
 
@@ -30,9 +28,8 @@ Status: **Needs to get started** · **Working on it** · **Finished**
   past the new baseline (88772b32 → 268636c9 on 2026-10-19).
 
 ### Stage 3 · Foundations
-- **App list and look settings:** adding an app touches one list plus its own
-  folder. Shared look settings (rounding, title bar, buttons, font, spacing) that
-  every app follows. Move Calculator and Clock onto them.
+- **Look picker in Settings:** a place in Settings → Appearance to choose the
+  look for all apps or for one app (the switch itself exists; see Finished).
 - **Services manager:** each service On / Off / Removed (data kept unless chosen)
   / Reinstall. Each person can hide apps and features they don't use.
 - **Remove visible "Odysseus" text.** Keep the legally required credit and
@@ -84,6 +81,14 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ## Finished
 
+- 2026-10-19 · **App list and look settings** (Stage 3): built-in apps now come
+  from one list (`static/js/apps/registry.js`), which makes their Tools-menu
+  entries and loading. Adding an app means one entry plus its own folder.
+  Calculator and Clock moved onto it. Shared look settings (fonts, button shape,
+  rounding, title-bar spacing) are read by both apps. A look can be chosen per
+  app or for every app; "Apple-like" is the default and renders exactly as
+  before, and an "Exodus" look proves the switch. License Tracker screen also
+  checked on Jairo's own account: it shows the new versions.
 - 2026-10-19 · **Service updates** (one PR, each service backed up first and its
   old image kept for rollback): Vaultwarden 1.37.3 → 1.37.4, ntfy 2.27.0 →
   2.32.0 (test message sent and received), DeepSeek Harness 0.1.7-rc.2 →

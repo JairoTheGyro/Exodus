@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'odysseus-v660-exodus-odysseus-sync';
+const CACHE_NAME = 'odysseus-v661-exodus-app-registry';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -140,6 +140,9 @@ const PRECACHE = [
   '/static/js/toolWindowZOrder.js',
   '/static/js/color/hex.js',
   '/static/js/windowDrag.js',
+  // Built-in app registry and launcher (imported by app.js at startup).
+  '/static/js/apps/registry.js',
+  '/static/js/apps/launcher.js',
   '/static/js/modalSnap.js',
   '/static/js/windowResize.js',
   '/static/js/modalManager.js',
@@ -326,6 +329,9 @@ const PANEL_PRECACHE = [
   '/static/js/calculator/engine.js',
   '/static/js/calculator/index.js',
   '/static/js/calculator/units.js',
+  // Look hooks shared by built-in app windows (loaded when one opens).
+  '/static/js/apps/looks.js',
+  '/static/js/apps/looks.css',
   '/static/js/editor/wire-view-menu.js',
 ];
 

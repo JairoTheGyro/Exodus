@@ -20,7 +20,7 @@
   --clk-stop: #e9534b;
   --clk-best: #5bc964;
   --clk-worst: #e9534b;
-  --clk-digits: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', 'Inter', system-ui, sans-serif;
+  --clk-digits: var(--look-font, -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Helvetica Neue', 'Inter', system-ui, sans-serif);
 }
 
 /* style.css gives every <button> a fixed 32px height; Clock's buttons size
@@ -39,6 +39,8 @@
 }
 
 #clock-modal .clk-content {
+  /* Window text: Exodus's window font unless a look changes it (js/apps/looks.css). */
+  font-family: var(--look-text-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
   width: min(920px, 94vw);
   height: min(660px, 86vh);
   max-height: 92vh;
@@ -55,8 +57,8 @@
 #clock-modal .clk-header {
   position: relative;
   margin: 0;
-  padding: 8px 10px;
-  min-height: 46px;
+  padding: var(--look-header-padding, 8px 10px);
+  min-height: var(--look-header-height, 46px);
   gap: 6px;
   border-bottom: 1px solid var(--clk-sep);
   z-index: 6;
@@ -75,7 +77,7 @@
   display: inline-flex;
   padding: 3px;
   gap: 2px;
-  border-radius: 999px;
+  border-radius: var(--look-button-radius, 999px);
   background: var(--clk-surface-2);
   border: 1px solid var(--clk-sep);
   cursor: default;
@@ -91,7 +93,7 @@
   font-weight: 500;
   letter-spacing: -0.01em;
   padding: 4px 13px;
-  border-radius: 999px;
+  border-radius: var(--look-button-radius, 999px);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -105,7 +107,7 @@
   margin-right: 2px;
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: var(--look-button-radius, 999px);
   border: 1px solid var(--clk-sep);
   background: var(--clk-surface-2);
   color: var(--clk-text);
@@ -146,7 +148,7 @@
   font: inherit;
   font-size: 13px;
   padding: 5px 14px;
-  border-radius: 7px;
+  border-radius: var(--look-control-radius, 7px);
   cursor: pointer;
 }
 #clock-modal .clk-btn:hover { background: var(--clk-surface-3); }
@@ -160,7 +162,7 @@
   min-width: 150px;
   height: 28px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--look-button-radius, 999px);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -189,7 +191,7 @@
   color: var(--clk-text);
   background: var(--clk-surface-1);
   border: 1px solid var(--clk-sep);
-  border-radius: 6px;
+  border-radius: var(--look-control-radius, 6px);
   padding: 4px 9px;
   height: 26px;
   box-sizing: border-box;
@@ -226,7 +228,7 @@
 
 /* Round icon buttons (sheet close) */
 #clock-modal .clk-round-btn {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 34px; height: 34px; border-radius: var(--look-button-radius, 50%);
   border: 1px solid var(--clk-sep); background: var(--clk-surface-2); color: var(--clk-text);
   display: inline-flex; align-items: center; justify-content: center; padding: 0; margin: 0; cursor: pointer;
 }
@@ -247,7 +249,7 @@
 #clock-modal .clk-sheet {
   background: var(--clk-surface-1);
   border: 1px solid var(--clk-sep);
-  border-radius: 14px;
+  border-radius: var(--look-card-radius, 14px);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
   padding: 26px 28px 20px;
   max-width: calc(100% - 32px);
@@ -268,18 +270,18 @@
 #clock-modal .clk-alarm-time { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 26px; }
 #clock-modal .clk-timefield {
   display: inline-flex; align-items: center;
-  padding: 3px; border-radius: 8px; background: var(--clk-surface-2);
+  padding: 3px; border-radius: var(--look-control-radius, 8px); background: var(--clk-surface-2);
   font-family: var(--clk-digits); font-size: 40px; font-weight: 300; line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-#clock-modal .clk-seg { min-width: 1.3em; padding: 4px 6px; border-radius: 5px; text-align: right; cursor: text; outline: none; }
+#clock-modal .clk-seg { min-width: 1.3em; padding: 4px 6px; border-radius: var(--look-control-radius, 5px); text-align: right; cursor: text; outline: none; }
 #clock-modal .clk-seg:last-child { text-align: left; }
 #clock-modal .clk-seg:focus { background: var(--clk-accent); color: var(--clk-on-accent); }
 #clock-modal .clk-seg-colon { padding: 0 1px; }
-#clock-modal .clk-seg-group { display: inline-flex; padding: 2px; border-radius: 7px; background: var(--clk-surface-2); gap: 2px; }
+#clock-modal .clk-seg-group { display: inline-flex; padding: 2px; border-radius: var(--look-control-radius, 7px); background: var(--clk-surface-2); gap: 2px; }
 #clock-modal .clk-seg-btn {
   appearance: none; border: 0; margin: 0; font: inherit; font-size: 13px; color: var(--clk-text);
-  width: 58px; height: 22px; border-radius: 5px; background: transparent; cursor: pointer;
+  width: 58px; height: 22px; border-radius: var(--look-control-radius, 5px); background: transparent; cursor: pointer;
 }
 #clock-modal .clk-seg-btn.clk-on { background: var(--clk-accent); color: var(--clk-on-accent); }
 #clock-modal .clk-form-row { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 10px; }
@@ -290,7 +292,7 @@
 #clock-modal .clk-form-gap { height: 12px; }
 #clock-modal .clk-days { display: flex; gap: 4px; }
 #clock-modal .clk-day {
-  appearance: none; margin: 0; width: 28px; height: 28px; border-radius: 50%;
+  appearance: none; margin: 0; width: 28px; height: 28px; border-radius: var(--look-button-radius, 50%);
   border: 0; background: var(--clk-surface-2); color: var(--clk-text);
   font: inherit; font-size: 13px; cursor: pointer; padding: 0;
 }
@@ -305,7 +307,7 @@
 #clock-modal .clk-city-head .clk-round-btn { position: absolute; left: 0; top: 0; }
 #clock-modal .clk-search {
   display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 34px;
-  border-radius: 999px; background: var(--clk-surface-2); border: 1px solid var(--clk-sep); color: var(--clk-muted);
+  border-radius: var(--look-button-radius, 999px); background: var(--clk-surface-2); border: 1px solid var(--clk-sep); color: var(--clk-muted);
 }
 #clock-modal .clk-search-input { flex: 1; border: 0; background: transparent; color: var(--clk-text); font: inherit; font-size: 14px; outline: none; min-width: 0; }
 #clock-modal .clk-city-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 6px; }
@@ -356,7 +358,7 @@
   flex-direction: column;
   align-items: center;
   padding: 16px 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--look-card-radius, 12px);
   background: var(--clk-surface-1);
   text-align: center;
   user-select: none;
@@ -364,7 +366,7 @@
 }
 #clock-modal .clk-card:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--clk-accent) 70%, transparent); }
 #clock-modal .clk-card-remove {
-  position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
+  position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: var(--look-button-radius, 50%);
   border: 0; padding: 0; margin: 0; background: var(--clk-surface-3); color: var(--clk-text);
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
   opacity: 0; transition: opacity 0.12s;
@@ -407,7 +409,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--look-card-radius, 12px);
   background: var(--clk-surface-1);
   cursor: pointer;
   user-select: none;
@@ -472,7 +474,7 @@
 #clock-modal .clk-side-header { font-size: 11px; font-weight: 600; color: var(--clk-muted); padding: 10px 6px 6px; border-bottom: 1px solid var(--clk-sep); }
 #clock-modal .clk-tcard,
 #clock-modal .clk-recent { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; outline: none; }
-#clock-modal .clk-tcard { padding: 10px 14px 10px 16px; border-radius: 16px; background: var(--clk-surface-2); margin-bottom: 8px; }
+#clock-modal .clk-tcard { padding: 10px 14px 10px 16px; border-radius: var(--look-card-radius, 16px); background: var(--clk-surface-2); margin-bottom: 8px; }
 #clock-modal .clk-tcard.clk-selected { background: var(--clk-surface-3); }
 #clock-modal .clk-tcard:focus-visible,
 #clock-modal .clk-recent:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--clk-accent) 70%, transparent); }
@@ -483,7 +485,7 @@
 #clock-modal .clk-recent-time { color: var(--clk-muted); }
 #clock-modal .clk-tcard-sub { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #clock-modal .clk-circle {
-  width: 54px; height: 54px; border-radius: 50%; flex-shrink: 0; padding: 0; margin: 0;
+  width: 54px; height: 54px; border-radius: var(--look-button-radius, 50%); flex-shrink: 0; padding: 0; margin: 0;
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: 0;
 }
 #clock-modal .clk-circle-start { background: var(--clk-go-soft); color: var(--clk-go); }
@@ -491,7 +493,7 @@
 #clock-modal .clk-circle-pause { background: color-mix(in srgb, var(--clk-accent) 16%, transparent); color: var(--clk-accent); box-shadow: inset 0 0 0 2px var(--clk-accent); }
 #clock-modal .clk-circle:hover { filter: brightness(1.12); }
 #clock-modal .clk-recent-del {
-  width: 26px; height: 26px; border-radius: 50%; border: 0; padding: 0; margin: 0;
+  width: 26px; height: 26px; border-radius: var(--look-button-radius, 50%); border: 0; padding: 0; margin: 0;
   background: transparent; color: var(--clk-muted); display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; opacity: 0; transition: opacity 0.12s;
 }
@@ -506,12 +508,12 @@
 #clock-modal .clk-pick-labels { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; font-size: 13px; color: var(--clk-muted); }
 #clock-modal .clk-pick-box {
   display: flex; align-items: center; justify-content: center;
-  padding: 8px 18px; border-radius: 6px; border: 1px solid var(--clk-sep);
+  padding: 8px 18px; border-radius: var(--look-control-radius, 6px); border: 1px solid var(--clk-sep);
   background: color-mix(in srgb, #000 14%, var(--panel));
   font-family: var(--clk-digits); font-weight: 200; font-size: clamp(54px, 9.5cqi, 92px); line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
-#clock-modal .clk-pick-seg { padding: 0 4px; border-radius: 6px; outline: none; cursor: ns-resize; }
+#clock-modal .clk-pick-seg { padding: 0 4px; border-radius: var(--look-control-radius, 6px); outline: none; cursor: ns-resize; }
 #clock-modal .clk-pick-seg:focus { background: color-mix(in srgb, var(--clk-accent) 30%, transparent); }
 #clock-modal .clk-pick-colon { opacity: 0.9; }
 #clock-modal .clk-timer-fields { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 200px; }
@@ -548,7 +550,7 @@
   position: fixed;
   min-width: 170px;
   padding: 5px;
-  border-radius: 9px;
+  border-radius: var(--look-control-radius, 9px);
   background: var(--panel);
   border: 1px solid var(--border);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
@@ -557,7 +559,7 @@
 }
 .clk-menu-item {
   display: block; width: 100%; text-align: left; margin: 0; padding: 5px 10px;
-  border: 0; border-radius: 5px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+  border: 0; border-radius: var(--look-control-radius, 5px); background: transparent; color: inherit; font: inherit; cursor: pointer;
 }
 .clk-menu-item:hover, .clk-menu-item:focus-visible { background: var(--red); color: #fff; outline: none; }
 .clk-menu-item.clk-danger { color: var(--color-error-light, #ff6666); }
@@ -568,18 +570,18 @@
 .clk-alerts { position: fixed; top: 14px; right: 14px; display: flex; flex-direction: column; gap: 10px; max-width: min(380px, calc(100vw - 28px)); }
 .clk-alert {
   display: flex; align-items: center; gap: 12px; padding: 12px 14px;
-  background: var(--panel); color: var(--fg); border: 1px solid var(--border); border-radius: 14px;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--border); border-radius: var(--look-card-radius, 14px);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
   font: 13px 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   animation: clk-pop 0.18s ease-out;
 }
-.clk-alert-icon { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--red); color: #fff; }
+.clk-alert-icon { width: 38px; height: 38px; border-radius: var(--look-card-radius, 10px); flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--red); color: #fff; }
 .clk-alert-text { flex: 1; min-width: 0; }
 .clk-alert-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .clk-alert-sub { color: color-mix(in srgb, var(--fg) 60%, transparent); margin-top: 1px; }
 .clk-alert-actions { display: flex; gap: 6px; }
 .clk-alert .clk-btn {
-  margin: 0; border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); border-radius: 7px;
+  margin: 0; border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); border-radius: var(--look-control-radius, 7px);
   background: color-mix(in srgb, var(--fg) 10%, var(--panel)); color: var(--fg);
   font: inherit; padding: 5px 12px; cursor: pointer;
 }
