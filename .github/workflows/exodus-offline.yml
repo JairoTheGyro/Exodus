@@ -15,6 +15,8 @@ concurrency:
 jobs:
   offline-baseline:
     name: Cloud development offline baseline
+    # Already ran on the pull request; skip the repeat on push while private.
+    if: github.event_name != 'push' || !github.event.repository.private
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
