@@ -18,6 +18,24 @@ _Nothing in progress._
 
 ## Needs to get started
 
+### Up next: make the repo public (moved earlier, 2026-10-19)
+Jairo chose to do this before Stage 3 continues: public repos get GitHub's
+automatic checks free with no monthly limit (the private repo ran out of
+minutes on 2026-10-19), and the AGPL needs the source shared anyway once others
+use Exodus.
+- **Secrets check:** scan the whole git history (gitleaks) for passwords, keys
+  or tokens; remove or rotate anything found.
+- **Personal data check:** no personal emails, names, addresses, screenshots or
+  test data that shouldn't be public, in files or history.
+- **Licence check:** every bundled third-party file has its licence and credit
+  (`ACKNOWLEDGMENTS.md`, `THIRD_PARTY_PROVENANCE.json`, `licenses/`); nothing
+  copied from the original apps that REA recreated.
+- **Repo settings after going public:** confirm the checks that skip private
+  repos (CodeQL, dependency review, Trivy) switch back on, and that branch and
+  Actions settings are safe for a public repo.
+- **Then Jairo flips it to public** (or tells Claude to), and the roadmap notes
+  the date.
+
 ### Odysseus catch-up follow-ups (2026-10-19)
 - **Small regular catch-ups** from now on: when the License Tracker shows new
   upstream changes, merge them on a `sync/odysseus-<date>` branch.
@@ -47,8 +65,6 @@ _Nothing in progress._
 - **Welcome setup** for invited people: look, language, AI choice and spending
   cap, email and calendar.
 - **AI per person:** cloud AI with a spend cap, a shared AI machine, or AI-Free.
-- **Licence and secrets audit,** then make the repo public or add a
-  "Source code" link (required by the AGPL when others use Exodus).
 - **Home server** reachable privately (e.g. Tailscale), plus an "update the
   server" step. Hardware choice is Jairo's.
 - Invite family and friends.
@@ -169,4 +185,5 @@ _Nothing in progress._
    much harder.
 3. Privacy work (spaces, private alerts, licence audit) before anyone else uses
    Exodus.
-4. Public release only after the licence and secrets audit.
+4. Public release only after the licence and secrets audit (the audit and
+   making the repo public were moved earlier on 2026-10-19 to get free checks).
