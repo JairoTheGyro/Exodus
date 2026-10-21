@@ -303,6 +303,36 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # Replica: a local video player with a YouTube-style interface, plus a
+  # one-paste downloader and an iPad app that syncs from it. It lives in its own
+  # repository (JairoTheGyro/youtube-replica). Opt-in: in the local .env set
+  #   COMPOSE_PROFILES=replica
+  #   REPLICA_SRC=/path/to/the/replica/checkout
+  # This Mac opens it at http://127.0.0.1:5180 (trusted, loopback only). Other
+  # devices use the second port, which always requires pairing with the code
+  # shown in Replica's Settings, and stays loopback-only unless
+  # REPLICA_LAN_BIND=0.0.0.0. Library folders are mounted at the same paths as
+  # on the Mac, so video ids, history and playlists match the Mac app's.
+  replica:
+    profiles: [replica]
+    build: ${REPLICA_SRC:-./integrations/replica}
+    image: replica:local
+    ports:
+      - "127.0.0.1:${REPLICA_PORT:-5180}:5180"
+      - "${REPLICA_LAN_BIND:-127.0.0.1}:${REPLICA_LAN_PORT:-5181}:5181"
+    volumes:
+      - ${REPLICA_DATA_DIR:-./data/replica}:/data:z
+      - ${REPLICA_LIBRARY:-${HOME}/Movies/Replica}:${REPLICA_LIBRARY:-${HOME}/Movies/Replica}:z
+      - ${REPLICA_EXTRA_FOLDER:-${HOME}/Downloads}:${REPLICA_EXTRA_FOLDER:-${HOME}/Downloads}:z
+    environment:
+      - HOME=${HOME}
+      - REPLICA_LIBRARY=${REPLICA_LIBRARY:-${HOME}/Movies/Replica}
+      # How other devices reach this Mac, e.g. My-Mac.local:5181 (shown for pairing).
+      - REPLICA_PUBLIC_ADDRESS=${REPLICA_PUBLIC_ADDRESS:-}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
 volumes:
   searxng-data:
   chromadb-data:
