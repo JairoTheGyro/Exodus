@@ -79,6 +79,12 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-22 · **Pillow 13 security update:** GitHub's dependency check found
+  35 security problems in the image library Pillow 12.3.0, fixed in 13.0.0. One
+  AI-memory library (fastembed) still asks for an older Pillow, but only for
+  image features Exodus doesn't use, so `requirements-overrides.txt` installs
+  Pillow 13 on top. Applies to the app image at the next rebuild (Docker is
+  off for now).
 - 2026-10-22 · **Exodus is public:** Jairo kept his name on past commits and
   the repo went public. `main` is protected from force-pushes and deletion;
   secret scanning with push protection, Dependabot alerts and private

@@ -165,9 +165,11 @@ jobs:
         if: steps.docs-check.outputs.docs_only != 'true'
         with:
           enable-cache: true
-          cache-dependency-glob: requirements.txt
+          cache-dependency-glob: |
+            requirements.txt
+            requirements-overrides.txt
           prune-cache: false
-      - run: uv pip install --system -r requirements.txt
+      - run: uv pip install --system -r requirements.txt --override requirements-overrides.txt
         if: steps.docs-check.outputs.docs_only != 'true'
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         if: steps.docs-check.outputs.docs_only != 'true'

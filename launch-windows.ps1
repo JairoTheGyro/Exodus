@@ -134,6 +134,8 @@ Write-Step "Installing dependencies (first run can take a few minutes)"
 & $venvPy -m pip install --upgrade pip --quiet
 & $venvPy -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { Fail "Dependency install failed. Scroll up for the pip error." }
+& $venvPy -m pip install --no-deps -r requirements-overrides.txt
+if ($LASTEXITCODE -ne 0) { Fail "Dependency override install failed. Scroll up for the pip error." }
 
 # 4. First-time setup (creates data dirs, DB, .env, admin user)
 Write-Step "Running first-time setup"

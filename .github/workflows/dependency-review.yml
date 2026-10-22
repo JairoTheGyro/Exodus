@@ -69,8 +69,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+        with:
+          enable-cache: false
+
+      # Audit what actually gets installed: requirements.txt plus the
+      # requirements-overrides.txt versions, resolved into one pinned list.
       - name: Run pip-audit on requirements
         run: |
           set -euo pipefail
+          uv pip compile requirements.txt requirements-optional.txt \
+            --override requirements-overrides.txt --python-version 3.12 -q -o "$RUNNER_TEMP/resolved.txt"
           pip install pip-audit==2.10.0
-          pip-audit -r requirements.txt -r requirements-optional.txt --strict
+          pip-audit -r "$RUNNER_TEMP/resolved.txt" --no-deps --disable-pip --strict
