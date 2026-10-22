@@ -18,15 +18,6 @@ _Nothing in progress._
 
 ## Needs to get started
 
-### Up next: make the repo public (moved earlier, 2026-10-19)
-The audit is done and clean; see [`GO_PUBLIC_AUDIT.md`](GO_PUBLIC_AUDIT.md).
-What's left:
-- **Jairo decides** whether his full name stays on past commits (normal) or
-  the history gets rewritten to his GitHub username.
-- **Flip the repo to public** (Jairo, or Claude when told to).
-- **Right after:** protect `main`, turn on secret scanning, Dependabot alerts
-  and private vulnerability reporting, and confirm all checks run again.
-
 ### Odysseus catch-up follow-ups (2026-10-19)
 - **Small regular catch-ups** from now on: when the License Tracker shows new
   upstream changes, merge them on a `sync/odysseus-<date>` branch.
@@ -88,6 +79,10 @@ What's left:
 
 ## Finished
 
+- 2026-10-22 · **Exodus is public:** Jairo kept his name on past commits and
+  the repo went public. `main` is protected from force-pushes and deletion;
+  secret scanning with push protection, Dependabot alerts and private
+  vulnerability reporting are on. GitHub's checks are free again.
 - 2026-10-22 · **Go-public audit:** no passwords, keys or private files
   anywhere in the published history, no personal details beyond Jairo's name on
   commits, credits and the AGPL "modified version" notice added, GitHub settings
