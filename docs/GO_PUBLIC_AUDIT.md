@@ -1,5 +1,8 @@
 # Go-public audit (2026-10-22)
 
+**Outcome:** the repository was made public on 2026-10-22. The owner kept
+the author name on past commits; the follow-up settings below were applied.
+
 Checks done before making `JairoTheGyro/Exodus` public. Scope: everything
 pushed to the Exodus repository (`main`, `pr-assets` and remaining branches;
 2,639 commits, about 19,400 file versions, no tags). The Odysseus history it
