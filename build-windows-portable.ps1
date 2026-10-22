@@ -50,6 +50,8 @@ Write-Step "Installing build dependencies"
 & $pyExe -m pip install --upgrade pip --quiet
 & $pyExe -m pip install -r requirements.txt pyinstaller pystray Pillow
 if ($LASTEXITCODE -ne 0) { Fail "Dependency install failed." }
+& $pyExe -m pip install --no-deps -r requirements-overrides.txt
+if ($LASTEXITCODE -ne 0) { Fail "Dependency override install failed." }
 
 Write-Step "Building portable exe bundle"
 Remove-Item -Recurse -Force build, dist -ErrorAction SilentlyContinue

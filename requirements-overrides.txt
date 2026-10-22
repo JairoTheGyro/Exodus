@@ -1,0 +1,10 @@
+# Versions installed on top of requirements.txt, ignoring a dependency's cap.
+# Apply after requirements.txt with `pip install --no-deps -r
+# requirements-overrides.txt` (or uv's `--override requirements-overrides.txt`).
+# Keep each entry until the capping package allows the version itself, then
+# delete it here.
+#
+# Pillow 13.0.0 fixes 35 security advisories in 12.x (2026-10). fastembed 0.9.0
+# caps pillow<13, but only its image-embedding models use Pillow; Exodus uses
+# fastembed's TextEmbedding only (src/embeddings.py).
+Pillow==13.0.0
