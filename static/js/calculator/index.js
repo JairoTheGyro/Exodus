@@ -828,7 +828,8 @@ function openUnitPicker(anchor, isInput) {
     footer.replaceChildren();
     footer.hidden = !(category === 'Currency' && !query);
     if (!footer.hidden) {
-      footer.append(h('span', { text: `Rates: ${(rates?.source || 'ExchangeRate-API').replace(/\s*\(.*\)$/, '')}`, title: rates?.source || '' }));
+      // ExchangeRate-API's free (open access) terms ask for a visible link back.
+      footer.append(h('a', { href: 'https://www.exchangerate-api.com', target: '_blank', rel: 'noopener noreferrer', text: 'Rates by ExchangeRate-API', title: rates?.source || '' }));
       if (rates?.updated) footer.append(h('span', { text: `Updated ${relativeTime(rates.updated * 1000)}${rates.stale ? ' (offline copy)' : ''}` }));
     }
   };
