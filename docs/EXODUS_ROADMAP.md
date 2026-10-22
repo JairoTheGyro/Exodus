@@ -19,22 +19,13 @@ _Nothing in progress._
 ## Needs to get started
 
 ### Up next: make the repo public (moved earlier, 2026-10-19)
-Jairo chose to do this before Stage 3 continues: public repos get GitHub's
-automatic checks free with no monthly limit (the private repo ran out of
-minutes on 2026-10-19), and the AGPL needs the source shared anyway once others
-use Exodus.
-- **Secrets check:** scan the whole git history (gitleaks) for passwords, keys
-  or tokens; remove or rotate anything found.
-- **Personal data check:** no personal emails, names, addresses, screenshots or
-  test data that shouldn't be public, in files or history.
-- **Licence check:** every bundled third-party file has its licence and credit
-  (`ACKNOWLEDGMENTS.md`, `THIRD_PARTY_PROVENANCE.json`, `licenses/`); nothing
-  copied from the original apps that REA recreated.
-- **Repo settings after going public:** confirm the checks that skip private
-  repos (CodeQL, dependency review, Trivy) switch back on, and that branch and
-  Actions settings are safe for a public repo.
-- **Then Jairo flips it to public** (or tells Claude to), and the roadmap notes
-  the date.
+The audit is done and clean; see [`GO_PUBLIC_AUDIT.md`](GO_PUBLIC_AUDIT.md).
+What's left:
+- **Jairo decides** whether his full name stays on past commits (normal) or
+  the history gets rewritten to his GitHub username.
+- **Flip the repo to public** (Jairo, or Claude when told to).
+- **Right after:** protect `main`, turn on secret scanning, Dependabot alerts
+  and private vulnerability reporting, and confirm all checks run again.
 
 ### Odysseus catch-up follow-ups (2026-10-19)
 - **Small regular catch-ups** from now on: when the License Tracker shows new
@@ -97,6 +88,10 @@ use Exodus.
 
 ## Finished
 
+- 2026-10-22 · **Go-public audit:** no passwords, keys or private files
+  anywhere in the published history, no personal details beyond Jairo's name on
+  commits, credits and the AGPL "modified version" notice added, GitHub settings
+  safe for a public repo. Details in `docs/GO_PUBLIC_AUDIT.md`.
 - 2026-10-19 · **App list and look settings** (Stage 3): built-in apps now come
   from one list (`static/js/apps/registry.js`), which makes their Tools-menu
   entries and loading. Adding an app means one entry plus its own folder.

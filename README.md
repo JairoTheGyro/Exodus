@@ -1,3 +1,35 @@
+# Exodus
+
+**Exodus is a modified version of [Odysseus](https://github.com/odysseus-dev/odysseus)**,
+the self-hosted AI workspace, maintained by [JairoTheGyro](https://github.com/JairoTheGyro)
+since September 2026. It keeps everything Odysseus does and adds, among other
+things: invite-only team accounts, an AI-Free mode, a private password manager
+(Vaultwarden), a coding workspace (DeepSeek Harness), built-in apps (Calculator
+and Clock), switchable app looks, a License Tracker for upstream updates, and
+its own branding and themes. Changes are tracked in
+[`docs/EXODUS_ROADMAP.md`](docs/EXODUS_ROADMAP.md) and the git history.
+
+Exodus is licensed, like Odysseus, under the
+[GNU AGPL v3 or later](LICENSE). Credit for Odysseus remains with its authors
+and contributors; third-party credits are in [`ACKNOWLEDGMENTS.md`](ACKNOWLEDGMENTS.md).
+Exodus is not an official Odysseus release.
+
+### Run Exodus
+
+```bash
+git clone https://github.com/JairoTheGyro/Exodus.git
+cd Exodus
+cp .env.example .env
+docker compose up -d --build
+```
+
+Open `http://localhost:7011` (or the `APP_PORT` you set in `.env`). The first
+admin password is printed in `docker compose logs odysseus`.
+
+*The rest of this page is the original Odysseus README, kept for reference.*
+
+---
+
 <p align="center">
   <img src="assets/branding/odysseus-wordmark.png" alt="Odysseus" width="238">
 </p>

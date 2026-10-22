@@ -19,8 +19,13 @@ def _fenced_segments(text: str):
 
 
 def test_readme_opens_with_wordmark_title():
-    head = "\n".join(README.read_text(encoding="utf-8").splitlines()[:15])
-    assert 'alt="Odysseus"' in head, "README must open with the Odysseus wordmark image"
+    # Exodus: the README opens with the AGPL modification notice (Exodus is a
+    # modified Odysseus), then keeps the original Odysseus README and wordmark.
+    text = README.read_text(encoding="utf-8")
+    head = "\n".join(text.splitlines()[:5])
+    assert head.startswith("# Exodus") and "modified version of [Odysseus]" in head
+    original = text.split("original Odysseus README", 1)[1]
+    assert 'alt="Odysseus"' in "\n".join(original.splitlines()[:15]), "the original README keeps the Odysseus wordmark"
 
 
 def test_reintroduced_ascii_banner_stays_fenced():

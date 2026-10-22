@@ -48,8 +48,8 @@ just composed.
 | Service | Image | Purpose | License |
 |---|---|---|---|
 | [SearXNG](https://github.com/searxng/searxng) | `searxng/searxng:2026.9.25-12f8b6515` (pinned tag; see compose) | Default metasearch backend | AGPL-3.0 |
-| [ChromaDB](https://github.com/chroma-core/chroma) | `chromadb/chroma:latest` | Vector store for memory / RAG | Apache-2.0 |
-| [ntfy](https://github.com/binwiederhier/ntfy) | `binwiederhier/ntfy` | Push notifications (self-hosted reminders) | Apache-2.0 / GPL-2.0 |
+| [ChromaDB](https://github.com/chroma-core/chroma) | `chromadb/chroma:latest` (Exodus pins `1.5.9`) | Vector store for memory / RAG | Apache-2.0 |
+| [ntfy](https://github.com/binwiederhier/ntfy) | `binwiederhier/ntfy` (Exodus pins `v2.32.0`) | Push notifications (self-hosted reminders) | Apache-2.0 / GPL-2.0 |
 
 ## Bundled front-end libraries
 
@@ -169,6 +169,25 @@ concerns from earlier are resolved:
   it. The cloud `az-doc-intel` extra is deliberately **not** installed, keeping extraction fully local.
 
 ---
+
+## Exodus additions
+
+Exodus is a modified version of Odysseus (see the README). These are the
+third-party works Exodus adds on top of the ones listed above.
+
+| What | Where | Source | License / terms |
+|---|---|---|---|
+| [Vaultwarden](https://github.com/dani-garcia/vaultwarden) password manager | `vaultwarden/server:1.37.4` image, composed unmodified | Daniel García & contributors | AGPL-3.0. Not affiliated with Bitwarden, Inc. |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`@deepseek-ai/dsh` 0.2.1-rc.2) | Installed from npm into `integrations/harness/` image | DeepSeek & contributors | MIT, with its [third-party notices](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/THIRD_PARTY_NOTICES.md) |
+| TempleOS 8×8 system font | `static/fonts/temple/FontStd.hex`, `Temple8x8.ttf` (converted) | TempleOS by Terry A. Davis | Public domain |
+| Natural Earth 1:110m land outline | `static/js/clock/worldLand.js` (simplified path) | [Natural Earth](https://www.naturalearthdata.com/) via [world-atlas](https://github.com/topojson/world-atlas) 2.0.2 | Natural Earth data is public domain; world-atlas is ISC |
+| Currency exchange rates | Fetched at runtime by `routes/calculator_routes.py` only when Currency is chosen | [ExchangeRate-API](https://www.exchangerate-api.com) open access | Free with attribution, shown in the Calculator |
+
+The Calculator and Clock apps are original recreations: their behaviour and
+layout were studied by observing Apple's macOS apps, then rewritten from
+scratch. They contain no Apple code, artwork, icons, sounds or fonts, and use
+generic names. Apple, macOS and related names are trademarks of Apple Inc.;
+Exodus is not affiliated with or endorsed by Apple.
 
 ## Thanks to
 
