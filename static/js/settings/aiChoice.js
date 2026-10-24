@@ -55,8 +55,12 @@ export function renderAiChoice(container, data, { compact = false, doc = contain
   }
   if (detail) container.append(el(doc, 'p', { className: 'admin-toggle-sub ai-choice-detail', text: detail }));
   if (chosen === 'own') {
-    container.append(el(doc, 'div', { className: 'ai-choice-row' },
-      el(doc, 'button', { type: 'button', className: 'admin-btn-sm', dataset: { aiAction: 'add-account' }, text: 'Add or manage my AI accounts' })));
+    // Filled in by mountAiChoice from /api/my-ai (your private accounts).
+    container.append(el(doc, 'div', { className: 'ai-own-accounts' }));
+    if (data.is_admin && !compact) {
+      container.append(el(doc, 'div', { className: 'ai-choice-row' },
+        el(doc, 'button', { type: 'button', className: 'admin-btn-sm', dataset: { aiAction: 'add-account' }, text: 'Advanced: all AI connections' })));
+    }
   }
 
   if (chosen !== 'off') {
@@ -90,6 +94,24 @@ export function renderAiChoice(container, data, { compact = false, doc = contain
   container.append(el(doc, 'p', { className: 'ai-choice-msg admin-toggle-sub', role: 'status' }));
 }
 
+/** Your connected accounts plus the "connect one" form. */
+export function renderOwnAccounts(box, { accounts = [], providers = [] } = {}, doc = box.ownerDocument || document) {
+  box.replaceChildren();
+  const list = el(doc, 'ul', { className: 'ai-own-list' });
+  for (const account of accounts) {
+    list.append(el(doc, 'li', { dataset: { account: account.id } },
+      el(doc, 'span', { text: `${account.provider_name || account.name} · ${account.models} models` }),
+      el(doc, 'button', { type: 'button', className: 'admin-btn-sm admin-btn-danger', dataset: { aiAction: 'remove-account' }, text: 'Remove' })));
+  }
+  if (accounts.length) box.append(list);
+  const select = el(doc, 'select', { className: 'ai-own-provider', 'aria-label': 'AI provider' });
+  for (const provider of providers) select.append(el(doc, 'option', { value: provider.id, text: provider.name }));
+  const key = el(doc, 'input', { type: 'password', className: 'ai-own-key', placeholder: 'Paste your API key', autocomplete: 'off', 'aria-label': 'API key' });
+  box.append(el(doc, 'div', { className: 'ai-choice-row ai-own-form' }, select, key,
+    el(doc, 'button', { type: 'button', className: 'admin-btn-sm', dataset: { aiAction: 'connect-account' }, text: 'Connect' })));
+  box.append(el(doc, 'p', { className: 'admin-toggle-sub', text: 'Only you can use and see this account. Exodus stores the key encrypted and never shows it again. Create the key on the provider\u2019s website; you pay them directly.' }));
+}
+
 export function renderMembers(box, members, doc = box.ownerDocument || document) {
   box.replaceChildren();
   const table = el(doc, 'table', { className: 'ai-choice-table' });
@@ -119,7 +141,16 @@ export function mountAiChoice(container, {
   if (!container) return Promise.resolve();
   let latest = null;
   const say = text => { const msg = container.querySelector('.ai-choice-msg'); if (msg) msg.textContent = text; };
-  const show = data => { latest = data; renderAiChoice(container, data, { compact }); return data; };
+  const loadOwn = async () => {
+    const box = container.querySelector('.ai-own-accounts');
+    if (!box) return;
+    const [accounts, providers] = await Promise.all([
+      api('/api/my-ai/accounts').then(r => (r.ok ? r.json() : { accounts: [] })).catch(() => ({ accounts: [] })),
+      api('/api/my-ai/providers').then(r => (r.ok ? r.json() : { providers: [] })).catch(() => ({ providers: [] })),
+    ]);
+    renderOwnAccounts(box, { accounts: accounts.accounts || [], providers: providers.providers || [] });
+  };
+  const show = data => { latest = data; renderAiChoice(container, data, { compact }); loadOwn(); return data; };
   const send = (url, method, body) => api(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const errorText = async response => {
     const body = await response.json().catch(() => ({}));
@@ -149,6 +180,25 @@ export function mountAiChoice(container, {
         await save({ clear_cap: true });
       } else if (action === 'add-account') {
         await openSettings('added-models');
+      } else if (action === 'connect-account') {
+        const box = container.querySelector('.ai-own-accounts');
+        const provider = box.querySelector('.ai-own-provider')?.value;
+        const key = box.querySelector('.ai-own-key');
+        if (!key.value.trim()) { key.focus(); return; }
+        event.target.disabled = true;
+        say('Checking the key with the provider…');
+        const response = await send('/api/my-ai/accounts', 'POST', { provider, api_key: key.value });
+        event.target.disabled = false;
+        if (!response.ok) { say(await errorText(response)); return; }
+        key.value = '';
+        await loadOwn();
+        say('Connected. Its models now appear in your model picker.');
+      } else if (action === 'remove-account') {
+        const id = event.target.closest('[data-account]')?.dataset.account;
+        const response = await api(`/api/my-ai/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (!response.ok) { say(await errorText(response)); return; }
+        await loadOwn();
+        say('Removed.');
       } else if (action === 'members') {
         const response = await api('/api/ai-budget/members');
         if (!response.ok) { say(await errorText(response)); return; }

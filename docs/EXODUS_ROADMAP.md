@@ -62,10 +62,6 @@ _Nothing in progress._
   proven hot spots (no full rewrite).
 
 ### Stage 4 · Ready to share with family and friends
-- **Members' own AI accounts:** today only the admin can add AI connections,
-  so "My own cloud account" in Your AI can't be set up by members. Let members
-  add their own provider connection, private to them, with the endpoint
-  address safety checks.
 - **Shared spaces, later:** drawings in shared notes; Library → Files uploads.
 - Home server setup and inviting people: see **Waiting on Jairo**.
 
@@ -97,6 +93,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Members' own AI accounts:** in Your AI → My own cloud account,
+  anyone can connect a private account at a well-known provider by pasting
+  its key. Members can't type a web address, so their accounts can't reach the
+  home network or Exodus's internal services.
 - 2026-10-24 · **Local AI guide:** `docs/LOCAL_AI.md` covers what fits in
   36 GB, LM Studio or Ollama, picking models with the Cookbook (model picks
   checked against the live catalog), connecting them as Shared AI, and using

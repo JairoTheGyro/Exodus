@@ -61,8 +61,13 @@ Settings → Account → **Your AI** lets each person choose:
 
 - **Shared AI:** the AI connections the admin added for everyone. Nothing to
   set up.
-- **My own cloud account:** add their own provider account (Settings → Added
-  Models) and pay that provider directly.
+- **My own cloud account:** choose a provider (OpenRouter, OpenAI, Anthropic,
+  Google Gemini, DeepSeek, Groq, xAI or NVIDIA), paste their API key and press
+  Connect. The account is private to them, the key is stored encrypted and
+  never shown again, and they pay that provider directly. Members can't type a
+  web address, so an account can't point at the home network or Exodus's
+  internal services. Only the admin connects local or self-hosted models, in
+  Settings → Added Models (`docs/LOCAL_AI.md`).
 - **No AI:** turns on AI-free mode for their account only.
 
 **Monthly spending cap.** Each person can set a cap in dollars. An admin can
