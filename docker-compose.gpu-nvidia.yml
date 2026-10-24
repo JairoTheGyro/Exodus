@@ -62,6 +62,8 @@ services:
       - SEARXNG_CATEGORIES=${SEARXNG_CATEGORIES:-general}
       - NTFY_BASE_URL=${NTFY_BASE_URL:-http://ntfy:80}
       - NTFY_DEFAULT_TOPIC=${NTFY_DEFAULT_TOPIC:-exodus-alerts}
+      # Exodus: the ntfy address phones subscribe to (shown in Settings).
+      - NTFY_PUBLIC_URL=${NTFY_PUBLIC_URL:-http://localhost:8091}
       - NTFY_ENABLED=${NTFY_ENABLED:-true}
       - NTFY_CACHE_MESSAGES=${NTFY_CACHE_MESSAGES:-true}
       - CHROMA_HOST=${CHROMA_HOST:-chromadb}

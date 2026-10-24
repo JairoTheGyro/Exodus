@@ -186,6 +186,17 @@ def _reminder_text_from_note(note: Note) -> tuple[str, str]:
 _scheduler_ref = None
 
 
+def _reminder_topic(owner, settings):
+    """Exodus: a person's own private topic when accounts are in use; the
+    shared Reminders topic setting on single-user installs."""
+    try:
+        from src.personal_alerts import personal_topic
+        mine = personal_topic(owner)
+    except Exception:
+        mine = None
+    return mine or settings.get("reminder_ntfy_topic") or None
+
+
 async def dispatch_reminder(
     title: str,
     note_body: str,
@@ -527,7 +538,9 @@ async def dispatch_reminder(
         from src.notifications import dispatch_notification
         delivery = await dispatch_notification(
             synthesis or note_body or title, title=title or "Reminder",
-            priority=4, tags=["bell"], topic=settings.get("reminder_ntfy_topic") or None,
+            # Exodus: with accounts, each person's reminders go to their own
+            # private topic; the shared topic setting is for single-user installs.
+            priority=4, tags=["bell"], topic=_reminder_topic(owner, settings),
             owner=owner, ai=bool(llm_on),
         )
         ntfy_sent = delivery["status"] == "sent"

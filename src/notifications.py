@@ -64,7 +64,17 @@ async def dispatch_notification(message, *, title='Exodus', priority=3, tags=Non
         if destination is None:
             return {'status': 'skipped', 'reason': 'integration_disabled'}
         base, token = destination
-        target = topic if topic is not None else os.getenv('NTFY_DEFAULT_TOPIC', 'exodus-alerts')
+        if topic is not None:
+            target = topic
+        else:
+            # Exodus: with accounts, each account's alerts go to its own
+            # private topic; single-user installs keep the shared topic.
+            target = None
+            if owner:
+                from src.personal_alerts import personal_topic
+                target = await asyncio.to_thread(personal_topic, owner)
+            if target is None:
+                target = os.getenv('NTFY_DEFAULT_TOPIC', 'exodus-alerts')
         if not isinstance(target, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', target):
             raise ValueError('Invalid topic')
         if not isinstance(message, str) or not message.strip() or len(message.encode('utf-8')) > 4096:

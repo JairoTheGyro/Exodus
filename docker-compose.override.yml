@@ -179,3 +179,5 @@ services:
       - ./routes/services_routes.py:/app/routes/services_routes.py:ro
       - ./routes/space_routes.py:/app/routes/space_routes.py:ro
       - ./src/spaces.py:/app/src/spaces.py:ro
+      - ./src/personal_alerts.py:/app/src/personal_alerts.py:ro
+      - ./routes/personal_alerts_routes.py:/app/routes/personal_alerts_routes.py:ro

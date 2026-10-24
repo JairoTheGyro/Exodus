@@ -74,10 +74,10 @@ both, or use separate browser profiles.
 Current deployment remains Mac-only. Invitation links and service URLs are usable
 only on that Mac until a shared trusted HTTPS deployment is configured. SearXNG
 is a shared search engine, Chroma is a backend with application owner filters,
-ntfy's current default topic is installation-wide, and Harness is admin-only.
-These services are not automatically converted into separate tenant instances by
-adding Exodus accounts. Do not publish their local ports or treat shared ntfy
-messages as private. Every future integration must document personal ownership,
+each account sends its ntfy alerts to its own private topic (see
+`docs/PHONE_ALERTS.md`; the topic name is the only secret), and Harness is
+admin-only. These services are not automatically converted into separate tenant
+instances by adding Exodus accounts. Do not publish their local ports. Every future integration must document personal ownership,
 shared settings, onboarding, offboarding, and isolation tests in both modes.
 
 Official invitation behavior:
