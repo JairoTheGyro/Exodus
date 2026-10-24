@@ -7,9 +7,12 @@ anything not translated yet simply stays in English.
   account), or the language menu at the bottom of the sign-in page (saved in
   that browser). A browser set to Spanish starts in Spanish.
 - **Languages:** English, and Spanish for Latin America (`es-419`).
-- **What's translated so far (wave 1):** the sign-in page, Home, and the
-  everyday (Essentials) Settings. Later waves are listed in
-  `docs/EXODUS_ROADMAP.md`.
+- **What's translated so far:** wave 1: the sign-in page, Home, and the
+  everyday (Essentials) Settings; wave 2: the sidebar, menus (the chat "+"
+  menu and the chat, folder, message, email and document menus) and toast
+  notifications, including messages with names or numbers in them. Later
+  waves are listed in `docs/EXODUS_ROADMAP.md`. Chat titles and folder names
+  in the sidebar are people's own words and are never translated.
 - **AI replies:** chat answers come back in the chosen language
   (`src/reply_language.py` adds one instruction; nothing for English), unless
   the person asks for another language.
@@ -38,6 +41,7 @@ Open the screen in Spanish, find the wording, and edit its value in
 `static/locales/es-419.json` (keep the English key exactly as it is). Use
 Latin American Spanish ("computadora", "correo", "tú").
 
-`tests/test_i18n.py` fails if a visible English string on the sign-in page or
-in the Essentials Settings has no Spanish entry, so new wording there gets
+`tests/test_i18n.py` fails if a visible English string on the sign-in page, in
+the Essentials Settings, the sidebar or the chat "+" menu has no Spanish entry,
+and if more than 5% of toast messages are untranslated, so new wording gets
 translated in the same pull request.

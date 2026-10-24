@@ -74,6 +74,9 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-25 · **Spanish wave 2:** the sidebar, menus and toast notifications
+  are in Spanish too (858 strings and 77 patterns in total). Chat titles and
+  folder names stay as people wrote them.
 - 2026-10-25 · **AI replies in your language:** when someone chooses Spanish,
   chat answers (normal and agent mode) come back in Latin American Spanish
   unless they ask for another language. English chats are unchanged.

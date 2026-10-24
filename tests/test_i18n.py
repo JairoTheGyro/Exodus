@@ -28,6 +28,7 @@ KEEP = {
     "Anthropic", "DeepSeek", "OpenAI", "GitHub Copilot", "ChatGPT Subscription", "Featherless.ai", "OpenRouter",
     "Ollama Cloud", "Groq", "Mistral", "Together AI", "Fireworks AI", "Google Gemini", "xAI Grok", "Z.AI (Zhipu)",
     "OpenCode Zen", "OpenCode Go", "Z.AI Coding Plan", "NVIDIA",
+    "AI Workshop", "Code", "SearXNG", "ChromaDB", "ntfy", "Vaultwarden", "RAG", "Prompt",
 }
 
 
@@ -103,6 +104,38 @@ def test_sign_in_page_is_fully_translated():
 
 def test_settings_essentials_are_fully_translated():
     assert _missing(_visible("static/index.html", _settings_essentials)) == []
+
+
+def _in_ids(*ids):
+    def include(stack):
+        return any(a.get("id") in ids for _, a in stack) and not any(t in ("script", "style") for t, _ in stack)
+    return include
+
+
+def test_sidebar_and_chat_plus_menu_are_fully_translated():
+    assert _missing(_visible("static/index.html", _in_ids("sidebar", "overflow-menu"))) == []
+
+
+def _literal_toasts():
+    texts = []
+    for path in list(ROOT.glob("static/*.js")) + list(ROOT.glob("static/js/**/*.js")):
+        if "/lib/" in path.as_posix():
+            continue
+        source = path.read_text(encoding="utf-8")
+        for m in re.finditer(r"""showToast\??\.?\(\s*(['"])((?:\\.|(?!\1).)*?)\1""", source):
+            text = m.group(2).replace("\\'", "'").replace('\\"', '"').strip()
+            if re.search("[A-Za-z]{3}", text):
+                texts.append(text)
+    return sorted(set(texts))
+
+
+def test_toast_messages_are_almost_all_translated():
+    # A hard 100% would fail every upstream catch-up that adds a toast; 95%
+    # keeps gaps small. New Exodus toasts should be translated in their PR.
+    toasts = _literal_toasts()
+    missing = _missing(toasts)
+    assert len(toasts) > 250
+    assert len(missing) / len(toasts) <= 0.05, f"{len(missing)} of {len(toasts)} toasts untranslated, e.g. {missing[:10]}"
 
 
 def test_wiring():
