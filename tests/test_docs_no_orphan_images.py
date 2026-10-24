@@ -38,6 +38,7 @@ OPERATIONAL_GUIDES = {
     "GO_PUBLIC_AUDIT.md",
     "HOME_SERVER.md",
     "TRANSLATIONS.md",
+    "LOCAL_AI.md",
     "LOCAL_BACKUPS.md",
     "PHONE_ALERTS.md",
     "PRACTICE_TESTS.md",
