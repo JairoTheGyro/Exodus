@@ -59,9 +59,8 @@ _Nothing in progress._
   proven hot spots (no full rewrite).
 
 ### Stage 4 · Ready to share with family and friends
-- **Shared spaces, later:** shared PDF/Word documents and uploaded files
-  (needs uploads that members can read); shared calendars on Home and for the
-  AI.
+- **Shared spaces, later:** shared calendars on Home and for the AI; drawings
+  in shared notes; Library → Files uploads.
 - Home server setup and inviting people: see **Waiting on Jairo**.
 
 ### Stage 5 · Looks, apps and convenience
@@ -92,6 +91,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Shared PDFs, Word files and pictures:** space members can now
+  open shared PDF and Word documents and see pictures in shared notes and
+  documents. Files are read-only for members, and only files behind items
+  shared with them, owned by that item's owner.
 - 2026-10-24 · **Home server prep:** install guide (`docs/HOME_SERVER.md`:
   hardware choices, Docker, Tailscale with a private HTTPS address, first run,
   backups). The updater now backs up data first, keeps a `:rollback` image and

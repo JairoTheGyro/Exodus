@@ -96,7 +96,18 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         if upload_handler is None:
             return None
         auth_manager = getattr(getattr(request.app, "state", None), "auth_manager", None)
-        return _resolve_user_upload_path(upload_handler, upload_id, user, auth_manager)
+        path = _resolve_user_upload_path(upload_handler, upload_id, user, auth_manager)
+        if path is None and user:
+            # Exodus shared spaces: read the owner's file behind a document or
+            # note shared with this person (read-only routes only).
+            try:
+                from src import spaces
+                owner = spaces.shared_upload_owner(user, upload_id)
+            except Exception:
+                owner = None
+            if owner:
+                path = _resolve_user_upload_path(upload_handler, upload_id, owner, auth_manager)
+        return path
 
     def _load_pdf_viewer_fitz():
         from src.pdf_runtime import load_pymupdf_for_pdf_viewer
@@ -429,7 +440,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             match = re.search(r'<!--\s*docx_source\s+upload_id="([^"]+)"\s*-->', doc.current_content or "")
             if not match:
                 raise HTTPException(400, "Document has no DOCX source")
@@ -473,7 +484,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             content = doc.current_content or ""
             match = re.search(
                 r'<!--\s*(?:docx|pdf(?:_form)?)_source\s+upload_id="([^"\s]+)"\s*-->',
@@ -888,9 +899,11 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                 return _doc_to_dict(doc)
 
             if user is not None and doc.owner is not None and doc.owner != user:
-                # Exodus shared spaces: members edit text only; uploads are per person.
+                # Exodus shared spaces: members can't add files or pictures
+                # (uploads are per person); ones already there may stay.
                 from src.upload_handler import extract_internal_upload_ids
-                if extract_internal_upload_ids(incoming_content or ""):
+                added = extract_internal_upload_ids(incoming_content or "") - extract_internal_upload_ids(doc.current_content or "")
+                if added:
                     raise HTTPException(403, "Only the person who made this document can add files or pictures to it.")
             else:
                 _reserve_document_uploads(user, incoming_content)
@@ -1071,12 +1084,9 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             ).first()
             if not old_ver:
                 raise HTTPException(404, "Version not found")
-            if user is not None and doc.owner is not None and doc.owner != user:
-                # Exodus shared spaces: a member can't restore a version that
-                # points at the owner's uploaded files.
-                from src.upload_handler import extract_internal_upload_ids
-                if extract_internal_upload_ids(old_ver.content or ""):
-                    raise HTTPException(403, "Only the person who made this document can restore that version.")
+            # Exodus shared spaces: members may restore any earlier version.
+            # Members can never add uploads, so every file a version points at
+            # was put there by the document's owner.
 
             new_ver_num = doc.version_count + 1
             ver = DocumentVersion(
@@ -1329,7 +1339,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
 
             upload_id = find_source_upload_id(doc.current_content or "")
             if not upload_id:
@@ -1393,7 +1403,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             upload_id = find_source_upload_id(doc.current_content or "")
             if not upload_id:
                 raise HTTPException(400, "Document is not linked to a source PDF")
@@ -1460,7 +1470,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             upload_id = find_source_upload_id(doc.current_content or "")
             if not upload_id:
                 raise HTTPException(400, "Document is not linked to a source PDF")
@@ -1663,7 +1673,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             upload_id = find_source_upload_id(doc.current_content or "")
             if not upload_id:
                 raise HTTPException(400, "Document is not linked to a source PDF")
@@ -1761,7 +1771,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
 
             upload_id = find_source_upload_id(doc.current_content or "")
             if not upload_id:

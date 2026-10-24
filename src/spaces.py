@@ -90,17 +90,50 @@ def can_use_calendar(cal: CalendarCal, user: Optional[str], db=None) -> bool:
 
 
 def document_shareable(doc) -> bool:
-    """Text documents only: a document that points at uploaded files (a PDF or
-    Word source, pictures) can't be shared, because uploads are per person."""
-    from src.upload_handler import extract_internal_upload_ids
-    return not extract_internal_upload_ids(getattr(doc, "current_content", None) or "")
+    """Every document can be shared. Uploaded files it points at (a PDF or Word
+    source, pictures) become readable to members through shared_upload_owner."""
+    return True
 
 
 def can_use_document(doc, user: Optional[str], db=None) -> bool:
-    """A member of the space a shareable document is shared in (owners are
-    checked by the document routes themselves)."""
+    """A member of the space a document is shared in (owners are checked by the
+    document routes themselves)."""
     space_id = getattr(doc, "space_id", None)
-    return bool(user and space_id) and document_shareable(doc) and is_member(user, space_id, db)
+    return bool(user and space_id) and is_member(user, space_id, db)
+
+
+def shared_upload_owner(user: Optional[str], upload_id: str, db=None) -> Optional[str]:
+    """Whose upload a space member may READ, or None.
+
+    A member may read an upload only when a note or document shared in one of
+    their spaces references it, and the upload belongs to that item's owner
+    (checked by the caller against the upload index). Returns the owner whose
+    upload it must be. Never grants writing, and never applies to the owner.
+    """
+    from src.upload_handler import extract_internal_upload_ids
+    if not user or not upload_id:
+        return None
+    own = db is None
+    db = db or SessionLocal()
+    try:
+        member_of = space_ids_for(user, db)
+        if not member_of:
+            return None
+        like = f"%{upload_id}%"
+        candidates = []
+        for note in db.query(Note).filter(Note.space_id.in_(member_of), Note.owner != user).filter(
+                (Note.content.like(like)) | (Note.items.like(like)) | (Note.image_url.like(like)) | (Note.color.like(like))).all():
+            if upload_id in extract_internal_upload_ids([note.content, note.items, note.image_url, note.color]):
+                candidates.append(note.owner)
+        for doc in db.query(Document).filter(Document.space_id.in_(member_of), Document.owner != user,
+                                             Document.current_content.like(like)).all():
+            if upload_id in extract_internal_upload_ids(doc.current_content or ""):
+                candidates.append(doc.owner)
+        owners = {o for o in candidates if o}
+        return owners.pop() if len(owners) == 1 else None
+    finally:
+        if own:
+            db.close()
 
 
 def _space_or_404(db, space_id: str) -> Space:
@@ -278,8 +311,6 @@ def share_document(user: str, doc_id: str, space_id) -> dict:
         if space_id:
             if not is_member(user, space_id, db):
                 raise SpaceError("Space not found.", 404)
-            if not document_shareable(doc):
-                raise SpaceError("Documents made from a PDF or Word file, or with pictures, can't be shared yet.", 400)
             doc.space_id = space_id
         else:
             doc.space_id = None
