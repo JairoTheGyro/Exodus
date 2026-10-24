@@ -227,6 +227,18 @@ def setup_upload_routes(upload_handler):
         if not (hasattr(auth_mgr, "is_admin") and auth_mgr.is_admin(current_user)):
             raise HTTPException(404, "File not found")
 
+    def _shared_space_read_allowed(request: Request, file_id: str, file_owner: str | None) -> bool:
+        if not file_owner or auth_disabled() or is_delegated_credential(request):
+            return False
+        current_user = effective_user(request)
+        if not current_user or is_request_sentinel_owner(current_user) or current_user == file_owner:
+            return False
+        try:
+            from src import spaces
+            return spaces.shared_upload_owner(current_user, file_id) == file_owner
+        except Exception:
+            return False
+
     def _valid_session_id_for_owner(db, session_id: str | None, owner: str | None) -> str | None:
         if not session_id:
             return None
@@ -453,7 +465,15 @@ def setup_upload_routes(upload_handler):
         if info:
             original_name = info.get("name", file_id)
         file_owner = info.get("owner") if info else None
-        _verify_upload_access(request, file_owner)
+        try:
+            _verify_upload_access(request, file_owner)
+        except HTTPException:
+            # Exodus shared spaces: a member may read (never change) a file
+            # that a note or document shared with them points at, when the
+            # file belongs to that item's owner. Signed-in people only, not
+            # API tokens.
+            if not _shared_space_read_allowed(request, file_id, file_owner):
+                raise
         path = _resolve_upload_path(file_id)
         mime = (info or {}).get("mime") or _mt.guess_type(path)[0] or "application/octet-stream"
         from fastapi.responses import FileResponse

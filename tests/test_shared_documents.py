@@ -1,9 +1,9 @@
 """Exodus shared spaces, part 3: shared documents (Library).
 
-Members of a space can open, edit and see the history of a text document
-shared there. Only the owner can delete, archive or re-share it, and
-documents that point at uploaded files (PDF/Word sources, pictures) stay
-personal because uploads are stored per person.
+Members of a space can open, edit and see the history of a document shared
+there, including PDF/Word-backed ones (tests/test_shared_uploads.py covers
+reading the source file). Only the owner can delete, archive or re-share it,
+and members can't add files or pictures.
 """
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -133,8 +133,8 @@ async def test_owner_only_actions_and_outsiders(client):
 async def test_sharing_rules(client):
     async with client as c:
         space = await family(c)
-        refused = await c.put("/api/spaces/documents/scan", json={"space_id": space}, headers=as_("mom"))
-        assert refused.status_code == 400 and "can't be shared" in refused.json()["detail"]
+        # PDF/Word-backed documents can be shared too (members read the source file).
+        assert (await c.put("/api/spaces/documents/scan", json={"space_id": space}, headers=as_("mom"))).status_code == 200
         assert (await c.put("/api/spaces/documents/dad-private", json={"space_id": space}, headers=as_("mom"))).status_code == 404
         assert (await c.put("/api/spaces/documents/plan", json={"space_id": "nope"}, headers=as_("mom"))).status_code == 404
         assert (await c.put("/api/spaces/documents/plan", json={"space_id": space}, headers=as_("neighbor"))).status_code == 404

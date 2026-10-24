@@ -58,16 +58,23 @@ Family" (yours) or "Family · by mom" (someone else's).
 | Who | Can |
 |---|---|
 | The document's owner | Everything: edit, archive, delete, export, change who can see it |
-| Space members | Open it, edit its text, see and restore its versions |
+| Space members | Open it (including PDF and Word documents), edit its text, see and restore its versions, view and download the PDF |
 | Everyone else | Nothing |
 
-Documents made from a PDF or Word file, or that contain pictures, stay
-personal for now, because those files are stored per person.
+PDF and Word documents and pictures can be shared too. Members can **see**
+the files behind a shared note or document and fill in a shared PDF form's
+fields. Only the owner can add new files or pictures, add signatures, or let
+the AI fill a form.
 
 ## Good to know
 
-- **Pictures** in a shared note can only be added by its owner. Pictures are
-  stored per person, so members may not see them yet.
+- **Pictures and files** in a shared note or document: members can see and
+  download them. Only the owner can add new ones. A file is only visible
+  through items shared in your spaces, and only if it belongs to that item's
+  owner.
+- **Signatures** stamped on a PDF show only for the person who signed.
+- **Drawings** made in a note (stored in the owner's Gallery) don't show for
+  members yet.
 - **AI** never reads other people's notes: shared notes are not fed to a
   member's AI chats or memory.
 - **Reminders** on a shared note notify its owner. Event reminders are
@@ -85,8 +92,11 @@ personal for now, because those files are stored per person.
 - `static/js/calendar/spaces.js`: the Share to choice in Calendar Settings.
 - `routes/document/document_routes.py` and `document_helpers.py`: documents
   that respect spaces.
+- `routes/upload_routes.py` and `src/spaces.py` (`shared_upload_owner`):
+  members reading files behind shared items.
 - `static/js/documentLibrarySpaces.js`: the Library tag and Share to menu.
 - `static/js/settings/spacesSettings.js`: the Settings card.
 - `frontend/src/features/notes/ui/spaces.js`: the Notes badge and the Share to menu.
 - `tests/test_shared_spaces.py`, `tests/test_shared_calendars.py`,
-  `tests/test_shared_documents.py`: isolation tests.
+  `tests/test_shared_documents.py`, `tests/test_shared_uploads.py`: isolation
+  tests.
