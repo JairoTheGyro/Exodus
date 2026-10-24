@@ -204,3 +204,16 @@
 .exodus-welcome-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .exodus-welcome-footer { display: flex; align-items: center; gap: 8px; }
 .exodus-welcome-spacer { flex: 1; }
+
+/* Exodus "Your AI" (static/js/settings/aiChoice.js). */
+.ai-choice-options { display: grid; gap: 6px; margin: 8px 0; }
+.ai-choice-option { height: auto; min-height: 0; max-height: none; white-space: normal; line-height: 1.4; display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: none; color: var(--fg); font: inherit; font-size: 12px; cursor: pointer; }
+.ai-choice-option span { opacity: 0.75; }
+.ai-choice-option[aria-checked="true"] { border-color: var(--accent, var(--red)); background: color-mix(in srgb, var(--accent, var(--red)) 10%, transparent); }
+.ai-choice-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; font-size: 12px; flex-wrap: wrap; }
+.ai-choice-cap { width: 90px; padding: 4px 6px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; font: inherit; }
+.ai-choice-spend { font-size: 12px; margin: 6px 0; }
+.ai-choice-paused { font-size: 12px; color: var(--color-error, var(--red)); }
+.ai-choice-msg:empty { display: none; }
+.ai-choice-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+.ai-choice-table th, .ai-choice-table td { text-align: left; padding: 4px; border-bottom: 1px solid var(--border); }

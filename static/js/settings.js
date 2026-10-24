@@ -21,6 +21,7 @@ import { mountWorkspaceBrandSettings } from './settings/workspaceBrandSettings.j
 import { mountServicesManager } from './settings/servicesManager.js';
 import { mountSpacesSettings } from './settings/spacesSettings.js';
 import { mountPhoneAlerts } from './settings/phoneAlerts.js';
+import { mountAiChoice } from './settings/aiChoice.js';
 import { APPS } from './apps/registry.js';
 import { bindSettingsNavigation } from './settings/navigation.js';
 import {
@@ -77,6 +78,7 @@ const _shell = createSettingsShell({
   onPanelActivated: (tab) => {
     if (tab === 'licenses') loadUpstreamUpdates();
     if (tab === 'account') {
+      mountAiChoice(byId('ai-choice-rows'));
       mountSpacesSettings(byId('spaces-rows'));
       mountPhoneAlerts(byId('phone-alerts-rows'));
       const rerun = byId('welcome-setup-rerun');

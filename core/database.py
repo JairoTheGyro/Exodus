@@ -2126,6 +2126,28 @@ class Note(TimestampMixin, Base):
     space_id = Column(String, nullable=True, index=True)
 
 
+class AiBudget(TimestampMixin, Base):
+    """Exodus: one person's AI choice and monthly spending caps (src/ai_budget.py).
+
+    ``owner`` is the username, so an account rename carries the row along.
+    """
+    __tablename__ = "ai_budgets"
+
+    owner = Column(String, primary_key=True)
+    source = Column(String, nullable=True)          # "shared" | "own" | "off"
+    self_cap_usd = Column(Float, nullable=True)     # set by the person
+    admin_cap_usd = Column(Float, nullable=True)    # set by an admin; the person can't raise it
+
+
+class AiSpend(TimestampMixin, Base):
+    """Exodus: estimated AI cost per person per calendar month (UTC)."""
+    __tablename__ = "ai_spend"
+
+    owner = Column(String, primary_key=True)
+    month = Column(String, primary_key=True)        # "YYYY-MM"
+    cost_usd = Column(Float, nullable=False, default=0.0)
+
+
 class Space(TimestampMixin, Base):
     """Exodus shared space (e.g. "Family"): a named group of accounts.
 

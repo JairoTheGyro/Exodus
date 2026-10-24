@@ -27,6 +27,15 @@ def require_ai(owner=None):
     owner = owner if owner is not None else AI_OWNER.get()
     if owner is not None and ai_free(owner):
         raise HTTPException(403, 'AI is disabled for this account. Change Workspace mode in Settings to use it.')
+    # Exodus: a person's monthly AI spending cap (src/ai_budget.py).
+    if owner:
+        try:
+            from src.ai_budget import pause_reason
+            reason = pause_reason(owner)
+        except Exception:
+            reason = None
+        if reason:
+            raise HTTPException(403, reason)
 
 
 def tracked_ai(fn):
@@ -68,6 +77,19 @@ def allowed_without_ai(path, method):
     if path == '/api/tasks' or re.fullmatch(r'/api/tasks/(?:onboarding|notifications|runs/recent|meta/(?:actions|events|output-targets)|[^/]+(?:/(?:runs|pause|resume|run|stop|revert|clear-cache|webhook-regenerate))?)', path):
         return True
     if path.startswith(('/api/prefs', '/api/fonts', '/api/upstream', '/api/contacts/')):
+        return True
+    # Exodus non-AI features: shared spaces, phone alerts, the person's AI
+    # choice (so an AI-free account can switch back), workspace name/logo and
+    # the admin Services manager.
+    if path == '/api/spaces' or path.startswith('/api/spaces/'):
+        return True
+    if path == '/api/alerts/phone' or path.startswith('/api/alerts/phone/'):
+        return True
+    if path == '/api/ai-budget' or path.startswith('/api/ai-budget/'):
+        return True
+    if path == '/api/workspace/brand' or path.startswith('/api/workspace/brand/'):
+        return True
+    if path == '/api/services' or path.startswith('/api/services/'):
         return True
     if path in ('/api/health', '/api/config', '/api/client-info', '/api/version'):
         return method == 'GET'

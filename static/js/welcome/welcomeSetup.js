@@ -5,6 +5,7 @@
 import { mountLanguagePicker } from '../settings/languagePicker.js';
 import { mountAppLookPicker } from '../settings/appLooks.js';
 import { mountPhoneAlerts } from '../settings/phoneAlerts.js';
+import { mountAiChoice } from '../settings/aiChoice.js';
 import { workspaceName } from '../workspaceBrand.js';
 
 export const PREF_KEY = 'exodus-welcome';
@@ -73,7 +74,7 @@ export function openWelcome({
   panel.append(progress, body, footer);
   overlay.append(panel);
 
-  const labels = { hello: 'Language', workspace: 'Workspace', look: 'Look', connect: 'Email and calendar', phone: 'Phone alerts', done: 'Done' };
+  const labels = { hello: 'Language', workspace: 'Your AI', look: 'Look', connect: 'Email and calendar', phone: 'Phone alerts', done: 'Done' };
   for (const id of STEPS) progress.append(el(doc, 'li', { dataset: { step: id }, text: labels[id] }));
 
   async function markDone(skipped) {
@@ -117,30 +118,18 @@ export function openWelcome({
       );
       mountLanguagePicker(select);
     } else if (id === 'workspace') {
-      const choices = el(doc, 'div', { className: 'exodus-welcome-choices', role: 'radiogroup', 'aria-label': 'Workspace' });
-      for (const [mode, title, text] of [
-        ['full', 'Full workspace', 'Everything, including AI chat and helpers whenever you want them.'],
-        ['ai-free', 'AI-free workspace', 'Notes, calendar, email, files and focus, with all AI features hidden for your account.'],
-      ]) {
-        const button = el(doc, 'button', { type: 'button', role: 'radio', 'aria-checked': String(chosenMode === mode), className: 'exodus-welcome-choice', dataset: { mode } },
-          el(doc, 'strong', { text: title }), el(doc, 'span', { text }));
-        button.addEventListener('click', async () => {
-          chosenMode = mode;
-          choices.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === mode)));
-          try {
-            const r = await fetchImpl('/api/home/profile', jsonInit('PATCH', { mode }));
-            if (!r.ok) throw new Error(String(r.status));
-            status.textContent = 'Saved for your account.';
-          } catch (_) {
-            chosenMode = null;
-            status.textContent = 'Could not save. Try again.';
-          }
-        });
-        choices.append(button);
-      }
-      const status = el(doc, 'p', { className: 'exodus-welcome-status', role: 'status' });
-      body.append(el(doc, 'h2', { id: 'exodus-welcome-title', text: 'How do you want to use it?' }), choices,
-        el(doc, 'p', { className: 'exodus-welcome-muted', text: 'This only affects your account. You can switch any time.' }), status);
+      // Exodus "Your AI": shared AI, your own cloud account, or no AI.
+      const rows = el(doc, 'div', { className: 'exodus-welcome-ai' });
+      body.append(el(doc, 'h2', { id: 'exodus-welcome-title', text: 'Where should your AI come from?' }), rows,
+        el(doc, 'p', { className: 'exodus-welcome-muted', text: 'This only affects your account. You can switch any time.' }));
+      mountAiChoice(rows, {
+        compact: true,
+        api: (url, init) => fetchImpl(url, { credentials: 'same-origin', ...init }),
+        openSettings: async tab => { await close(); await openSettings(tab); },
+        onChanged: (data, previous) => {
+          if (!previous || !!previous.ai_free !== !!data.ai_free) chosenMode = data.ai_free ? 'ai-free' : 'full';
+        },
+      });
     } else if (id === 'look') {
       const rows = el(doc, 'div', { className: 'exodus-welcome-looks' });
       body.append(el(doc, 'h2', { id: 'exodus-welcome-title', text: 'Pick a look' }),
