@@ -76,11 +76,15 @@ the AI fill a form.
 - **Drawings** made in a note (stored in the owner's Gallery) don't show for
   members yet.
 - **AI** never reads other people's notes: shared notes are not fed to a
-  member's AI chats or memory.
+  member's AI chats or memory. Shared calendars are the exception, read-only
+  (see below).
 - **Reminders** on a shared note notify its owner. Event reminders are
   personal: each person sets their own.
-- Shared calendars appear in the Calendar. Home's agenda and the AI still show
-  only your own calendars.
+- Shared calendars appear in the Calendar, on Home's agenda and in the morning
+  briefing. The **AI can read** them (and says who shares each one). It can't
+  add, change or delete events in someone else's shared calendar: do that in
+  the Calendar app. This keeps text another member typed into an event from
+  steering the AI.
 - Uploaded files in Library → Files are still personal.
 
 ## Files

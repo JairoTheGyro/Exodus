@@ -1986,7 +1986,14 @@ async def action_daily_brief(owner: str, **kwargs) -> Tuple[str, bool]:
                 CalendarEvent.dtend > today,
                 CalendarEvent.status != "cancelled",
             )
-            if owner:
+            if owner and not _allow_null:
+                # Exodus: your calendars plus local ones shared in your spaces.
+                try:
+                    from routes.calendar_routes import _visible_calendar_filter
+                    ev_q = ev_q.filter(_visible_calendar_filter(db, owner))
+                except Exception:
+                    ev_q = owner_filter(ev_q, CalendarCal, owner, include_shared=False)
+            elif owner:
                 ev_q = owner_filter(ev_q, CalendarCal, owner, include_shared=_allow_null)
             events = ev_q.order_by(CalendarEvent.dtstart).all()
             # ----- Notes: pinned + non-archived todos with at least one undone item -----

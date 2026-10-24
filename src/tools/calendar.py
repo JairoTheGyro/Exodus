@@ -181,6 +181,31 @@ async def do_manage_calendar(content: str, owner: Optional[str] = None, *, impor
             q = q.filter(CalendarCal.owner == owner)
         return q
 
+    # Exodus shared spaces: READ actions also see local calendars shared in
+    # the person's spaces (as the Calendar app does). Create, update and
+    # delete keep using the owner-only queries above, so text someone else
+    # typed into a shared event can't steer the AI into changing things.
+    def _visible_filter():
+        from routes.calendar_routes import _visible_calendar_filter
+        return _visible_calendar_filter(db, owner)
+
+    def _readable_calendar_query():
+        q = db.query(CalendarCal)
+        if owner is not None:
+            q = q.filter(_visible_filter())
+        return q
+
+    def _readable_event_query():
+        q = db.query(CalendarEvent).join(CalendarCal)
+        if owner is not None:
+            q = q.filter(_visible_filter())
+        return q
+
+    def _shared_note(cal):
+        if owner is None or cal is None or cal.owner == owner:
+            return ""
+        return f" (shared by {cal.owner})"
+
     def _event_uid_candidates(raw_uid):
         """Yield exact UID first, then unambiguous UI-anchor spellings.
 
@@ -340,12 +365,14 @@ async def do_manage_calendar(content: str, owner: Optional[str] = None, *, impor
             # This read path intentionally persists the lazily-created default;
             # event creation commits it in the event's transaction instead.
             db.commit()
-            cals = _calendar_query().all()
-            result = [{"name": c.name, "href": c.id} for c in cals]
+            cals = _readable_calendar_query().all()
+            result = [{"name": c.name, "href": c.id, "shared_by": c.owner if owner is not None and c.owner != owner else None}
+                      for c in cals]
             if result:
                 lines = [f"Found {len(result)} calendar(s):"]
                 for c in result:
-                    lines.append(f"- {c['name']} ({c['href'][:8]})")
+                    shared = f" — shared by {c['shared_by']}, read-only for the assistant" if c["shared_by"] else ""
+                    lines.append(f"- {c['name']} ({c['href'][:8]}){shared}")
                 response_text = "\n".join(lines)
             else:
                 response_text = "No calendars found."
@@ -383,7 +410,7 @@ async def do_manage_calendar(content: str, owner: Optional[str] = None, *, impor
             if end_dt <= start_dt:
                 end_dt = start_dt + timedelta(days=1)
 
-            q = _event_query().filter(
+            q = _readable_event_query().filter(
                 CalendarEvent.dtstart < end_dt,
                 CalendarEvent.dtend > start_dt,
                 CalendarEvent.status != "cancelled",
@@ -407,7 +434,11 @@ async def do_manage_calendar(content: str, owner: Optional[str] = None, *, impor
                     ]
             events = []
             for ev in rows:
-                events.append(_event_to_dict(ev, db=db, owner=owner))
+                item = _event_to_dict(ev, db=db, owner=owner)
+                cal = getattr(ev, "calendar", None)
+                if owner is not None and cal is not None and cal.owner != owner:
+                    item["shared_by"] = cal.owner  # Exodus: from a shared calendar
+                events.append(item)
             if not events:
                 response_text = f"No events between {start_dt.date().isoformat()} and {end_dt.date().isoformat()}."
             else:
@@ -432,6 +463,8 @@ async def do_manage_calendar(content: str, owner: Optional[str] = None, *, impor
                         line += f" @ {ev['location']}"
                     if ev.get("calendar"):
                         line += f" ({ev['calendar']})"
+                    if ev.get("shared_by"):
+                        line += f" [shared by {ev['shared_by']}; read-only for the assistant]"
                     if ev.get("description"):
                         desc = ev["description"].strip().replace("\n", " ")
                         if len(desc) > 120:
@@ -468,6 +501,17 @@ async def do_manage_calendar(content: str, owner: Optional[str] = None, *, impor
                     cal = (_calendar_query()
                            .filter(CalendarCal.id.like(f"{cal_href}%"))
                            .first())
+                if not cal and owner is not None:
+                    # Exodus: a shared calendar is read-only for the assistant;
+                    # say so instead of quietly using another calendar.
+                    shared = (_readable_calendar_query()
+                              .filter((CalendarCal.id == cal_href) | CalendarCal.name.ilike(cal_href)
+                                      | CalendarCal.id.like(f"{cal_href}%"))
+                              .first())
+                    if shared is not None:
+                        return {"error": (f"'{shared.name}' is a calendar shared by {shared.owner}. The assistant can read "
+                                          "it but not change it; add the event from the Calendar app, or to one of "
+                                          "your own calendars."), "exit_code": 1}
             if not cal:
                 cal = _ensure_default_calendar(db, owner)
 

@@ -59,8 +59,7 @@ _Nothing in progress._
   proven hot spots (no full rewrite).
 
 ### Stage 4 · Ready to share with family and friends
-- **Shared spaces, later:** shared calendars on Home and for the AI; drawings
-  in shared notes; Library → Files uploads.
+- **Shared spaces, later:** drawings in shared notes; Library → Files uploads.
 - Home server setup and inviting people: see **Waiting on Jairo**.
 
 ### Stage 5 · Looks, apps and convenience
@@ -91,6 +90,9 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Shared calendars for Home and the AI:** Home's agenda and the
+  morning briefing include shared calendars. The AI can read them, labelled
+  "shared by …", but only changes your own calendars.
 - 2026-10-24 · **Shared PDFs, Word files and pictures:** space members can now
   open shared PDF and Word documents and see pictures in shared notes and
   documents. Files are read-only for members, and only files behind items
