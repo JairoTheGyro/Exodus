@@ -32,8 +32,6 @@ _Nothing in progress._
   / Reinstall. Each person can hide apps and features they don't use.
 - **Review Spanish wave 1** in the browser (Jairo) and fix any wording in
   `static/locales/es-419.json`.
-- **AI replies in your language:** include the person's language in the AI
-  instructions so chat answers come back in Spanish too.
 - **Performance:** measure where memory and time go, then trim. Rust only for
   proven hot spots (no full rewrite).
 
@@ -76,6 +74,9 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-25 · **AI replies in your language:** when someone chooses Spanish,
+  chat answers (normal and agent mode) come back in Latin American Spanish
+  unless they ask for another language. English chats are unchanged.
 - 2026-10-24 · **Translations and Spanish wave 1:** a translation system plus
   Latin American Spanish for the sign-in page, Home and the everyday Settings.
   Pick the language in Settings → Appearance or on the sign-in page; it's saved
