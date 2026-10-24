@@ -43,7 +43,7 @@ OPERATIONAL_GUIDES = {
     "TEAM_ACCOUNTS.md",
     "VAULTWARDEN.md",
 }
-# Upstream Odysseus engineering records under docs/ (as of the 2026-10-18 sync).
+# Upstream Odysseus engineering records under docs/ (as of the 2026-10-24 sync).
 UPSTREAM_DOCS_FALLBACK = {
     "AGENT_TURN_CONTRACT.md",
     "BACKGROUND_TOOL_JOBS.md",
@@ -64,6 +64,14 @@ UPSTREAM_DOCS_FALLBACK = {
     "frontend-architecture/notes-roadmap.md",
     "frontend-architecture/notes-validation.md",
     "frontend-architecture/validation.md",
+    "maintainers/README.md",
+    "maintainers/changes-and-review.md",
+    "maintainers/documentation.md",
+    "maintainers/product-and-features.md",
+    "maintainers/review-playbook.md",
+    "maintainers/roles-and-access.md",
+    "maintainers/testing-and-releases.md",
+    "maintainers/triage.md",
     "ref-parity-audit.md",
     "runtime-decomposition/COMPARISON_PROTOCOL.md",
     "runtime-decomposition/WAVE_1_1_RECONCILIATION.md",
@@ -78,9 +86,11 @@ UPSTREAM_DOCS_FALLBACK = {
     "runtime-decomposition/wave-4-effects-provenance-integration.md",
     "runtime-decomposition/wave-5a-browser-lifecycle.md",
     "search-quality-audit-20260917.md",
+    "searxng-trust-image.md",
     "skills-audit-architecture.md",
     "skills-audit-second-review.md",
     "skills-lifecycle.md",
+    "tls-trust.md",
 }
 # Files a referenced image name could legitimately appear in.
 TEXT_EXTS = {".md", ".html", ".htm", ".js", ".ts", ".css", ".py", ".sh",
