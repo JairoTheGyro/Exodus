@@ -181,3 +181,5 @@ services:
       - ./src/spaces.py:/app/src/spaces.py:ro
       - ./src/personal_alerts.py:/app/src/personal_alerts.py:ro
       - ./routes/personal_alerts_routes.py:/app/routes/personal_alerts_routes.py:ro
+      - ./src/ai_budget.py:/app/src/ai_budget.py:ro
+      - ./routes/ai_budget_routes.py:/app/routes/ai_budget_routes.py:ro

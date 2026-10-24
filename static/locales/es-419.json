@@ -934,7 +934,40 @@
   "Get alerts on your phone": "Recibe alertas en tu teléfono",
   "You’re all set": "Todo listo",
   "Everything you chose can be changed in Settings. To run this setup again, open Settings → Account.": "Todo lo que elegiste se puede cambiar en Configuración. Para volver a ejecutar esta configuración, abre Configuración → Cuenta.",
-  "Tip: you can share notes, lists, calendars and documents with family in Settings → Account → Spaces.": "Consejo: puedes compartir notas, listas, calendarios y documentos con tu familia en Configuración → Cuenta → Espacios."
+  "Tip: you can share notes, lists, calendars and documents with family in Settings → Account → Spaces.": "Consejo: puedes compartir notas, listas, calendarios y documentos con tu familia en Configuración → Cuenta → Espacios.",
+  "Your AI": "Tu IA",
+  "Choose where your AI comes from and how much it may cost each month. This only affects your account.": "Elige de dónde viene tu IA y cuánto puede costar cada mes. Esto solo afecta a tu cuenta.",
+  "Your AI settings could not load.": "No se pudo cargar la configuración de tu IA.",
+  "Where your AI comes from": "De dónde viene tu IA",
+  "Where should your AI come from?": "¿De dónde quieres que venga tu IA?",
+  "Shared AI": "IA compartida",
+  "Use the AI connections your household or team set up. Nothing to set up.": "Usa las conexiones de IA que configuró tu hogar o tu equipo. No hay nada que configurar.",
+  "My own cloud account": "Mi propia cuenta en la nube",
+  "Use your own AI provider account (for example OpenRouter or OpenAI). You pay that provider directly.": "Usa tu propia cuenta de un proveedor de IA (por ejemplo, OpenRouter u OpenAI). Le pagas directamente a ese proveedor.",
+  "No AI": "Sin IA",
+  "Hide all AI features for your account. Notes, calendar, email and files still work.": "Oculta todas las funciones de IA de tu cuenta. Las notas, el calendario, el correo y los archivos siguen funcionando.",
+  "No shared AI is set up yet. Ask your admin, or use your own account.": "Todavía no hay IA compartida. Pídesela a tu administrador o usa tu propia cuenta.",
+  "You’ve added no AI account yet.": "Todavía no agregaste ninguna cuenta de IA.",
+  "You haven’t added an AI account yet.": "Todavía no agregaste ninguna cuenta de IA.",
+  "Add or manage my AI accounts": "Agregar o administrar mis cuentas de IA",
+  "Your monthly cap is used up, so AI is paused until the 1st of next month. Raise the cap to keep going.": "Ya usaste tu límite mensual, así que la IA está en pausa hasta el día 1 del próximo mes. Sube el límite para seguir.",
+  "Monthly cap $": "Límite mensual $",
+  "Monthly spending cap in dollars": "Límite de gasto mensual en dólares",
+  "No cap": "Sin límite",
+  "None": "Ninguno",
+  "Save cap": "Guardar límite",
+  "Remove cap": "Quitar límite",
+  "Costs are estimates for cloud models; AI running on your own computers counts as $0.": "Los costos son estimaciones para los modelos en la nube; la IA que corre en tus propias computadoras cuenta como $0.",
+  "Everyone’s AI spending": "Gasto de IA de todos",
+  "Person": "Persona",
+  "This month": "Este mes",
+  "Admin cap": "Límite del administrador",
+  "Only admins can see everyone's AI spending.": "Solo los administradores pueden ver el gasto de IA de todos.",
+  "Only admins can set someone's AI cap.": "Solo los administradores pueden fijar el límite de IA de alguien.",
+  "Choose shared, own or off.": "Elige compartida, propia o sin IA.",
+  "The cap must be a number of dollars.": "El límite debe ser una cantidad en dólares.",
+  "The cap must be between $0 and $100,000.": "El límite debe estar entre $0 y $100,000.",
+  "Choosing your AI needs a sign-in account.": "Para elegir tu IA necesitas una cuenta con inicio de sesión."
  },
  "patterns": [
   [
@@ -1324,6 +1357,38 @@
   [
    "Hi {name}! A few quick choices get your workspace ready. Each one is optional, and you can change it later in Settings.",
    "¡Hola, {name}! Unas pocas decisiones rápidas preparan tu espacio de trabajo. Todas son opcionales y puedes cambiarlas después en Configuración."
+  ],
+  [
+   "Available: {list}.",
+   "Disponible: {list}."
+  ],
+  [
+   "Your accounts: {list}.",
+   "Tus cuentas: {list}."
+  ],
+  [
+   "This month: {spent} of {cap}",
+   "Este mes: {spent} de {cap}"
+  ],
+  [
+   "This month: {spent} (no cap)",
+   "Este mes: {spent} (sin límite)"
+  ],
+  [
+   "Your admin set a limit of {cap} a month.",
+   "Tu administrador fijó un límite de {cap} al mes."
+  ],
+  [
+   "Saved the cap for {name}.",
+   "Se guardó el límite de {name}."
+  ],
+  [
+   "Monthly cap for {name}",
+   "Límite mensual de {name}"
+  ],
+  [
+   "You've reached your monthly AI spending cap of {cap}. AI resumes on the 1st of next month, or raise the cap in Settings → Account → Your AI.",
+   "Llegaste a tu límite mensual de gasto en IA de {cap}. La IA vuelve el día 1 del próximo mes, o sube el límite en Configuración → Cuenta → Tu IA."
   ]
  ]
 }

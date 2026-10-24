@@ -1325,6 +1325,13 @@ def accumulate_token_usage(session_id: str, metrics: dict):
             if cost:
                 db_s.total_cost_usd = (db_s.total_cost_usd or 0.0) + cost
             db.commit()
+            if cost and getattr(db_s, "owner", None):
+                # Exodus: count it toward the person's monthly AI budget.
+                try:
+                    from src.ai_budget import record_spend
+                    record_spend(db_s.owner, cost)
+                except Exception:
+                    pass
     except Exception:
         db.rollback()
     finally:

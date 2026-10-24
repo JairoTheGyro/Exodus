@@ -43,7 +43,7 @@ The first time a new account opens Exodus, a short **welcome setup** walks
 through:
 
 1. language;
-2. workspace: full, or AI-free;
+2. their AI: shared AI, their own cloud account, or no AI (see below);
 3. the look of the built-in apps;
 4. connecting email and a calendar (optional; opens Settings);
 5. phone alerts (their private ntfy topic);
@@ -54,6 +54,32 @@ It shows once per account. "Skip setup" or Escape also count. Anyone can run
 it again from Settings → Account → **Welcome setup**. Accounts that had
 already chosen their workspace before this existed don't see it
 automatically.
+
+## Your AI and spending caps
+
+Settings → Account → **Your AI** lets each person choose:
+
+- **Shared AI:** the AI connections the admin added for everyone. Nothing to
+  set up.
+- **My own cloud account:** add their own provider account (Settings → Added
+  Models) and pay that provider directly.
+- **No AI:** turns on AI-free mode for their account only.
+
+**Monthly spending cap.** Each person can set a cap in dollars. An admin can
+also set a cap for any member under "Everyone's AI spending", and the member
+can't raise it. The lower cap applies. When the month's estimated cost
+reaches the cap, AI pauses for that person until the 1st of the next month
+(UTC), or until the cap is raised. Everything else keeps working.
+
+How cost is counted:
+
+- Chat and agent turns are counted, using the provider's reported cost or an
+  estimate from `src/model_pricing.py`.
+- AI running on your own computers counts as $0.
+- Costs are estimates, so keep the provider's own limits too.
+
+**After updating:** spending counts start once the app image is rebuilt
+(`routes/chat_helpers.py` is part of the image).
 
 ## Personal and shared configuration
 

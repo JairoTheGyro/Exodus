@@ -16,6 +16,7 @@ try {
     window.__opened = [];
     window.__home = { owner: 'sofia', profile: {} };
     window.__pref = { key: 'exodus-welcome', value: null };
+    window.__ai = { source: null, ai_free: false, spent_usd: 0, cap_usd: null, connections: { own: [], shared: ['Home GPU'] } };
     window.__fetch = async (url, init = {}) => {
       const method = init.method || 'GET';
       window.__calls.push([method, url, init.body || null]);
@@ -23,6 +24,8 @@ try {
       if (url === '/api/home/profile') { window.__home.profile.mode = JSON.parse(init.body).mode; return new Response(JSON.stringify({ profile: window.__home.profile })); }
       if (url === '/api/prefs/exodus-welcome' && method === 'GET') return new Response(JSON.stringify(window.__pref));
       if (url === '/api/prefs/exodus-welcome') { window.__pref.value = JSON.parse(init.body).value; return new Response('{}'); }
+      if (url === '/api/ai-budget' && method === 'GET') return new Response(JSON.stringify({ ...window.__ai }));
+      if (url === '/api/ai-budget') { const body = JSON.parse(init.body); window.__ai = { ...window.__ai, source: body.source, ai_free: body.source === 'off' }; return new Response(JSON.stringify(window.__ai)); }
       if (url === '/api/alerts/phone') return new Response(JSON.stringify({ enabled: true, personal: true, server: 'http://x:8091', topic: 'exodus-AAAAAAAAAAAAAAAAAAAAAAAA' }));
       return new Response('{}');
     };
@@ -61,10 +64,11 @@ try {
 
   await page.click('[data-welcome="next"]');
   assert.equal(await stepOf(), 'workspace');
-  await page.click('[data-mode="ai-free"]');
-  await page.waitForFunction(() => document.querySelector('.exodus-welcome-status')?.textContent === 'Saved for your account.');
-  assert.equal(await page.getAttribute('[data-mode="ai-free"]', 'aria-checked'), 'true');
-  assert.deepEqual(await run(() => window.__home.profile), { mode: 'ai-free' });
+  await page.waitForSelector('[data-ai-source="shared"]');
+  assert.match(await page.textContent('.exodus-welcome-ai'), /Available: Home GPU\./);
+  await page.click('[data-ai-source="off"]');
+  await page.waitForFunction(() => document.querySelector('[data-ai-source="off"]')?.getAttribute('aria-checked') === 'true');
+  assert.deepEqual(await run(() => window.__calls.filter(c => c[1] === '/api/ai-budget' && c[0] === 'PUT').map(c => c[2])), ['{"source":"off"}']);
 
   await page.click('[data-welcome="next"]');
   assert.equal(await stepOf(), 'look');

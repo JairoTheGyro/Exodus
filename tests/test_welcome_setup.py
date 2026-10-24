@@ -36,5 +36,5 @@ def test_welcome_reuses_the_settings_pieces_and_is_translated():
         assert f"../settings/{module}" in source
     # The window is a translation scope, so Spanish speakers see it in Spanish.
     assert "'data-i18n-scope': ''" in source
-    # Saving the workspace choice uses the same per-account Home profile as Home.
-    assert "'/api/home/profile', jsonInit('PATCH', { mode })" in source
+    # The AI step is the same "Your AI" card as Settings (it also sets AI-free mode).
+    assert "../settings/aiChoice.js" in source and "mountAiChoice(rows" in source
