@@ -346,6 +346,10 @@ class Document(TimestampMixin, Base):
     source_email_folder      = Column(String, nullable=True)
     source_email_account_id  = Column(String, nullable=True)
     source_email_message_id  = Column(String, nullable=True, index=True)
+    # Exodus shared spaces: members of this space can open, edit and see the
+    # history of this document. Text documents only (no uploaded PDF/Word
+    # source, which is stored per person). No foreign key, like notes.space_id.
+    space_id = Column(String, nullable=True, index=True)
 
     session  = relationship("Session", backref=backref("documents", cascade="save-update, merge"))
     versions = relationship("DocumentVersion", back_populates="document",
@@ -2521,6 +2525,7 @@ def init_db():
     _migrate_add_note_gallery_id()
     _migrate_add_note_space_id()
     _migrate_add_calendar_space_id()
+    _migrate_add_document_space_id()
     _migrate_chat_messages_fts()
     _migrate_encrypt_email_passwords()
     _migrate_encrypt_signatures()
@@ -3018,6 +3023,27 @@ def _migrate_add_calendar_space_id():
             conn.commit()
     except Exception as e:
         logging.getLogger(__name__).warning(f"calendars space_id migration failed: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _migrate_add_document_space_id():
+    """Exodus shared spaces: add documents.space_id to existing databases."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(documents)").fetchall()]
+        if columns and "space_id" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN space_id VARCHAR")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_documents_space_id ON documents(space_id)")
+            conn.commit()
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"documents space_id migration failed: {e}")
     finally:
         if conn is not None:
             conn.close()

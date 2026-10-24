@@ -260,7 +260,7 @@ def test_spaces_ui_in_a_real_browser():
     result = subprocess.run(["node", "tests/browser/sharedSpaces.mjs"], cwd=root,
                             capture_output=True, text=True, timeout=90)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "PASS: spaces settings card" in result.stdout
+    assert "PASS: spaces settings card" in result.stdout and "document sharing" in result.stdout
 
 
 def test_spaces_ui_is_wired():

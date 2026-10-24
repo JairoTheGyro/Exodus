@@ -75,7 +75,7 @@ def _email_source_key(content: str) -> tuple[str, str]:
 from routes.document_helpers import (
     DocumentCreate, DocumentUpdate, DocumentPatch,
     _doc_to_dict, _version_to_dict,
-    _verify_doc_owner, _owner_session_filter,
+    _verify_doc_owner, _owner_session_filter, _verify_doc_access, _owner_or_space_filter,
     _slug, _resolve_user_upload_path, _assert_pdf_marker_upload_owned, _derive_title,
     _PDF_RENDER_SCALE,
 )
@@ -583,7 +583,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                 .outerjoin(DbSession, Document.session_id == DbSession.id)
                 .filter(Document.is_active == True).filter(_arch_cond)
             )
-            q = _owner_session_filter(q, user)
+            q = _owner_or_space_filter(q, user, db)  # Exodus: + shared in your spaces
 
             # Search filter — split on whitespace and require EACH term to
             # match (title OR content). A single `%foo bar%` LIKE only matched
@@ -634,6 +634,9 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                     "language": _library_language_for_document(doc),
                     "preview": (doc.current_content or "")[:500],
                     "version_count": doc.version_count,
+                    # Exodus shared spaces
+                    "owner": doc.owner,
+                    "space_id": getattr(doc, "space_id", None),
                     "created_at": (doc.created_at.isoformat() + "Z") if doc.created_at else None,
                     "updated_at": (doc.updated_at.isoformat() + "Z") if doc.updated_at else None,
                 })
@@ -683,7 +686,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             return _doc_to_dict(doc)
         finally:
             db.close()
@@ -698,7 +701,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             if (doc.language or "").lower() != "markdown":
                 raise HTTPException(400, "Visual reports are available for Markdown documents")
 
@@ -866,7 +869,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
 
             incoming_content = req.content
             from src.agent_tools.document_tools import _coerce_email_document_content, _looks_like_email_document
@@ -884,8 +887,14 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             if doc.current_content == incoming_content and not req.force_version:
                 return _doc_to_dict(doc)
 
-            _reserve_document_uploads(user, incoming_content)
-            _assert_pdf_marker_upload_owned(request, incoming_content, user, upload_handler)
+            if user is not None and doc.owner is not None and doc.owner != user:
+                # Exodus shared spaces: members edit text only; uploads are per person.
+                from src.upload_handler import extract_internal_upload_ids
+                if extract_internal_upload_ids(incoming_content or ""):
+                    raise HTTPException(403, "Only the person who made this document can add files or pictures to it.")
+            else:
+                _reserve_document_uploads(user, incoming_content)
+                _assert_pdf_marker_upload_owned(request, incoming_content, user, upload_handler)
 
             # Check if we can coalesce with the latest version
             latest_ver = db.query(DocumentVersion).filter(
@@ -1009,7 +1018,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             versions = db.query(DocumentVersion).filter(
                 DocumentVersion.document_id == doc_id
             ).order_by(DocumentVersion.version_number.desc()).all()
@@ -1034,7 +1043,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
             ver = db.query(DocumentVersion).filter(
                 DocumentVersion.document_id == doc_id,
                 DocumentVersion.version_number == num,
@@ -1054,7 +1063,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc = db.query(Document).filter(Document.id == doc_id).first()
             if not doc:
                 raise HTTPException(404, "Document not found")
-            _verify_doc_owner(db, doc, user)
+            _verify_doc_access(db, doc, user)
 
             old_ver = db.query(DocumentVersion).filter(
                 DocumentVersion.document_id == doc_id,
@@ -1062,6 +1071,12 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             ).first()
             if not old_ver:
                 raise HTTPException(404, "Version not found")
+            if user is not None and doc.owner is not None and doc.owner != user:
+                # Exodus shared spaces: a member can't restore a version that
+                # points at the owner's uploaded files.
+                from src.upload_handler import extract_internal_upload_ids
+                if extract_internal_upload_ids(old_ver.content or ""):
+                    raise HTTPException(403, "Only the person who made this document can restore that version.")
 
             new_ver_num = doc.version_count + 1
             ver = DocumentVersion(

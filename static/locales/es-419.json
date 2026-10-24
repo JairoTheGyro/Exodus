@@ -714,7 +714,6 @@
   "Settings search results": "Resultados de la búsqueda de ajustes",
   "Shape layer rasterized": "Capa de forma rasterizada",
   "Share my presence with this workspace": "Compartir mi presencia con este espacio de trabajo",
-  "Share notes and lists with family or a team. Everyone in a space can see and edit what's shared there; everything else stays private to you. To share a note, open its ⋯ menu and choose Share to.": "Comparte notas y listas con tu familia o tu equipo. Todos en un espacio pueden ver y editar lo que se comparte ahí; todo lo demás sigue siendo privado. Para compartir una nota, abre su menú ⋯ y elige Compartir con.",
   "Share to": "Compartir con",
   "Shared announcement": "Anuncio compartido",
   "Shared spaces need sign-in accounts.": "Los espacios compartidos requieren cuentas con inicio de sesión.",
@@ -883,7 +882,12 @@
   "Who can see this calendar": "Quién puede ver este calendario",
   "Now only you can see this calendar": "Ahora solo tú puedes ver este calendario",
   "Could not change who can see this calendar": "No se pudo cambiar quién puede ver este calendario",
-  "Calendars synced from another service can't be shared yet.": "Los calendarios sincronizados desde otro servicio todavía no se pueden compartir."
+  "Calendars synced from another service can't be shared yet.": "Los calendarios sincronizados desde otro servicio todavía no se pueden compartir.",
+  "Share notes, lists, calendars and documents with family or a team. Everyone in a space can see and edit what's shared there; everything else stays private to you. To share something, open its ⋯ menu (or Calendar Settings) and choose who can see it.": "Comparte notas, listas, calendarios y documentos con tu familia o tu equipo. Todos en un espacio pueden ver y editar lo que se comparte ahí; todo lo demás sigue siendo privado. Para compartir algo, abre su menú ⋯ (o la configuración del calendario) y elige quién puede verlo.",
+  "Now only you can see this document": "Ahora solo tú puedes ver este documento",
+  "Could not change who can see this document": "No se pudo cambiar quién puede ver este documento",
+  "Documents made from a PDF or Word file, or with pictures, can't be shared yet.": "Los documentos creados a partir de un PDF o un archivo de Word, o con imágenes, todavía no se pueden compartir.",
+  "Only the person who made this document can add files or pictures to it.": "Solo quien creó este documento puede agregarle archivos o imágenes."
  },
  "patterns": [
   [
@@ -1253,6 +1257,18 @@
   [
    "Who can see {name}",
    "Quién puede ver {name}"
+  ],
+  [
+   "{n} shared document",
+   "{n} documento compartido"
+  ],
+  [
+   "{n} shared documents",
+   "{n} documentos compartidos"
+  ],
+  [
+   "Shared in {name}",
+   "Compartido en {name}"
   ]
  ]
 }
