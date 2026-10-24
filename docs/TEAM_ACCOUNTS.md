@@ -37,6 +37,24 @@ Team panel; invitations are the recommended path so administrators don't choose
 teammates' passwords. Removed/renamed usernames are retired to prevent a new
 member inheriting records that still reference an old username.
 
+## Welcome setup for new people
+
+The first time a new account opens Exodus, a short **welcome setup** walks
+through:
+
+1. language;
+2. workspace: full, or AI-free;
+3. the look of the built-in apps;
+4. connecting email and a calendar (optional; opens Settings);
+5. phone alerts (their private ntfy topic);
+6. done.
+
+Every step can be skipped, and everything can be changed later in Settings.
+It shows once per account. "Skip setup" or Escape also count. Anyone can run
+it again from Settings → Account → **Welcome setup**. Accounts that had
+already chosen their workspace before this existed don't see it
+automatically.
+
 ## Personal and shared configuration
 
 Themes, personal preferences, Home layout/AI mode, notes, documents, calendar

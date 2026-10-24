@@ -3074,6 +3074,9 @@ function initializeEventListeners() {
   window.UI_VIS_ADMIN_ONLY = UI_VIS_ADMIN_ONLY;
   window.UI_VIS_DEFAULT_OFF = UI_VIS_DEFAULT_OFF;
 
+  // Exodus: guided first run for new accounts (opens once; Settings → Account reruns it).
+  import('./js/welcome/welcomeSetup.js').then(m => m.maybeStartWelcome()).catch(() => {});
+
   (function initUIVisibility() {
     // Apply saved visibility on load
     applyUIVis(loadUIVis());

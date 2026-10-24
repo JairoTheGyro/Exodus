@@ -76,7 +76,19 @@ const _shell = createSettingsShell({
   // Exodus panels with their own activation work (License Tracker).
   onPanelActivated: (tab) => {
     if (tab === 'licenses') loadUpstreamUpdates();
-    if (tab === 'account') { mountSpacesSettings(byId('spaces-rows')); mountPhoneAlerts(byId('phone-alerts-rows')); }
+    if (tab === 'account') {
+      mountSpacesSettings(byId('spaces-rows'));
+      mountPhoneAlerts(byId('phone-alerts-rows'));
+      const rerun = byId('welcome-setup-rerun');
+      if (rerun && !rerun.dataset.bound) {
+        rerun.dataset.bound = '1';
+        rerun.addEventListener('click', async () => {
+          close();
+          const { openWelcome } = await import('./welcome/welcomeSetup.js');
+          openWelcome();
+        });
+      }
+    }
     if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); mountLanguagePicker(byId('settings-language')); }
     if (tab === 'system') { mountWorkspaceBrandSettings(); mountServicesManager(byId('services-manager-rows')); }
   },

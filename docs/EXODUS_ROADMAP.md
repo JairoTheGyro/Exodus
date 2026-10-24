@@ -40,8 +40,6 @@ _Nothing in progress._
   AI.
 - **Phone app polish:** check the main screens at phone width, home-screen
   icon and sign-in on phones (private ntfy topics are done).
-- **Welcome setup** for invited people: look, language, AI choice and spending
-  cap, email and calendar.
 - **AI per person:** cloud AI with a spend cap, a shared AI machine, or AI-Free.
 - **Home server** reachable privately (e.g. Tailscale), plus an "update the
   server" step. Hardware choice is Jairo's.
@@ -75,6 +73,11 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Welcome setup:** new accounts get a short guided first run.
+  It covers language, full or AI-free workspace, app look, email and calendar,
+  and phone alerts. Every step is skippable, and it can be rerun from
+  Settings → Account. The AI provider and spending-cap choice will join it
+  with "AI per person".
 - 2026-10-24 · **Private phone alerts:** every account gets its own private
   ntfy topic; reminders and alerts go only there. Settings → Account → Phone
   alerts shows how to subscribe, sends a test and can make a new address.
