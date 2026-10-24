@@ -908,7 +908,33 @@
   "Get a new private address? Your phone stops receiving alerts until you subscribe to the new topic.": "¿Obtener una dirección privada nueva? Tu teléfono dejará de recibir alertas hasta que te suscribas al tema nuevo.",
   "New address ready. Subscribe to it on your phone.": "La dirección nueva está lista. Suscríbete a ella en tu teléfono.",
   "Could not get a new address.": "No se pudo obtener una dirección nueva.",
-  "Private alert addresses need sign-in accounts.": "Las direcciones privadas de alertas requieren cuentas con inicio de sesión."
+  "Private alert addresses need sign-in accounts.": "Las direcciones privadas de alertas requieren cuentas con inicio de sesión.",
+  "Welcome setup": "Configuración inicial",
+  "Language, workspace, look, email and calendar, and phone alerts, one step at a time.": "Idioma, espacio de trabajo, apariencia, correo y calendario, y alertas en el teléfono, paso a paso.",
+  "Run it again": "Volver a ejecutarla",
+  "Setup steps": "Pasos de la configuración",
+  "Look": "Apariencia",
+  "Email and calendar": "Correo y calendario",
+  "Back": "Atrás",
+  "Skip setup": "Omitir configuración",
+  "Next": "Siguiente",
+  "Start using it": "Empezar a usarlo",
+  "A few quick choices get your workspace ready. Each one is optional, and you can change it later in Settings.": "Unas pocas decisiones rápidas preparan tu espacio de trabajo. Todas son opcionales y puedes cambiarlas después en Configuración.",
+  "How do you want to use it?": "¿Cómo quieres usarlo?",
+  "Full workspace": "Espacio de trabajo completo",
+  "Everything, including AI chat and helpers whenever you want them.": "Todo, incluido el chat con IA y los asistentes cuando los quieras.",
+  "Notes, calendar, email, files and focus, with all AI features hidden for your account.": "Notas, calendario, correo, archivos y concentración, con todas las funciones de IA ocultas para tu cuenta.",
+  "This only affects your account. You can switch any time.": "Esto solo afecta a tu cuenta. Puedes cambiarlo cuando quieras.",
+  "Pick a look": "Elige una apariencia",
+  "Choose how the built-in apps look. More colours and themes are in Settings → Appearance.": "Elige cómo se ven las apps integradas. Hay más colores y temas en Configuración → Apariencia.",
+  "Bring in your email and calendar": "Trae tu correo y tu calendario",
+  "Connect your email account, or a calendar you already use, so everything is in one place. You can also do this later.": "Conecta tu cuenta de correo, o un calendario que ya usas, para tener todo en un solo lugar. También puedes hacerlo después.",
+  "Connect email": "Conectar correo",
+  "Connect a calendar": "Conectar un calendario",
+  "Get alerts on your phone": "Recibe alertas en tu teléfono",
+  "You’re all set": "Todo listo",
+  "Everything you chose can be changed in Settings. To run this setup again, open Settings → Account.": "Todo lo que elegiste se puede cambiar en Configuración. Para volver a ejecutar esta configuración, abre Configuración → Cuenta.",
+  "Tip: you can share notes, lists, calendars and documents with family in Settings → Account → Spaces.": "Consejo: puedes compartir notas, listas, calendarios y documentos con tu familia en Configuración → Cuenta → Espacios."
  },
  "patterns": [
   [
@@ -1290,6 +1316,14 @@
   [
    "Shared in {name}",
    "Compartido en {name}"
+  ],
+  [
+   "Welcome to {name}",
+   "Te damos la bienvenida a {name}"
+  ],
+  [
+   "Hi {name}! A few quick choices get your workspace ready. Each one is optional, and you can change it later in Settings.",
+   "¡Hola, {name}! Unas pocas decisiones rápidas preparan tu espacio de trabajo. Todas son opcionales y puedes cambiarlas después en Configuración."
   ]
  ]
 }
