@@ -31,6 +31,11 @@ import {
 } from './index.js';
 import { _openUnsubscribeReviewModal } from './unsubscribe.js';
 
+// Calendar entries for an away auto-reply are found by this description
+// prefix. Entries made before the Exodus rename used the legacy wording.
+const AUTO_REPLY_MARKER = 'Exodus email auto reply';
+const LEGACY_AUTO_REPLY_MARKERS = ['Odysseus email auto reply'];
+
 const API_BASE = window.location.origin;
 
 function _emailInlineImagesStorageKey(accountId = state._libAccountId) {
@@ -153,7 +158,7 @@ function _autoReplyCalendarPayload(cfg, accountId = state._libAccountId) {
     dtstart: start,
     dtend: _addLocalCalendarDays(end, 1),
     all_day: true,
-    description: `Odysseus email auto reply - account:${String(accountId || '')}`,
+    description: `${AUTO_REPLY_MARKER} - account:${String(accountId || '')}`,
   };
 }
 
@@ -168,9 +173,9 @@ async function _findAutoReplyCalendarEventUids(cfg, accountId) {
     });
     if (!response.ok) return [];
     const data = await response.json().catch(() => ({}));
-    const marker = `Odysseus email auto reply - account:${String(accountId || '')}`;
+    const markers = [AUTO_REPLY_MARKER, ...LEGACY_AUTO_REPLY_MARKERS].map(m => `${m} - account:${String(accountId || '')}`);
     return (data.events || [])
-      .filter(ev => String(ev?.description || '').startsWith(marker))
+      .filter(ev => markers.some(marker => String(ev?.description || '').startsWith(marker)))
       .map(ev => String(ev?.uid || '').trim())
       .filter(Boolean);
   } catch (_) {

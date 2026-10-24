@@ -32,8 +32,6 @@ _Nothing in progress._
   look for all apps or for one app (the switch itself exists; see Finished).
 - **Services manager:** each service On / Off / Removed (data kept unless chosen)
   / Reinstall. Each person can hide apps and features they don't use.
-- **Remove visible "Odysseus" text.** Keep the legally required credit and
-  hidden internal names. Add a test that blocks new visible mentions.
 - **Your own workspace name and logo** (admin setting, used everywhere).
 - **Languages:** a translation system plus Spanish (Latin America) wave 1:
   sign-in, Home, Settings Essentials. Reviewed by Jairo in the browser.
@@ -79,6 +77,12 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-23 · **Visible "Odysseus" text removed:** screens, download file
+  names, server messages and what the AI calls itself now say "Exodus".
+  Deliberately kept: the legal credit, the mythological hero persona, hidden
+  internal names, the wording Odysseus's own trained AI models need, and old
+  markers that recognise data from before the rename.
+  `tests/test_no_visible_odysseus.py` fails if a new visible mention appears.
 - 2026-10-22 · **Pillow 13 security update:** GitHub's dependency check found
   35 security problems in the image library Pillow 12.3.0, fixed in 13.0.0. One
   AI-memory library (fastembed) still asks for an older Pillow, but only for

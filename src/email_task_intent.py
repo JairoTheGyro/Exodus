@@ -205,7 +205,7 @@ async def classify_email_task(client, *, endpoint_url, headers, model, history,
             'Interpret replies to clarification '
             'questions as answers within the unfinished task; honor changes/cancellation. '
             'Draft means compose, NOT send. Send requires an explicit delivery request. '
-            'Destination mailbox means an unsent Odysseus email editor document, NOT delivery. '
+            'Destination mailbox means an unsent Exodus email editor document, NOT delivery. '
             'Requests to write, compose, or draft an email default to mailbox. Destination '
             'chat is for explicitly requested text-only examples, templates, or rewriting '
             'supplied text without a compose request. Preserve the existing draft destination '

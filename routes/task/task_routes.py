@@ -632,7 +632,7 @@ def setup_task_routes(task_scheduler) -> APIRouter:
             raise HTTPException(400, "Notification body required")
         row = NotificationLog(
             id=str(uuid.uuid4()), owner=user,
-            task_name=str(body.get("title") or "Odysseus")[:200],
+            task_name=str(body.get("title") or "Exodus")[:200],
             status="error" if body.get("status") == "error" else "success",
             body=message,
         )

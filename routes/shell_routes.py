@@ -1671,7 +1671,7 @@ def setup_shell_routes() -> APIRouter:
                 "kind": "system",
                 "system_prereqs": ["libreoffice"],
                 "install_cmd": "sudo apt install -y libreoffice || brew install --cask libreoffice",
-                "install_hint": "Install LibreOffice/soffice where Odysseus runs to open DOCX attachments as signable PDF previews. Without it, DOCX opens as readable Markdown.",
+                "install_hint": "Install LibreOffice/soffice where Exodus runs to open DOCX attachments as signable PDF previews. Without it, DOCX opens as readable Markdown.",
             },
         ]
 
