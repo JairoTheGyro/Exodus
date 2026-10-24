@@ -18,7 +18,7 @@ from typing import Optional
 
 from sqlalchemy import func
 
-from core.database import Note, SessionLocal, Space, SpaceMember
+from core.database import CalendarCal, Note, SessionLocal, Space, SpaceMember
 
 MAX_NAME = 40
 MAX_SPACES_PER_ACCOUNT = 20
@@ -79,6 +79,16 @@ def can_see_note(note: Note, user: Optional[str], db=None) -> bool:
     return bool(note.space_id) and is_member(user, note.space_id, db)
 
 
+def can_use_calendar(cal: CalendarCal, user: Optional[str], db=None) -> bool:
+    """Calendar owner, or a member of the space a local calendar is shared in."""
+    if not cal or not user:
+        return False
+    if cal.owner == user:
+        return True
+    space_id = getattr(cal, "space_id", None)
+    return bool(space_id) and (getattr(cal, "source", None) or "local") == "local" and is_member(user, space_id, db)
+
+
 def _space_or_404(db, space_id: str) -> Space:
     space = db.query(Space).filter(Space.id == space_id).first()
     if space is None:
@@ -107,6 +117,7 @@ def _describe(db, space: Space, user: str, is_admin: bool) -> dict:
     )
     mine = next((m for m in members if m.owner == user), None)
     notes = db.query(func.count(Note.id)).filter(Note.space_id == space.id).scalar() or 0
+    calendars = db.query(func.count(CalendarCal.id)).filter(CalendarCal.space_id == space.id).scalar() or 0
     return {
         "id": space.id,
         "name": space.name,
@@ -115,6 +126,7 @@ def _describe(db, space: Space, user: str, is_admin: bool) -> dict:
         "can_manage": is_admin or bool(mine and mine.role == "manager"),
         "members": [{"username": m.owner, "role": m.role} for m in members],
         "note_count": notes,
+        "calendar_count": calendars,
     }
 
 
@@ -163,12 +175,14 @@ def rename_space(user: str, space_id: str, name, is_admin: bool = False) -> dict
 
 
 def delete_space(user: str, space_id: str, is_admin: bool = False) -> None:
-    """Delete a space. Its notes are not deleted: each goes back to its owner."""
+    """Delete a space. Nothing in it is deleted: notes and calendars go back to their owners."""
     db = SessionLocal()
     try:
         space = _space_or_404(db, space_id)
         _require_manager(db, space_id, user, is_admin)
         db.query(Note).filter(Note.space_id == space_id).update({Note.space_id: None}, synchronize_session=False)
+        db.query(CalendarCal).filter(CalendarCal.space_id == space_id).update(
+            {CalendarCal.space_id: None}, synchronize_session=False)
         db.query(SpaceMember).filter(SpaceMember.space_id == space_id).delete(synchronize_session=False)
         db.delete(space)
         db.commit()
@@ -226,6 +240,8 @@ def remove_member(user: str, space_id: str, username: str, is_admin: bool = Fals
                 raise SpaceError("A space needs at least one manager. Add another manager first, or delete the space.", 409)
         db.query(Note).filter(Note.space_id == space_id, Note.owner == username).update(
             {Note.space_id: None}, synchronize_session=False)
+        db.query(CalendarCal).filter(CalendarCal.space_id == space_id, CalendarCal.owner == username).update(
+            {CalendarCal.space_id: None}, synchronize_session=False)
         db.delete(target)
         db.commit()
     finally:

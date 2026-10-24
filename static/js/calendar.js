@@ -9,6 +9,7 @@ import { topPortalZ } from './toolWindowZOrder.js';
 import { makeWindowDraggable } from './windowDrag.js';
 import { attachColorPicker } from './colorPicker.js?v=20260910eyedropper1';
 import { bindMenuDismiss } from './escMenuStack.js';
+import { loadSpaces as _loadCalSpaces, decorateCalendarRows as _decorateCalSpaceRows } from './calendar/spaces.js';
 import {
   WEEKDAYS, WEEKDAYS_SUN, MONTHS, MON_SHORT,
   CAL_PALETTE, CAL_COLORS, _CAL_CUSTOM_GRADIENT, _TYPE_PALETTE,
@@ -3187,6 +3188,16 @@ async function _showCalSettings() {
     </div>
   `;
   document.body.appendChild(overlay);
+  // Exodus shared spaces: "Share to" per calendar; shared-with-you rows are read-only.
+  const _decorateSpaces = data => _decorateCalSpaceRows(overlay, _calendars, data, {
+    save: async (id, spaceId) => {
+      const r = await fetch(`${API_BASE}/api/calendar/calendars/${encodeURIComponent(id)}?space_id=${encodeURIComponent(spaceId)}`, { method: 'PUT', credentials: 'same-origin' });
+      if (!r.ok) throw new Error(String(r.status));
+    },
+    onSaved: () => { _allEvents = {}; _fetchedRanges = []; localStorage.removeItem(LS_KEY); if (_open) _render(); },
+    toast: text => uiModule?.showToast?.(text),
+  });
+  _loadCalSpaces().then(_decorateSpaces);
 
   const onSettingsKeydown = (e) => {
     if (e.key !== 'Escape') return;

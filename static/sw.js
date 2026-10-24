@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'odysseus-v666-exodus-spaces';
+const CACHE_NAME = 'odysseus-v667-exodus-shared-calendars';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -202,6 +202,7 @@ const PRECACHE = [
   '/static/js/tasks.js?v=20260914taskmodel1',
   '/static/js/calendar.js?v=20260914emailsource11',
   '/static/js/calendar/utils.js',
+  '/static/js/calendar/spaces.js',
   '/static/js/calendar/reminders.js',
   '/static/js/group.js',
   '/static/js/keyboard-shortcuts.js?v=20260829chatstyle12',

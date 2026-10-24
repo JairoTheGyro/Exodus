@@ -113,7 +113,55 @@ try {
   assert.deepEqual(notes.saved, ['s1']);
   assert.equal(notes.ownNow, 's1');
   assert.equal(notes.othersItems, 0);
-  console.log('PASS: spaces settings card, member actions, error message, note badge and share menu');
+  // Calendar Settings: "Share to" on your local calendars; others' shared calendars are read-only.
+  const cal = await page.evaluate(async () => {
+    const { decorateCalendarRows } = await import('/static/js/calendar/spaces.js');
+    const row = (id, name) => `<div class="cal-settings-row" data-id="${id}"><input class="cal-s-name" value="${name}"><input type="color" class="cal-s-color"><button class="cal-s-del"></button></div>`;
+    const root = document.createElement('div');
+    root.innerHTML = `<div id="cal-settings-list">${row('c1', 'Home')}${row('c2', 'Kids')}${row('c3', 'Work')}</div>`
+      + '<button class="cal-s-export-chip" data-id="c1"></button><button class="cal-s-export-chip" data-id="c2"></button>';
+    const calendars = [
+      { href: 'c1', name: 'Home', source: 'local', mine: true, space_id: null },
+      { href: 'c2', name: 'Kids', source: 'local', mine: false, owner: 'dad', space_id: 's1' },
+      { href: 'c3', name: 'Work', source: 'caldav', mine: true, space_id: null },
+    ];
+    const saved = [];
+    let refreshed = 0;
+    decorateCalendarRows(root, calendars, window.__data, { save: async (id, sp) => { saved.push([id, sp]); }, onSaved: () => { refreshed += 1; } });
+    const select = root.querySelector('[data-id="c1"] .cal-s-space');
+    const options = [...select.options].map(o => o.textContent);
+    select.value = 's2';
+    select.dispatchEvent(new Event('change'));
+    await new Promise(r => setTimeout(r, 0));
+    const shared = root.querySelector('[data-id="c2"]');
+    return {
+      options, saved, refreshed, nowShared: calendars[0].space_id,
+      sharedNote: shared.querySelector('.cal-space-note')?.textContent,
+      sharedDisabled: [...shared.querySelectorAll('input')].every(i => i.disabled),
+      sharedHasDelete: !!shared.querySelector('.cal-s-del'),
+      exportChips: [...root.querySelectorAll('.cal-s-export-chip')].map(b => b.dataset.id),
+      caldavSelect: !!root.querySelector('[data-id="c3"] .cal-s-space'),
+    };
+  });
+  assert.deepEqual(cal.options, ['Only me', 'Family', 'Book club']);
+  assert.deepEqual(cal.saved, [['c1', 's2']]);
+  assert.equal(cal.refreshed, 1);
+  assert.equal(cal.nowShared, 's2');
+  assert.equal(cal.sharedNote, 'Family · by dad');
+  assert.equal(cal.sharedDisabled, true);
+  assert.equal(cal.sharedHasDelete, false);
+  assert.deepEqual(cal.exportChips, ['c1']);
+  assert.equal(cal.caldavSelect, false);
+
+  // The space summary lists shared calendars when there are some.
+  const meta = await page.evaluate(async () => {
+    const { renderSpaces } = await import('/static/js/settings/spacesSettings.js');
+    const box = document.createElement('div');
+    renderSpaces(box, { me: 'mom', spaces: [{ ...window.__data.spaces[0], calendar_count: 1 }] });
+    return box.querySelector('.spaces-meta').textContent;
+  });
+  assert.equal(meta, '2 members · 2 shared notes · 1 shared calendar');
+  console.log('PASS: spaces settings card, member actions, error message, note badge and share menu, calendar sharing');
 } finally {
   await browser.close();
 }

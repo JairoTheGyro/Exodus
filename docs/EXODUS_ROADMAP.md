@@ -35,8 +35,8 @@ _Nothing in progress._
   proven hot spots (no full rewrite).
 
 ### Stage 4 · Ready to share with family and friends
-- **Shared spaces, part 2 and 3:** shared calendars, then shared files (notes
-  and lists are done). Personal items stay private.
+- **Shared spaces, part 3:** shared files (notes, lists and calendars are
+  done). Personal items stay private.
 - **Phone app and private notifications:** one ntfy topic per person.
 - **Welcome setup** for invited people: look, language, AI choice and spending
   cap, email and calendar.
@@ -73,6 +73,9 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Shared calendars:** share a calendar you made in Exodus with
+  a space from Calendar Settings; members see its events and can add, edit and
+  delete them. Synced (CalDAV) calendars stay personal for now.
 - 2026-10-24 · **Shared spaces (notes and lists):** create a space such as
   "Family" in Settings → Account → Spaces, add people, and share any note or
   checklist to it from its ⋯ menu. Only members can see it; everything else

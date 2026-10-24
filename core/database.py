@@ -2158,6 +2158,10 @@ class CalendarCal(TimestampMixin, Base):
     # multi-account support was added (treated as "use any configured account").
     account_id = Column(String, nullable=True, index=True)
     caldav_base_url = Column(String, nullable=True)
+    # Exodus shared spaces: members of this space can see the calendar and
+    # add, edit or delete its events. Local calendars only (a CalDAV calendar
+    # syncs with its owner's own login). No foreign key, like notes.space_id.
+    space_id = Column(String, nullable=True, index=True)
 
     events = relationship("CalendarEvent", back_populates="calendar", cascade="all, delete-orphan")
 
@@ -2516,6 +2520,7 @@ def init_db():
     _migrate_add_calendar_recurrence_exdates()
     _migrate_add_note_gallery_id()
     _migrate_add_note_space_id()
+    _migrate_add_calendar_space_id()
     _migrate_chat_messages_fts()
     _migrate_encrypt_email_passwords()
     _migrate_encrypt_signatures()
@@ -2992,6 +2997,27 @@ def _migrate_add_note_space_id():
             conn.commit()
     except Exception as e:
         logging.getLogger(__name__).warning(f"notes space_id migration failed: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _migrate_add_calendar_space_id():
+    """Exodus shared spaces: add calendars.space_id to existing databases."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(calendars)").fetchall()]
+        if columns and "space_id" not in columns:
+            conn.execute("ALTER TABLE calendars ADD COLUMN space_id VARCHAR")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_calendars_space_id ON calendars(space_id)")
+            conn.commit()
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"calendars space_id migration failed: {e}")
     finally:
         if conn is not None:
             conn.close()
