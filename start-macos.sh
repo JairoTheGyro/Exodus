@@ -140,11 +140,11 @@ if [ ! -x "$VENV_PY" ] || ! "$VENV_PY" -m pip --version >/dev/null 2>&1; then
     echo "▶ Creating Python environment…"
     "$PY" -m venv venv
 fi
-REQ_HASH="$(cat requirements.txt requirements-overrides.txt | (md5 -q 2>/dev/null || md5sum | cut -d' ' -f1))"
+REQ_HASH="$("$VENV_PY" -c 'import hashlib, pathlib; print(hashlib.sha256(b"".join(pathlib.Path(p).read_bytes() for p in ("requirements.txt", "requirements-bootstrap.txt", "requirements-overrides.txt"))).hexdigest())')"
 REQ_HASH_FILE="venv/.requirements_hash"
 if [ ! -f "$REQ_HASH_FILE" ] || [ "$REQ_HASH" != "$(cat "$REQ_HASH_FILE" 2>/dev/null)" ]; then
   echo "▶ Installing Python packages (first run downloads a few — can take a few minutes)…"
-  "$VENV_PY" -m pip install --quiet --upgrade pip
+  "$VENV_PY" -m pip install --quiet --require-hashes --only-binary=:all: --no-deps -r requirements-bootstrap.txt
   # Not --quiet: this is the slow step, so show progress (and any real errors).
   "$VENV_PY" -m pip install -r requirements.txt
   "$VENV_PY" -m pip install --no-deps -r requirements-overrides.txt
