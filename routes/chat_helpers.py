@@ -1178,6 +1178,12 @@ async def build_chat_context(
         _preface_kwargs["use_rag"] = use_rag_val
     preface, rag_sources, web_sources = chat_processor.build_context_preface(**_preface_kwargs)
 
+    # Exodus: reply in the person's chosen language (nothing for English).
+    from src.reply_language import reply_language_message
+    _language_message = reply_language_message(uprefs)
+    if _language_message:
+        preface.insert(1 if preset.system_prompt else 0, _language_message)
+
     # Capture used memories immediately
     used_memories = getattr(chat_processor, '_last_used_memories', [])
 

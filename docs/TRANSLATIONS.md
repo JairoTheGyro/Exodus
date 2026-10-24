@@ -10,6 +10,9 @@ anything not translated yet simply stays in English.
 - **What's translated so far (wave 1):** the sign-in page, Home, and the
   everyday (Essentials) Settings. Later waves are listed in
   `docs/EXODUS_ROADMAP.md`.
+- **AI replies:** chat answers come back in the chosen language
+  (`src/reply_language.py` adds one instruction; nothing for English), unless
+  the person asks for another language.
 
 ## How it works
 
