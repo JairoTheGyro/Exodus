@@ -126,3 +126,9 @@
 
 /* Settings → Appearance → App look: one aligned column of look dropdowns. */
 .app-look-row .app-look-select { width: 240px; max-width: 55%; flex-shrink: 0; }
+
+/* Settings → System → Workspace name and logo. */
+.workspace-brand-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.workspace-brand-row > label, .workspace-brand-label { width: 44px; font-size: 12px; color: var(--fg); }
+.workspace-brand-row .settings-input { flex: 1 1 180px; min-width: 0; }
+.workspace-brand-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; background: color-mix(in srgb, var(--fg) 6%, transparent); border: 1px solid var(--border); }

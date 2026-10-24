@@ -282,6 +282,9 @@ if AUTH_ENABLED:
         "/api/auth/integrations/presets",
         "/api/health",
         "/api/version",
+        # Exodus: the sign-in page shows the workspace name and logo.
+        "/api/workspace/brand",
+        "/api/workspace/brand/logo",
         "/login",
     }
     AUTH_EXEMPT_PREFIXES = ["/static"]
@@ -905,6 +908,8 @@ app.include_router(setup_font_routes())
 # Calculator currency rates (same-origin proxy; used only by Convert → Currency)
 from routes.calculator_routes import setup_calculator_routes
 app.include_router(setup_calculator_routes())
+from routes.workspace_brand_routes import setup_workspace_brand_routes
+app.include_router(setup_workspace_brand_routes())
 
 
 # MCP (Model Context Protocol)

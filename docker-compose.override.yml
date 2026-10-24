@@ -99,6 +99,7 @@ services:
       - ./static/js/notes.js:/app/static/js/notes.js:ro
       - ./static/js/theme.js:/app/static/js/theme.js:ro
       - ./static/login.html:/app/static/login.html:ro
+      - ./static/js/workspaceBrand.js:/app/static/js/workspaceBrand.js:ro
       - ./static/manifest.json:/app/static/manifest.json:ro
       - ./static/modal-control-variants.html:/app/static/modal-control-variants.html:ro
       - ./static/wave-variants.html:/app/static/wave-variants.html:ro
@@ -171,3 +172,4 @@ services:
       - ./static/js/calculator:/app/static/js/calculator:ro
       - ./static/js/apps:/app/static/js/apps:ro
       - ./routes/calculator_routes.py:/app/routes/calculator_routes.py:ro
+      - ./routes/workspace_brand_routes.py:/app/routes/workspace_brand_routes.py:ro
