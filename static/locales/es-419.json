@@ -5,6 +5,7 @@
   "(Endpoints)": "(Endpoints)",
   ". You can change it in Settings anytime.": ". Puedes cambiarla en Configuración cuando quieras.",
   "A little clarity for your day": "Un poco de claridad para tu día",
+  "A space needs at least one manager. Add another manager first, or delete the space.": "Un espacio necesita al menos un administrador. Primero agrega otro administrador o elimina el espacio.",
   "AI Workshop": "AI Workshop",
   "AI connection type": "Tipo de conexión de IA",
   "AI found nothing to fill": "La IA no encontró nada que completar",
@@ -161,6 +162,7 @@
   "Copy to session": "Copiar a la sesión",
   "Cost": "Costo",
   "Could not attach image": "No se pudo adjuntar la imagen",
+  "Could not change who can see this note": "No se pudo cambiar quién puede ver esta nota",
   "Could not copy notification": "No se pudo copiar la notificación",
   "Could not edit image": "No se pudo editar la imagen",
   "Could not open Serve:": "No se pudo abrir Servir:",
@@ -176,6 +178,7 @@
   "Create Admin Account": "Crear cuenta de administrador",
   "Create a selection before adding an effect mask": "Crea una selección antes de agregar una máscara de efecto",
   "Create new blank document": "Crear un documento en blanco",
+  "Create space": "Crear espacio",
   "Creating…": "Creando…",
   "Current": "Actual",
   "Current password": "Contraseña actual",
@@ -293,6 +296,7 @@
   "GPU probe error:": "Error en la prueba de GPU:",
   "GPU probe failed:": "Falló la prueba de GPU:",
   "Gallery": "Galería",
+  "Give the space a name.": "Ponle un nombre al espacio.",
   "Goal (e.g. books read)": "Meta (p. ej., libros leídos)",
   "Goal name": "Nombre de la meta",
   "Good afternoon.": "Buenas tardes.",
@@ -347,6 +351,7 @@
   "Layer duplicated": "Capa duplicada",
   "Layer merged down": "Capa combinada hacia abajo",
   "Layer pixels selected": "Píxeles de la capa seleccionados",
+  "Leave": "Salir",
   "Library": "Biblioteca",
   "License Tracker": "Registro de licencias",
   "Load failed:": "No se pudo cargar:",
@@ -368,9 +373,11 @@
   "Look for all apps": "Estilo para todas las apps",
   "Make a selection before transforming it": "Haz una selección antes de transformarla",
   "Make a selection before using Quick Mask": "Haz una selección antes de usar la máscara rápida",
+  "Make manager": "Hacer administrador",
   "Make room for what matters": "Haz espacio para lo que importa",
   "Manage Chats (Library)": "Administrar chats (Biblioteca)",
   "Manage email background tasks in Automations.": "Administra las tareas de correo en segundo plano en Automatizaciones.",
+  "Manager": "Administrador",
   "Manual order": "Orden manual",
   "Mark Read": "Marcar como leído",
   "Mark Unread": "Marcar como no leído",
@@ -382,6 +389,7 @@
   "Max 8": "Máximo 8",
   "Max 8 models": "Máximo 8 modelos",
   "Max tokens": "Tokens máximos",
+  "Member": "Miembro",
   "Memory": "Memoria",
   "Memory added": "Memoria agregada",
   "Memory deleted": "Memoria eliminada",
@@ -429,8 +437,10 @@
   "New chat ready.": "Nuevo chat listo.",
   "New document": "Nuevo documento",
   "New folder": "Nueva carpeta",
+  "New name for this space": "Nuevo nombre para este espacio",
   "New note": "Nueva nota",
   "New password": "Contraseña nueva",
+  "New space name, e.g. Family": "Nombre del nuevo espacio, p. ej., Familia",
   "Newest First": "Más recientes primero",
   "Next week": "La próxima semana",
   "No API endpoints yet.": "Todavía no hay endpoints de API.",
@@ -486,10 +496,13 @@
   "Nothing to save": "No hay nada que guardar",
   "Nothing to solve — note is empty": "No hay nada que resolver: la nota está vacía",
   "Nothing to tidy": "No hay nada que limpiar",
+  "Now only you can see this note": "Ahora solo tú puedes ver esta nota",
   "Off by default. Applies only in Full mode, and only to notes with automatic AI memory enabled.": "Desactivado por defecto. Solo aplica en modo Completo y a notas con memoria automática de IA activada.",
   "Older": "Anteriores",
   "One thing at a time. Time is saved when you stop.": "Una cosa a la vez. El tiempo se guarda cuando te detienes.",
   "Only admins can hide Settings.": "Solo los administradores pueden ocultar la Configuración.",
+  "Only me": "Solo yo",
+  "Only the space's managers can do that.": "Solo los administradores del espacio pueden hacer eso.",
   "Open": "Abrir",
   "Open Automations": "Abrir Automatizaciones",
   "Open Calendar": "Abrir Calendario",
@@ -701,7 +714,10 @@
   "Settings search results": "Resultados de la búsqueda de ajustes",
   "Shape layer rasterized": "Capa de forma rasterizada",
   "Share my presence with this workspace": "Compartir mi presencia con este espacio de trabajo",
+  "Share notes and lists with family or a team. Everyone in a space can see and edit what's shared there; everything else stays private to you. To share a note, open its ⋯ menu and choose Share to.": "Comparte notas y listas con tu familia o tu equipo. Todos en un espacio pueden ver y editar lo que se comparte ahí; todo lo demás sigue siendo privado. Para compartir una nota, abre su menú ⋯ y elige Compartir con.",
+  "Share to": "Compartir con",
   "Shared announcement": "Anuncio compartido",
+  "Shared spaces need sign-in accounts.": "Los espacios compartidos requieren cuentas con inicio de sesión.",
   "Shared updates": "Novedades compartidas",
   "Shared with Notes checklists · latest 500 checklists.": "Compartido con las listas de Notas · últimas 500 listas.",
   "Shell": "Terminal",
@@ -725,6 +741,8 @@
   "Sort sessions": "Ordenar sesiones",
   "Sorted": "Ordenado",
   "Sorting...": "Ordenando...",
+  "Spaces": "Espacios",
+  "Spaces could not load.": "No se pudieron cargar los espacios.",
   "Spam": "Spam",
   "Start a model in Ollama or another local model app, then enter its connection address below. Local generation uses that machine’s hardware; online tools may still use the internet.": "Inicia un modelo en Ollama u otra app de modelos locales y luego escribe su dirección de conexión abajo. La generación local usa el hardware de esa máquina; las herramientas en línea pueden seguir usando internet.",
   "Starting layout": "Diseño inicial",
@@ -760,6 +778,7 @@
   "The selected layer is outside the canvas": "La capa seleccionada está fuera del lienzo",
   "Theme": "Tema",
   "Theme saved": "Tema guardado",
+  "There is no account with that username.": "No hay ninguna cuenta con ese nombre de usuario.",
   "Thinking Process": "Proceso de razonamiento",
   "This affects only your account. Saved chats and model settings are retained for switching back. Other accounts and independently opened services keep their own settings.": "Esto solo afecta a tu cuenta. Los chats guardados y la configuración de modelos se conservan por si cambias de nuevo. Otras cuentas y los servicios abiertos por separado mantienen su propia configuración.",
   "Tidy": "Limpiar",
@@ -818,6 +837,7 @@
   "Use the full window width (desktop)": "Usa todo el ancho de la ventana (escritorio)",
   "User": "Usuario",
   "Username": "Usuario",
+  "Username to add": "Usuario para agregar",
   "Verify": "Verificar",
   "View / edit OCR text": "Ver o editar el texto OCR",
   "View the saved version": "Ver la versión guardada",
@@ -1169,6 +1189,54 @@
   [
    "{name} created",
    "{name} creado"
+  ],
+  [
+   "{a} member · {b} shared note",
+   "{a} miembro · {b} nota compartida"
+  ],
+  [
+   "{a} member · {b} shared notes",
+   "{a} miembro · {b} notas compartidas"
+  ],
+  [
+   "{a} members · {b} shared note",
+   "{a} miembros · {b} nota compartida"
+  ],
+  [
+   "{a} members · {b} shared notes",
+   "{a} miembros · {b} notas compartidas"
+  ],
+  [
+   "{name} (you)",
+   "{name} (tú)"
+  ],
+  [
+   "Shared with {name}",
+   "Compartida con {name}"
+  ],
+  [
+   "Everyone in {name} can see and edit this",
+   "Todos en {name} pueden verla y editarla"
+  ],
+  [
+   "{name} · by {owner}",
+   "{name} · de {owner}"
+  ],
+  [
+   "Add someone to {name}",
+   "Agregar a alguien a {name}"
+  ],
+  [
+   "Remove {who} from {name}? Notes they shared there go back to being only theirs.",
+   "¿Quitar a {who} de {name}? Las notas que compartió ahí vuelven a ser solo suyas."
+  ],
+  [
+   "Leave {name}? Notes you shared there go back to being only yours.",
+   "¿Salir de {name}? Las notas que compartiste ahí vuelven a ser solo tuyas."
+  ],
+  [
+   "Delete {name}? No notes are deleted: each goes back to the person who made it.",
+   "¿Eliminar {name}? No se elimina ninguna nota: cada una vuelve a quien la creó."
   ]
  ]
 }

@@ -437,6 +437,7 @@ const drawing = createDrawing({
 });
 const clipboard = createClipboard({
   _agentSolveNote,
+  _renderNotes,
   bindMenuDismiss,
   dismissOrRemove,
   state,

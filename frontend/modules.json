@@ -214,6 +214,10 @@
     {
       "source": "shared/ui/confetti.js",
       "deployment": "js/shared/ui/confetti.js"
+    },
+    {
+      "source": "features/notes/ui/spaces.js",
+      "deployment": "js/features/notes/ui/spaces.js"
     }
   ]
 }

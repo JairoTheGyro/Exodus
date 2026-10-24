@@ -113,7 +113,7 @@ export const SETTINGS_PANELS = Object.freeze([
     id: 'account',
     label: 'Account',
     group: 'account',
-    keywords: ['account', 'password', 'logout'],
+    keywords: ['account', 'password', 'logout', 'spaces', 'family', 'share', 'shared', 'members'],
   }),
   definePanel({
     id: 'licenses',
