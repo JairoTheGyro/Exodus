@@ -5,6 +5,15 @@ Run from any folder: python3 "/path/to/Sovereign Hub/scripts/update_local.py"
 --dry-run fetches Git metadata and previews the plan without changing source or
 containers. No environment values, Compose configuration, or build logs are
 printed. The updater never removes data, volumes, images, or local changes.
+
+Exodus safety net (home server):
+- Before pulling, a data backup is made with scripts/odysseus-backup
+  (skip with --no-backup).
+- Before rebuilding, each rebuilt app image is kept as <image>:rollback and
+  the previous code revision is recorded.
+- --rollback goes back to that revision and image, and reloads the services
+  the update touched. A failed update is never undone automatically; rerun
+  the update to retry, or use --rollback to go back.
 """
 from __future__ import annotations
 
@@ -15,6 +24,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -309,15 +319,57 @@ def plan_update(root, paths, before, after, containers, hashes):
     return plan
 
 
-def save_state(path, applied):
+def read_state(path):
+    return json_value(path.read_text(), 'updater checkpoint') if path.exists() else {}
+
+
+def save_state(path, applied, rollback=None):
     path.parent.mkdir(parents=True, exist_ok=True)
+    record = {'applied': applied}
+    if rollback is None:
+        rollback = read_state(path).get('rollback')  # keep the last rollback point
+    if rollback:
+        record['rollback'] = rollback
     with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.exodus-update-', delete=False) as handle:
-        json.dump({'applied': applied}, handle)
+        json.dump(record, handle)
         temporary = Path(handle.name)
     os.replace(temporary, path)
 
 
-def update(runner, root=ROOT, *, dry_run=False, say=print):
+def rollback_tag(image):
+    """sovereign-hub-odysseus:latest -> sovereign-hub-odysseus:rollback"""
+    if not isinstance(image, str) or not re.fullmatch(r'[a-z0-9][a-z0-9._/-]*(?::[A-Za-z0-9._-]+)?', image):
+        return None
+    repository = image.rsplit(':', 1)[0] if ':' in image.rsplit('/', 1)[-1] else image
+    return f'{repository}:rollback'
+
+
+def keep_rollback_images(runner, config, services):
+    """Tag the current image of each rebuilt service; returns {service: [image, rollback tag]}."""
+    kept = {}
+    for name in sorted(services):
+        image = config['services'].get(name, {}).get('image')
+        tag = rollback_tag(image)
+        if not tag:
+            continue
+        try:
+            runner.run(['docker', 'image', 'inspect', '--format', '{{.Id}}', image], timeout=30)
+        except UpdateError:
+            continue  # not built yet: nothing to go back to
+        runner.run(['docker', 'tag', image, tag], timeout=30)
+        kept[name] = [image, tag]
+    return kept
+
+
+def backup_data(runner, root, say):
+    script = root / 'scripts' / 'odysseus-backup'
+    if not script.is_file():
+        raise UpdateError('The backup tool is missing, so the update did not start. Use --no-backup to skip the backup.')
+    say('Backing up saved data first (scripts/odysseus-backup)…')
+    runner.run([sys.executable, str(script), 'snapshot'], timeout=3600)
+
+
+def update(runner, root=ROOT, *, dry_run=False, backup=True, say=print):
     root = root.resolve()
     if Path(git(runner, 'rev-parse', '--show-toplevel')).resolve() != root:
         raise UpdateError('Run the updater saved inside the Exodus checkout.')
@@ -359,6 +411,8 @@ def update(runner, root=ROOT, *, dry_run=False, say=print):
     if dry_run:
         say('Preview only: Git metadata fetched; source, containers, environment files and data unchanged.')
         return plan
+    if backup and head != target:
+        backup_data(runner, root, say)
     # Preserve a retry checkpoint before the pull/build. A failed deployment can
     # be retried even when the second run has no new Git commits to download.
     save_state(state_path, baseline)
@@ -368,14 +422,22 @@ def update(runner, root=ROOT, *, dry_run=False, say=print):
         raise UpdateError('GitHub changed during the update. Source was pulled, but containers were not touched; rerun to review and apply the final revision.')
     after = compose.config()
     plan = plan_update(root, paths, before, after, containers, compose.hashes())
+    if plan.recreate and head != current:
+        # Exodus: remember how to go back before anything is rebuilt or reloaded.
+        kept = keep_rollback_images(runner, before, plan.build)
+        save_state(state_path, baseline, rollback={'commit': head, 'images': kept, 'services': sorted(plan.recreate)})
+        say(f'Rollback point saved at {head[:12]}' + (f' (images: {", ".join(sorted(kept))}).' if kept else '.'))
     if plan.build:
         say('Building changed application images; existing containers remain running during the build…')
         runner.run(compose.command('build', *sorted(plan.build)), timeout=3600)
     if plan.recreate:
         say('Reloading affected services while retaining their saved data…')
-        runner.run(compose.command('up', '-d', '--no-deps', '--no-build', '--pull', 'missing',
-                                   '--force-recreate', '--wait', '--wait-timeout', '120',
-                                   *sorted(plan.recreate)), timeout=240)
+        try:
+            runner.run(compose.command('up', '-d', '--no-deps', '--no-build', '--pull', 'missing',
+                                       '--force-recreate', '--wait', '--wait-timeout', '120',
+                                       *sorted(plan.recreate)), timeout=240)
+        except UpdateError as exc:
+            raise UpdateError(f'{exc} Rerun the update to retry, or run it with --rollback to go back to the previous version.') from exc
     save_state(state_path, current)
     say(f'Update complete at {current[:12]}. Saved data, environment files and Docker volumes were retained.')
     if plan.ui_changed:
@@ -383,12 +445,55 @@ def update(runner, root=ROOT, *, dry_run=False, say=print):
     return plan
 
 
+def rollback(runner, root=ROOT, *, say=print):
+    """Go back to the code and images saved before the last update."""
+    root = root.resolve()
+    if Path(git(runner, 'rev-parse', '--show-toplevel')).resolve() != root:
+        raise UpdateError('Run the updater saved inside the Exodus checkout.')
+    if git(runner, 'branch', '--show-current') != 'main':
+        raise UpdateError('Switch to main before rolling back.')
+    if runner.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all']):
+        raise UpdateError('Commit or remove outstanding source changes first; nothing was rolled back.')
+    state_path = Path(git(runner, 'rev-parse', '--git-path', 'exodus-update.json'))
+    if not state_path.is_absolute():
+        state_path = root / state_path
+    point = read_state(state_path).get('rollback') or {}
+    commit = point.get('commit', '')
+    if not re.fullmatch(r'[a-f0-9]{40,64}', commit):
+        raise UpdateError('There is no saved rollback point yet. One is saved by the next update.')
+    head = git(runner, 'rev-parse', 'HEAD')
+    git(runner, 'merge-base', '--is-ancestor', commit, head)  # only ever go back along main
+    runner.run(['docker', 'info', '--format', '{{.ServerVersion}}'], timeout=30)
+    containers = inspect_containers(runner)
+    compose = Compose(runner, root, compose_files(root, containers))
+    say(f'Going back to {commit[:12]}…')
+    runner.run(['git', 'reset', '--hard', commit], timeout=120)
+    for name, pair in sorted((point.get('images') or {}).items()):
+        image, tag = pair
+        if rollback_tag(image) != tag:
+            raise UpdateError('The saved rollback point is invalid. Ask a maintainer to review it.')
+        runner.run(['docker', 'tag', tag, image], timeout=30)
+    services = [s for s in point.get('services') or [] if SERVICE.fullmatch(s)]
+    if services:
+        say('Reloading the services from before the update, keeping saved data…')
+        runner.run(compose.command('up', '-d', '--no-deps', '--no-build', '--force-recreate',
+                                   '--wait', '--wait-timeout', '120', *services), timeout=240)
+    save_state(state_path, commit, rollback={})
+    say(f'Rolled back to {commit[:12]}. Saved data was kept. The next update will try the newer version again.')
+    return commit
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true', help='Fetch remote metadata and preview without pulling or changing containers.')
+    parser.add_argument('--no-backup', action='store_true', help='Skip the data backup made before updating.')
+    parser.add_argument('--rollback', action='store_true', help='Go back to the code and app image from before the last update.')
     args = parser.parse_args(argv)
     try:
-        update(Runner(ROOT), dry_run=args.dry_run)
+        if args.rollback:
+            rollback(Runner(ROOT))
+        else:
+            update(Runner(ROOT), dry_run=args.dry_run, backup=not args.no_backup)
     except (UpdateError, OSError) as exc:
         print(f'Update stopped: {exc}')
         return 1
