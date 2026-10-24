@@ -1,0 +1,33 @@
+# Exodus Services manager (opt-in, high trust). Adds the service manager
+# helper (services/servicectl), the only container with Docker access, so
+# admins can turn the optional services on and off, remove them and reinstall
+# them from Settings. It runs a fixed set of actions on a fixed list of
+# services (never the Exodus app), has no published port, and only answers the
+# Exodus app on the internal network with a token from the servicectl-token
+# volume. Raw Docker socket access still means broad control of the Docker
+# daemon, so this is off by default. Enable it with, in .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.override.yml:docker/service-manager.yml
+# then run `docker compose up -d` from the Exodus folder.
+services:
+  odysseus:
+    volumes:
+      - servicectl-token:/run/servicectl:ro
+
+  servicectl:
+    build: ./services/servicectl
+    image: sovereign-hub-servicectl:1
+    environment:
+      - EXODUS_COMPOSE_PROJECT=${COMPOSE_PROJECT_NAME:-sovereign-hub}
+      - EXODUS_PROJECT_DIR=${PWD:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Same path as on the host, so `docker compose` resolves bind mounts.
+      - ${PWD:-.}:${PWD:-/project}:ro
+      - servicectl-token:/run/servicectl
+      - servicectl-state:/state
+    working_dir: ${PWD:-/project}
+    restart: unless-stopped
+
+volumes:
+  servicectl-token:
+  servicectl-state:

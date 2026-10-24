@@ -2810,6 +2810,16 @@ function initializeEventListeners() {
 
   function saveUIVis(state) {
     Storage.setJSON(UI_VIS_KEY, state);
+    syncUIVisToAccount(state);
+  }
+
+  // Exodus: what each person hides follows them to every device (saved with
+  // their account preferences); the browser copy keeps the first paint fast.
+  function syncUIVisToAccount(state) {
+    fetch('/api/prefs/ui-visibility', {
+      method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: state }),
+    }).catch(() => {});
   }
 
   function applyUIVis(state) {
@@ -3067,6 +3077,20 @@ function initializeEventListeners() {
   (function initUIVisibility() {
     // Apply saved visibility on load
     applyUIVis(loadUIVis());
+    // Then follow the account's saved choice (uploading this browser's choice
+    // the first time, so nothing set before is lost).
+    fetch('/api/prefs/ui-visibility', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        const saved = data && data.value;
+        if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+          Storage.setJSON(UI_VIS_KEY, saved);
+          applyUIVis(saved);
+        } else if (data && Object.keys(loadUIVis()).length) {
+          syncUIVisToAccount(loadUIVis());
+        }
+      })
+      .catch(() => {});
 
     // The only two modals without a per-module makeWindowDraggable call. Wire
     // them onto the shared helper, drag-only, to match their old behavior.

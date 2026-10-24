@@ -18,6 +18,8 @@ import { loadUpstreamUpdates } from './settings/upstream.js';
 import { mountAppLookPicker } from './settings/appLooks.js';
 import { mountLanguagePicker } from './settings/languagePicker.js';
 import { mountWorkspaceBrandSettings } from './settings/workspaceBrandSettings.js';
+import { mountServicesManager } from './settings/servicesManager.js';
+import { APPS } from './apps/registry.js';
 import { bindSettingsNavigation } from './settings/navigation.js';
 import {
   bindSettingsDrag,
@@ -73,7 +75,7 @@ const _shell = createSettingsShell({
   onPanelActivated: (tab) => {
     if (tab === 'licenses') loadUpstreamUpdates();
     if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); mountLanguagePicker(byId('settings-language')); }
-    if (tab === 'system') mountWorkspaceBrandSettings();
+    if (tab === 'system') { mountWorkspaceBrandSettings(); mountServicesManager(byId('services-manager-rows')); }
   },
 });
 
@@ -1303,7 +1305,26 @@ async function initResearchSearchSettings() {
 /* ═══════════════════════════════════════════
    APPEARANCE TAB
    ═══════════════════════════════════════════ */
+// Exodus: one "show in sidebar" switch per built-in app from the app registry.
+function addAppVisibilityRows() {
+  var anchor = modalEl.querySelector('[data-ui-key="tool-tasks"]');
+  var after = anchor && anchor.closest('.vis-row');
+  if (!after) return;
+  APPS.forEach(function(app) {
+    var key = 'tool-' + app.id;
+    if (modalEl.querySelector('[data-ui-key="' + key + '"]')) return;
+    var row = document.createElement('label');
+    row.className = 'vis-row';
+    row.innerHTML = '<span class="vis-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + app.icon + '</svg></span><span class="vis-label"></span><input type="checkbox" checked data-ui-key="' + key + '"><span class="vis-switch"></span>';
+    row.querySelector('.vis-label').textContent = app.name;
+    after.after(row);
+    after = row;
+  });
+}
+
 function initAppearance() {
+  addAppVisibilityRows();
   syncAppearanceCheckboxes();
   syncPrivacyCheckboxes();
 

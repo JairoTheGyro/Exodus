@@ -9,6 +9,8 @@
 // full view also hides when the sidebar is minimized to the icon rail (id
 // mapping mirrors _railToolMap in app.js; #tool-library-btn ↔ #rail-archive).
 
+import { APPS } from './apps/registry.js';
+
 // Selector map: UI customization key → CSS selector(s) for its target(s).
 export const UI_VIS_MAP = {
   'sidebar-brand':       '.sidebar-brand-title',
@@ -44,7 +46,16 @@ export const UI_VIS_MAP = {
   'attach-btn':          '#overflow-attach-btn',
   'research-btn':        '#overflow-research-btn',
   'rail-new-chat':       '#rail-new-session',
+  // Exodus: more sidebar entries each person can hide.
+  'tool-workshop':       '#tool-workshop-btn',
+  'tool-code':           '#tool-code-btn',
+  'local-services-section': '#local-services-section',
+  'privacy-hub-section': '#privacy-hub-section',
 };
+
+// Exodus: every built-in app from the app registry (Clock, Calculator, …) can
+// be hidden too; its rail launcher (if any) follows.
+for (const app of APPS) UI_VIS_MAP[`tool-${app.id}`] = `#tool-${app.id}-btn, #rail-${app.id}`;
 
 // Keys hidden by default on first run (no localStorage yet).
 export const UI_VIS_DEFAULT_OFF = new Set(['rag-toggle-btn', 'text-emojis', 'chat-fullwidth']);
