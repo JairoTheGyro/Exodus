@@ -217,10 +217,13 @@
     #authForm > #confirmGroup { order: 6; }
     #authForm > #submitBtn { order: 7; }
     #toggleArea { order: 8; }
+    .login-language { order: 9; }
   }
   .toggle { text-align: center; margin-top: calc(1rem + 4px); font-size: 0.85rem; color: color-mix(in srgb, var(--fg) 50%, transparent); }
   .toggle a { color: var(--red); cursor: pointer; text-decoration: none; }
   .toggle a:hover { text-decoration: underline; }
+  .login-language { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 14px; font-size: 0.8rem; color: color-mix(in srgb, var(--fg) 55%, transparent); }
+  .login-language select { background: transparent; color: inherit; border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent); border-radius: 6px; padding: 3px 6px; font: inherit; cursor: pointer; }
   .pw-wrapper { position: relative; margin-bottom: 1rem; }
   .pw-wrapper input:not(.remember-check) { padding-right: 2.5rem; margin-bottom: 0; }
   .pw-toggle {
@@ -276,7 +279,7 @@
 </style>
 </head>
 <body>
-<main class="card" data-workspace-brand-scope>
+<main class="card" data-workspace-brand-scope data-i18n-scope>
   <h1 class="logo">
     <img class="logo-boat exodus-logo" data-logo-pending alt="" width="32" height="32"><span>Exodus</span>
   </h1>
@@ -318,6 +321,10 @@
   <div class="toggle" id="toggleArea" style="display:none">
     <span id="toggleText">Don't have an account? </span>
     <a id="toggleLink" href="#">Sign up</a>
+  </div>
+  <div class="login-language">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-10-10 15.3 15.3 0 0 1 10-10Z"/></svg>
+    <select id="login-language" aria-label="Language"></select>
   </div>
 </main>
 
@@ -683,5 +690,6 @@ try {
 }
 </script>
 <script type="module" src="static/js/templeLogin.js"></script>
+<script type="module" src="static/js/i18nStart.js"></script>
 </body>
 </html>

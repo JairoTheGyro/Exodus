@@ -25,7 +25,7 @@ def test_picker_is_wired_into_appearance_settings():
     assert 'id="app-look-card"' in panel and 'id="app-look-rows"' in panel
     settings = (ROOT / "static" / "js" / "settings.js").read_text(encoding="utf-8")
     assert "import { mountAppLookPicker } from './settings/appLooks.js';" in settings
-    assert "if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); }" in settings
+    assert "if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows);" in settings
     registry = (ROOT / "static" / "js" / "settings" / "registry.js").read_text(encoding="utf-8")
     assert "'look', 'app look', 'style'" in registry
     assert "'/static/js/settings/appLooks.js'" in (ROOT / "static" / "sw.js").read_text(encoding="utf-8")
