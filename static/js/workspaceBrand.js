@@ -134,7 +134,14 @@ function brandTitle(doc) {
   }
 }
 
+// The name under the home-screen icon on iPhones (Android reads the manifest).
+function brandHomeScreenName(doc) {
+  const meta = doc.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (meta) meta.setAttribute('content', workspaceName().slice(0, 30));
+}
+
 function brandManifest(doc) {
+  brandHomeScreenName(doc);
   const link = doc.querySelector('link[rel="manifest"]');
   if (!link || link.dataset.routeManifest === 'true' || typeof Blob === 'undefined') return;
   if (!link.dataset.defaultHref) link.dataset.defaultHref = link.getAttribute('href') || '';

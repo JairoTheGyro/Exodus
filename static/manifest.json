@@ -1,7 +1,7 @@
 {
   "name": "Exodus",
   "short_name": "Exodus",
-  "description": "Self-hosted AI chat with memory, documents, and tools",
+  "description": "Your private workspace: notes, calendar, email, files and AI, on your own server.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -55,6 +55,9 @@ try {
     });
   });
   await page.waitForSelector('#exodus-welcome');
+  // While open, the page is marked so Home's older first-run screen hides
+  // (layering is checked with real styles in tests/browser/phoneReady.mjs).
+  assert.equal(await run(() => document.body.classList.contains('exodus-welcome-open')), true);
   const stepOf = () => page.getAttribute('.exodus-welcome-body', 'data-step');
   assert.equal(await stepOf(), 'hello');
   assert.equal(await page.textContent('#exodus-welcome-title'), 'Welcome to Exodus');
@@ -89,6 +92,7 @@ try {
   const result = await run(() => window.__closed);
   assert.deepEqual(result, { skipped: false, mode: 'ai-free' });
   assert.equal(await page.$('#exodus-welcome'), null);
+  assert.equal(await run(() => document.body.classList.contains('exodus-welcome-open')), false);
   assert.equal(await run(() => window.__pref.value.done), true);
   assert.equal(await run(() => window.__reloads), 1); // new workspace choice applies right away
 

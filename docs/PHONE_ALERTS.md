@@ -4,6 +4,19 @@ Exodus sends reminders and alerts to phones through **ntfy**, a small push
 service that runs next to Exodus. Each account has its own **private
 address** (an ntfy "topic"), so people only get their own alerts.
 
+## Add Exodus to your home screen
+
+Exodus works like an app on phones:
+
+- **iPhone:** open Exodus in **Safari**, sign in, tap **Share**, then **Add to
+  Home Screen**.
+- **Android:** open it in **Chrome**, then tap **⋮** → **Install app** (or
+  **Add to Home screen**).
+
+The icon opens Exodus full screen, without the browser bars. It's named after
+your workspace (Settings → System → workspace name). Adding it from the
+sign-in page works too.
+
 ## Set up your phone
 
 Settings → Account → **Phone alerts** shows your server and topic.

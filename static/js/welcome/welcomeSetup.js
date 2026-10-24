@@ -86,6 +86,7 @@ export function openWelcome({
   async function close({ skipped = false } = {}) {
     await markDone(skipped);
     overlay.remove();
+    doc.body.classList.remove('exodus-welcome-open');
     doc.removeEventListener('keydown', onKey, true);
     resolveClosed({ skipped, mode: chosenMode });
     // A new workspace choice changes what the whole app shows.
@@ -165,6 +166,7 @@ export function openWelcome({
   });
   doc.addEventListener('keydown', onKey, true);
   doc.body.append(overlay);
+  doc.body.classList.add('exodus-welcome-open');
   render();
   return closed;
 }
