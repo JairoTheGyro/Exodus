@@ -35,6 +35,9 @@ Claude reminds Jairo of them and walks through each one.
        email export.
    - Click through the Spanish screens and note any wording that sounds off
      (Claude fixes it in `static/locales/es-419.json`).
+   - Try **local AI** on the 36 GB computer with `docs/LOCAL_AI.md`: a model
+     server (LM Studio or Ollama), model picks from the Cookbook, and
+     connecting it as **Shared AI**.
 2. **Pick the home server computer.** The new 36 GB computer could be it, or a
    separate always-on mini PC or Mac mini. Then follow `docs/HOME_SERVER.md`
    with Claude.
@@ -59,6 +62,10 @@ _Nothing in progress._
   proven hot spots (no full rewrite).
 
 ### Stage 4 · Ready to share with family and friends
+- **Members' own AI accounts:** today only the admin can add AI connections,
+  so "My own cloud account" in Your AI can't be set up by members. Let members
+  add their own provider connection, private to them, with the endpoint
+  address safety checks.
 - **Shared spaces, later:** drawings in shared notes; Library → Files uploads.
 - Home server setup and inviting people: see **Waiting on Jairo**.
 
@@ -90,6 +97,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Local AI guide:** `docs/LOCAL_AI.md` covers what fits in
+  36 GB, LM Studio or Ollama, picking models with the Cookbook (model picks
+  checked against the live catalog), connecting them as Shared AI, and using
+  a separate AI computer over Tailscale.
 - 2026-10-24 · **Shared calendars for Home and the AI:** Home's agenda and the
   morning briefing include shared calendars. The AI can read them, labelled
   "shared by …", but only changes your own calendars.
