@@ -915,6 +915,8 @@ from routes.services_routes import setup_services_routes
 app.include_router(setup_services_routes())
 from routes.space_routes import setup_space_routes
 app.include_router(setup_space_routes())
+from routes.personal_alerts_routes import setup_personal_alerts_routes
+app.include_router(setup_personal_alerts_routes())
 
 
 # MCP (Model Context Protocol)

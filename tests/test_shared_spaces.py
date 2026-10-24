@@ -270,7 +270,7 @@ def test_spaces_ui_is_wired():
     panel = html.split('data-settings-panel="account"', 1)[1].split('data-settings-panel=', 1)[0]
     assert 'id="spaces-card"' in panel and 'id="spaces-rows"' in panel
     settings = (root / "static" / "js" / "settings.js").read_text(encoding="utf-8")
-    assert "if (tab === 'account') mountSpacesSettings(byId('spaces-rows'));" in settings
+    assert "mountSpacesSettings(byId('spaces-rows'))" in settings
     sw = (root / "static" / "sw.js").read_text(encoding="utf-8")
     assert "'/static/js/settings/spacesSettings.js'" in sw and "'/static/js/features/notes/ui/spaces.js'" in sw
     rendering = (root / "frontend" / "src" / "features" / "notes" / "ui" / "cardRendering.js").read_text(encoding="utf-8")

@@ -38,7 +38,8 @@ _Nothing in progress._
 - **Shared spaces, later:** shared PDF/Word documents and uploaded files
   (needs uploads that members can read); shared calendars on Home and for the
   AI.
-- **Phone app and private notifications:** one ntfy topic per person.
+- **Phone app polish:** check the main screens at phone width, home-screen
+  icon and sign-in on phones (private ntfy topics are done).
 - **Welcome setup** for invited people: look, language, AI choice and spending
   cap, email and calendar.
 - **AI per person:** cloud AI with a spend cap, a shared AI machine, or AI-Free.
@@ -74,6 +75,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Private phone alerts:** every account gets its own private
+  ntfy topic; reminders and alerts go only there. Settings → Account → Phone
+  alerts shows how to subscribe, sends a test and can make a new address.
+  Guide: `docs/PHONE_ALERTS.md`.
 - 2026-10-24 · **Shared documents:** share a text document from the Library's
   ⋯ menu with a space; members can open, edit and restore versions. PDF/Word
   documents stay personal for now.
