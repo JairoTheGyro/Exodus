@@ -913,6 +913,8 @@ from routes.workspace_brand_routes import setup_workspace_brand_routes
 app.include_router(setup_workspace_brand_routes())
 from routes.services_routes import setup_services_routes
 app.include_router(setup_services_routes())
+from routes.space_routes import setup_space_routes
+app.include_router(setup_space_routes())
 
 
 # MCP (Model Context Protocol)

@@ -40,6 +40,7 @@ OPERATIONAL_GUIDES = {
     "LOCAL_BACKUPS.md",
     "PRACTICE_TESTS.md",
     "SERVICES_MANAGER.md",
+    "SHARED_SPACES.md",
     "TEAM_ACCOUNTS.md",
     "VAULTWARDEN.md",
 }

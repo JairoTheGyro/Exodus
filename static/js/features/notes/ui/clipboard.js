@@ -1,7 +1,9 @@
 /** Note clipboard feedback and the Copy/Agent corner menu. */
 import { _serializeNoteForCopy } from '../domain/noteRules.js';
+import { addShareItems } from './spaces.js';
 export function createClipboard({
   _agentSolveNote,
+  _renderNotes,
   bindMenuDismiss,
   dismissOrRemove,
   state,
@@ -24,6 +26,20 @@ export function createClipboard({
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
       <span>${note.agent_session_id ? 'Re-run agent' : 'Agent: solve this'}</span>
     </button>`;
+    // Exodus shared spaces: "Share to" choices (owner only, when spaces exist).
+    addShareItems(menu, note, {
+      close: () => menu.remove(),
+      save: async spaceId => {
+        const r = await fetch(`/api/notes/${encodeURIComponent(id)}`, {
+          method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ space_id: spaceId }),
+        });
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      },
+      onSaved: () => _renderNotes?.(),
+      toast: text => uiModule.showToast?.(text),
+    });
     document.body.appendChild(menu);
     const r = btn.getBoundingClientRect();
     // Right-align to the ⋯ button, clamped to the viewport.

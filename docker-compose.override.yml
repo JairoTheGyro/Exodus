@@ -177,3 +177,5 @@ services:
       - ./routes/calculator_routes.py:/app/routes/calculator_routes.py:ro
       - ./routes/workspace_brand_routes.py:/app/routes/workspace_brand_routes.py:ro
       - ./routes/services_routes.py:/app/routes/services_routes.py:ro
+      - ./routes/space_routes.py:/app/routes/space_routes.py:ro
+      - ./src/spaces.py:/app/src/spaces.py:ro

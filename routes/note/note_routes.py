@@ -13,7 +13,8 @@ from core.database import SessionLocal, Note
 from core.middleware import INTERNAL_TOOL_USER
 from src.auth_helpers import require_user
 from src.constants import DATA_DIR
-from src.upload_handler import reserve_upload_references
+from src.upload_handler import extract_internal_upload_ids, reserve_upload_references
+from src import spaces as _spaces
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import or_
 
@@ -73,6 +74,8 @@ class NoteCreate(NoteOrganization):
     gallery_id: Optional[str] = None
     repeat: Optional[str] = "none"
     sort_order: Optional[int] = None
+    # Exodus shared spaces: put the new note straight into a space.
+    space_id: Optional[str] = None
 
 
 class NoteUpdate(NoteOrganization):
@@ -91,6 +94,9 @@ class NoteUpdate(NoteOrganization):
     repeat: Optional[str] = None
     sort_order: Optional[int] = None
     agent_session_id: Optional[str] = None
+    # Exodus shared spaces: a space id moves the note into it, "" makes it
+    # personal again. Only the note's owner can change it.
+    space_id: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -135,6 +141,7 @@ def _note_to_dict(note: Note) -> Dict[str, Any]:
         "ai_classification": ai_cls,
         "ai_content_hash": getattr(note, "ai_content_hash", None),
         "agent_session_id": getattr(note, "agent_session_id", None),
+        "space_id": getattr(note, "space_id", None),
         "created_at": note.created_at.isoformat() if note.created_at else None,
         "updated_at": note.updated_at.isoformat() if note.updated_at else None,
     }
@@ -656,7 +663,12 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
         try:
             query = db.query(Note)
             if user is not None:
-                query = query.filter(Note.owner == user)
+                # Exodus shared spaces: your notes plus your spaces' notes.
+                member_of = _spaces.space_ids_for(user, db)
+                if member_of:
+                    query = query.filter(or_(Note.owner == user, Note.space_id.in_(member_of)))
+                else:
+                    query = query.filter(Note.owner == user)
             if archived is not None:
                 query = query.filter(Note.archived == archived)
             else:
@@ -713,9 +725,12 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
         )
         db = SessionLocal()
         try:
+            if body.space_id and (user is None or not _spaces.is_member(user, body.space_id, db)):
+                raise HTTPException(404, "Space not found")
             note = Note(
                 id=str(uuid.uuid4()),
                 owner=user,
+                space_id=body.space_id or None,
                 title=body.title,
                 content=body.content,
                 items=json.dumps(body.items) if body.items is not None else None,
@@ -753,7 +768,8 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             # SECURITY: strict ownership — previously `note.owner and note.owner != user`
             # let any user touch a row whose owner field was null/empty.
-            if user is not None and note.owner != user:
+            # Exodus shared spaces: members of the note's space may use it too.
+            if not _spaces.can_see_note(note, user, db):
                 raise HTTPException(404, "Note not found")
             return _note_to_dict(note)
         finally:
@@ -770,16 +786,43 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             # SECURITY: strict ownership — previously `note.owner and note.owner != user`
             # let any user touch a row whose owner field was null/empty.
-            if user is not None and note.owner != user:
+            # Exodus shared spaces: members of the note's space may use it too.
+            if not _spaces.can_see_note(note, user, db):
                 raise HTTPException(404, "Note not found")
 
-            _reserve_note_uploads(
-                user,
-                body.image_url,
-                body.color,
-                body.content,
-                json.dumps(body.items) if body.items is not None else None,
-            )
+            is_owner = user is None or note.owner == user
+            if not is_owner:
+                # Exodus shared spaces: members edit text, checklist, colour,
+                # tags, pin, archive and reminders. Pictures, AI settings and
+                # moving the note stay with its owner (uploads are per person).
+                owner_only = [name for name in ("image_url", "gallery_id", "agent_session_id",
+                                                "ai_memory_enabled", "space_id")
+                              if getattr(body, name) is not None]
+                if owner_only:
+                    raise HTTPException(403, "Only the person who made this note can change that.")
+                existing_ids = extract_internal_upload_ids(
+                    [note.image_url, note.color, note.content, note.items])
+                added_ids = extract_internal_upload_ids([
+                    body.color, body.content,
+                    json.dumps(body.items) if body.items is not None else None,
+                ]) - existing_ids
+                if added_ids:
+                    raise HTTPException(403, "Only the person who made this note can add pictures to it.")
+            else:
+                _reserve_note_uploads(
+                    user,
+                    body.image_url,
+                    body.color,
+                    body.content,
+                    json.dumps(body.items) if body.items is not None else None,
+                )
+            if body.space_id is not None:
+                if body.space_id == "":
+                    note.space_id = None
+                elif user is None or not _spaces.is_member(user, body.space_id, db):
+                    raise HTTPException(404, "Space not found")
+                else:
+                    note.space_id = body.space_id
             if body.title is not None:
                 note.title = body.title
             if body.content is not None:
@@ -833,8 +876,11 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             # SECURITY: strict ownership — previously `note.owner and note.owner != user`
             # let any user touch a row whose owner field was null/empty.
-            if user is not None and note.owner != user:
+            if not _spaces.can_see_note(note, user, db):
                 raise HTTPException(404, "Note not found")
+            # Exodus shared spaces: only the owner can delete a shared note.
+            if user is not None and note.owner != user:
+                raise HTTPException(403, "Only the person who made this note can delete it.")
             db.delete(note)
             db.commit()
             return {"ok": True}
@@ -852,7 +898,8 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             # SECURITY: strict ownership — previously `note.owner and note.owner != user`
             # let any user touch a row whose owner field was null/empty.
-            if user is not None and note.owner != user:
+            # Exodus shared spaces: members of the note's space may use it too.
+            if not _spaces.can_see_note(note, user, db):
                 raise HTTPException(404, "Note not found")
             note.pinned = not note.pinned
             db.commit()
@@ -871,7 +918,8 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             # SECURITY: strict ownership — previously `note.owner and note.owner != user`
             # let any user touch a row whose owner field was null/empty.
-            if user is not None and note.owner != user:
+            # Exodus shared spaces: members of the note's space may use it too.
+            if not _spaces.can_see_note(note, user, db):
                 raise HTTPException(404, "Note not found")
             note.archived = not note.archived
             db.commit()
@@ -890,7 +938,8 @@ def setup_note_routes(task_scheduler=None, upload_handler=None):
                 raise HTTPException(404, "Note not found")
             # SECURITY: strict ownership — previously `note.owner and note.owner != user`
             # let any user touch a row whose owner field was null/empty.
-            if user is not None and note.owner != user:
+            # Exodus shared spaces: members of the note's space may use it too.
+            if not _spaces.can_see_note(note, user, db):
                 raise HTTPException(404, "Note not found")
             if not note.items:
                 raise HTTPException(400, "Note has no checklist items")

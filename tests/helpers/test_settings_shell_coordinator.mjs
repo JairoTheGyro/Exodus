@@ -24,6 +24,7 @@ const REAL_MODULES = new Set([
   path.join(JS, 'i18n.js'),
   path.join(JS, 'settings/workspaceBrandSettings.js'),
   path.join(JS, 'settings/servicesManager.js'),
+  path.join(JS, 'settings/spacesSettings.js'),
   path.join(JS, 'workspaceBrand.js'),
   path.join(JS, 'apps/registry.js'),
   path.join(JS, 'apps/looks.js'),

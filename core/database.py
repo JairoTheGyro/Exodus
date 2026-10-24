@@ -2114,6 +2114,34 @@ class Note(TimestampMixin, Base):
     # Chat session spawned by the note's "Agent" button (solve-this-todo).
     # The note shows a clickable tag that opens this session for review.
     agent_session_id  = Column(String, nullable=True)
+    # Exodus shared spaces: when set, every member of that space can see and
+    # edit this note. NULL = personal (owner only). Only the owner can delete
+    # it or move it in or out of a space. A plain column (no foreign key) so
+    # code that creates only the notes table keeps working; src/spaces.py
+    # clears it when a space is deleted or a member leaves.
+    space_id = Column(String, nullable=True, index=True)
+
+
+class Space(TimestampMixin, Base):
+    """Exodus shared space (e.g. "Family"): a named group of accounts.
+
+    ``owner`` is the account that created it (a column named ``owner`` so an
+    account rename carries it along, like every other owner-scoped row).
+    """
+    __tablename__ = "spaces"
+
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    owner = Column(String, nullable=True, index=True)
+
+
+class SpaceMember(TimestampMixin, Base):
+    """One account's membership in a space. ``owner`` is the member's username."""
+    __tablename__ = "space_members"
+
+    space_id = Column(String, ForeignKey("spaces.id", ondelete="CASCADE"), primary_key=True)
+    owner = Column(String, primary_key=True, index=True)
+    role = Column(String, nullable=False, default="member")  # "manager" or "member"
 
 
 class CalendarCal(TimestampMixin, Base):
@@ -2487,6 +2515,7 @@ def init_db():
     _migrate_add_caldav_sync_columns()
     _migrate_add_calendar_recurrence_exdates()
     _migrate_add_note_gallery_id()
+    _migrate_add_note_space_id()
     _migrate_chat_messages_fts()
     _migrate_encrypt_email_passwords()
     _migrate_encrypt_signatures()
@@ -2942,6 +2971,27 @@ def _migrate_add_note_gallery_id():
             conn.commit()
     except Exception as e:
         logging.getLogger(__name__).warning(f"notes gallery_id migration failed: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+def _migrate_add_note_space_id():
+    """Exodus shared spaces: add notes.space_id to existing databases."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(notes)").fetchall()]
+        if columns and "space_id" not in columns:
+            conn.execute("ALTER TABLE notes ADD COLUMN space_id VARCHAR")
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_notes_space_id ON notes(space_id)")
+            conn.commit()
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"notes space_id migration failed: {e}")
     finally:
         if conn is not None:
             conn.close()

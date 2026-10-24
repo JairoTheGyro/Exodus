@@ -19,6 +19,7 @@ import { mountAppLookPicker } from './settings/appLooks.js';
 import { mountLanguagePicker } from './settings/languagePicker.js';
 import { mountWorkspaceBrandSettings } from './settings/workspaceBrandSettings.js';
 import { mountServicesManager } from './settings/servicesManager.js';
+import { mountSpacesSettings } from './settings/spacesSettings.js';
 import { APPS } from './apps/registry.js';
 import { bindSettingsNavigation } from './settings/navigation.js';
 import {
@@ -74,6 +75,7 @@ const _shell = createSettingsShell({
   // Exodus panels with their own activation work (License Tracker).
   onPanelActivated: (tab) => {
     if (tab === 'licenses') loadUpstreamUpdates();
+    if (tab === 'account') mountSpacesSettings(byId('spaces-rows'));
     if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); mountLanguagePicker(byId('settings-language')); }
     if (tab === 'system') { mountWorkspaceBrandSettings(); mountServicesManager(byId('services-manager-rows')); }
   },

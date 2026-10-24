@@ -1,6 +1,7 @@
 /** Render note cards from application queries and read-only state. */
 import { _nextGoalStep, _goalProgress, _hasItems, _standardVisualVariant, _visibleNoteTags } from '../domain/noteRules.js';
 import { _hasTimeComponent, _formatRepeatLabel } from '../domain/recurrence.js';
+import { ensureSpaces, spaceBadgeHtml } from './spaces.js';
 export function createCardRendering({
   COLORS,
   COLOR_HEX,
@@ -52,6 +53,7 @@ export function createCardRendering({
     if (!body) return;
     const prevPositions = _captureCardPositions();
     const activeReminderHighlights = _loadActiveHighlights();
+    ensureSpaces(() => _renderNotes()); // Exodus: names for "Shared in …" badges
 
     const sorted = _sortedVisibleNotes();
 
@@ -185,6 +187,7 @@ export function createCardRendering({
       ${contentHtml}
       ${_hasItems(note) ? `<div class="note-cl-quickadd"><input type="text" class="note-cl-quickadd-input" placeholder="+ Add item" data-note-id="${note.id}" /></div>` : ''}
       ${reminderTagHtml}
+      ${spaceBadgeHtml(note)}
       ${noteTags.length ? `<div class="note-card-label">${noteTags.map(t => `<button type="button" class="note-card-label-chip" data-note-label-filter="${_esc(t)}" title="Filter #${_esc(t)}">#${_esc(t)}</button>`).join(' ')}</div>` : ''}
       <div class="note-card-actions">
         <div class="note-card-colors">${colorDots}</div>
