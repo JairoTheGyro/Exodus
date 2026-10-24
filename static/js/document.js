@@ -5348,7 +5348,7 @@ import { isWorkshopSource, mountWorkshopPreview } from './workshopRuntime.js';
           added += 1;
         }
       }
-      _afterOdysseusAttachmentsAdded(added, zip ? 'odysseus-attachments.zip' : undefined);
+      _afterOdysseusAttachmentsAdded(added, zip ? 'exodus-attachments.zip' : undefined);
       _closeOdysseusAttachMenu();
     } catch (err) {
       console.error('Failed to attach selected Exodus items:', err);

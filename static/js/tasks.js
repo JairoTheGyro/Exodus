@@ -1015,7 +1015,7 @@ function _renderList() {
       if (waitingForIdle) {
         const forceRunBtn = document.createElement('button');
         forceRunBtn.className = 'memory-toolbar-btn task-detail-force-run-btn';
-        forceRunBtn.title = 'Run anyway, even while Odysseus is busy';
+        forceRunBtn.title = 'Run anyway, even while Exodus is busy';
         forceRunBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:4px;"><polygon points="6 4 20 12 6 20 6 4"/></svg>Run anyway';
         forceRunBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -2907,7 +2907,7 @@ function _renderActivityEntry(entry, opts = {}) {
   // idle gate; completed rows retain the normal "Run again" action.
   const waitingForIdle = /waiting\s+for\s+.*?to\s+be\s+idle/i.test(String(entry.result || ''));
   if (entry.taskId && (_isRunning && entry.status === 'queued' || waitingForIdle)) {
-      actionBtn += `<button class="task-log-run-again task-log-force-run task-log-force-run-action" type="button" title="Run anyway, even while Odysseus is busy">
+      actionBtn += `<button class="task-log-run-again task-log-force-run task-log-force-run-action" type="button" title="Run anyway, even while Exodus is busy">
          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
          Run anyway
        </button>`;

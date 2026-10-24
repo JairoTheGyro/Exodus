@@ -778,7 +778,7 @@ function renderFeatherlessPanel(panel, ep, row) {
           <select class="adm-model-tool-mode admin-tools-select" data-ep-model-id="${esc(id)}" data-original-tool-mode="${esc(toolModes[id] || '')}">
             <option value="" ${mode === '' ? 'selected' : ''}>Auto</option>
             <option value="full" ${mode === 'full' ? 'selected' : ''}>Regular tools</option>
-            <option value="compact" ${mode === 'compact' ? 'selected' : ''}>Odysseus compact</option>
+            <option value="compact" ${mode === 'compact' ? 'selected' : ''}>Exodus compact</option>
             <option value="none" ${mode === 'none' ? 'selected' : ''}>Tools off</option>
           </select>
         </div>
@@ -1368,10 +1368,10 @@ async function loadEndpoints() {
                 </label>
                 <div class="adm-model-tools-col">
                   <span class="adm-model-tools-label" title="Select the tool schema profile for this model">Tools</span>
-                  <select class="adm-model-tool-mode admin-tools-select" data-ep-model-id="${esc(m.id)}" data-original-tool-mode="${esc(m.tool_mode || '')}" data-tool-mode-touched="0" title="Auto uses Odysseus compact for Odysseus/Ajax names and Regular tools for every other model">
+                  <select class="adm-model-tool-mode admin-tools-select" data-ep-model-id="${esc(m.id)}" data-original-tool-mode="${esc(m.tool_mode || '')}" data-tool-mode-touched="0" title="Auto uses Exodus compact for Odysseus/Ajax model names and Regular tools for every other model">
                     <option value="" ${mode === '' ? 'selected' : ''}>Auto</option>
                     <option value="full" ${mode === 'full' ? 'selected' : ''}>Regular tools</option>
-                    <option value="compact" ${mode === 'compact' ? 'selected' : ''}>Odysseus compact</option>
+                    <option value="compact" ${mode === 'compact' ? 'selected' : ''}>Exodus compact</option>
                     <option value="none" ${mode === 'none' ? 'selected' : ''}>Tools off</option>
                   </select>
                 </div>
@@ -3650,7 +3650,7 @@ function initBackup() {
       const blob = await res.blob();
       const disposition = res.headers.get('Content-Disposition') || '';
       const match = disposition.match(/filename=(.+)/);
-      const filename = match ? match[1] : 'odysseus_backup.json';
+      const filename = match ? match[1] : 'exodus_backup.json';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = filename;

@@ -5335,7 +5335,7 @@ async def stream_preview(*, endpoint_url, model, messages, headers, turn_contrac
         'This is a tool preview connected to the authenticated user’s real data. '
     )
     system = (
-        f'You are Odysseus. Current UTC date and time: {datetime.now(timezone.utc).isoformat()}. '
+        f'You are Exodus. Current UTC date and time: {datetime.now(timezone.utc).isoformat()}. '
         + runtime_scope_clause
         + 'Use available tools when needed, including for personal records and current information. '
         'Preserve conversation context on follow-ups and choose arguments yourself. '
@@ -5681,7 +5681,7 @@ async def stream_preview(*, endpoint_url, model, messages, headers, turn_contrac
                                       'destination': 'active_editor' if active_editor_target else intent.destination,
                                       'needs_clarification': intent.needs_clarification})
                         + '\nFor draft/revise, use the interpreted destination: mailbox means '
-                        'create an UNSENT Odysseus email editor document using draft_email or '
+                        'create an UNSENT Exodus email editor document using draft_email or '
                         'draft_email_reply; chat means composed text in chat. When an active '
                         'editor is bound, update it instead of creating another draft. Resolve '
                         'named recipients to contact email addresses before creating a compose '

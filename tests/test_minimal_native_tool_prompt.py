@@ -481,7 +481,7 @@ def test_qwen35_tui_workspace_uses_coding_only_prompt() -> None:
     )
 
     content = prompt[0]["content"]
-    assert "Odysseus TUI workspace tools" in content
+    assert "Exodus TUI workspace tools" in content
     assert "old_string" in content
     assert "mcp__email__search_emails" not in content
 

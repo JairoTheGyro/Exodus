@@ -522,7 +522,7 @@ def setup_mcp_routes(mcp_manager: McpManager):
 
         return HTMLResponse(_oauth_result_page(
             "Authorization Expired",
-            "This authorization round has expired. Press Reconnect in Odysseus and try again.",
+            "This authorization round has expired. Press Reconnect in Exodus and try again.",
         ), status_code=400)
 
     @router.post("/oauth/exchange/{server_id}")
@@ -558,7 +558,7 @@ def setup_mcp_routes(mcp_manager: McpManager):
 
         return HTMLResponse(_oauth_result_page(
             "Authorization Expired",
-            "This authorization round has expired. Press Reconnect in Odysseus and try again.",
+            "This authorization round has expired. Press Reconnect in Exodus and try again.",
         ), status_code=400)
 
     async def _exchange_and_connect(server_id: str, code: str, request: Request):

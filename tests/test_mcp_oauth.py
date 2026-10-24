@@ -40,7 +40,7 @@ def test_register_pending_prunes_abandoned_flows():
 def test_build_provider_has_odysseus_client_metadata():
     p = mcp_oauth.build_provider("srv-1", "https://example.com/mcp")
     md = p.context.client_metadata
-    assert md.client_name == "Odysseus"
+    assert md.client_name == "Exodus"
     assert "authorization_code" in md.grant_types
     assert "refresh_token" in md.grant_types
     assert str(md.redirect_uris[0]).rstrip("/") == mcp_oauth.REDIRECT_URI.rstrip("/")
@@ -311,7 +311,7 @@ def test_oauth_callback_expired_state_returns_dedicated_expired_page(monkeypatch
     assert resp.status_code == 400
     assert "Authorization Expired" in resp.text
     assert (
-        "This authorization round has expired. Press Reconnect in Odysseus and try again."
+        "This authorization round has expired. Press Reconnect in Exodus and try again."
         in resp.text
     )
     # Ensure it did not return the bare 403 "Admin only"
@@ -446,7 +446,7 @@ def test_oauth_exchange_expired_generic_state_returns_expired_page(monkeypatch):
     assert resp.status_code == 400
     assert "Authorization Expired" in resp.text
     assert (
-        "This authorization round has expired. Press Reconnect in Odysseus and try again."
+        "This authorization round has expired. Press Reconnect in Exodus and try again."
         in resp.text
     )
     assert "No OAuth config." not in resp.text

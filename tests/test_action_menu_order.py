@@ -149,7 +149,11 @@ def test_email_auto_reply_syncs_one_calendar_event_per_account() -> None:
     assert "function _syncAutoReplyCalendarEvent(cfg)" in source
     assert "summary: 'Email Auto Reply (away)'" in source
     assert "function _findAutoReplyCalendarEventUids(cfg, accountId)" in source
-    assert "Odysseus email auto reply - account:" in source
+    # Exodus wording for new entries; entries from before the rename still match.
+    assert "const AUTO_REPLY_MARKER = 'Exodus email auto reply';" in source
+    assert "const LEGACY_AUTO_REPLY_MARKERS = ['Odysseus email auto reply'];" in source
+    assert "${AUTO_REPLY_MARKER} - account:" in source
+    assert "[AUTO_REPLY_MARKER, ...LEGACY_AUTO_REPLY_MARKERS]" in source
     assert "_AUTO_REPLY_CALENDAR_KEY_PREFIX" in source
     assert "method: 'POST', body: JSON.stringify(payload)" in source
     assert "method: 'PUT', body: JSON.stringify(payload)" in source

@@ -498,7 +498,7 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
 
         soffice = shutil.which("soffice") or shutil.which("libreoffice")
         if not soffice:
-            raise HTTPException(503, "Direct conversion requires LibreOffice/soffice on the Odysseus host")
+            raise HTTPException(503, "Direct conversion requires LibreOffice/soffice on the Exodus host")
 
         def convert():
             # Keep cleanup in the worker too: request cancellation must not

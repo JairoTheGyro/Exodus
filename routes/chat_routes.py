@@ -987,7 +987,7 @@ def _client_runtime_context_system_message(
         and not has_contract_facts
     ):
         return None
-    lines = ["## Odysseus TUI runtime contract"]
+    lines = ["## Exodus TUI runtime contract"]
     if session_cwd:
         lines.append(f"- session_cwd: {session_cwd}")
     if turn_controls:

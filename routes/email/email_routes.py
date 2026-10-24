@@ -5253,7 +5253,7 @@ def setup_email_routes():
                 content = buf.getvalue()
                 if not content:
                     raise HTTPException(status_code=400, detail="No valid attachments")
-                return _stage_compose_bytes("odysseus-attachments.zip", content)
+                return _stage_compose_bytes("exodus-attachments.zip", content)
             finally:
                 db.close()
         except HTTPException:

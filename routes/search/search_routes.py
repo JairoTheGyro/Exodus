@@ -64,7 +64,7 @@ def setup_search_routes(config) -> APIRouter:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{title} - Odysseus Search</title>
+  <title>{title} - Exodus Search</title>
   <style>
     :root {{ color-scheme: dark; --bg:#111; --fg:#eee; --muted:#999; --border:#333; --accent:#e05252; }}
     body {{ margin:0; font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }}

@@ -4526,7 +4526,7 @@ async def test_stream_emits_incremental_text_and_persistable_history(monkeypatch
     raw = [chunk async for chunk in stream_preview(endpoint_url='http://test', model='test', messages=[{'role': 'user', 'content': 'hi'}], headers={}, turn_contract=contract, session_id='test', owner='test', disabled_tools=set(), tool_policy=ToolPolicy())]
     events = [json.loads(s[6:]) for s in raw if '[DONE]' not in s]
     assert [e['delta'] for e in events if 'delta' in e] == ['Hello', ' there']
-    assert requests[0]['messages'][0]['content'].startswith('You are Odysseus.')
+    assert requests[0]['messages'][0]['content'].startswith('You are Exodus.')
     metrics = next(e['data'] for e in events if e.get('type') == 'metrics')
     assert metrics['clean_v3_turn'] == [{'role': 'assistant', 'content': 'Hello there'}]
     assert raw[-1] == 'data: [DONE]\n\n'
