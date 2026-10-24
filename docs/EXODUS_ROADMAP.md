@@ -38,8 +38,6 @@ _Nothing in progress._
 - **Shared spaces, later:** shared PDF/Word documents and uploaded files
   (needs uploads that members can read); shared calendars on Home and for the
   AI.
-- **Phone app polish:** check the main screens at phone width, home-screen
-  icon and sign-in on phones (private ntfy topics are done).
 - **Home server** reachable privately (e.g. Tailscale), plus an "update the
   server" step. Hardware choice is Jairo's.
 - Invite family and friends.
@@ -72,6 +70,11 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Phone polish:** checked the main screens at iPhone size in a
+  throwaway copy of Exodus (none spill sideways). Fixed the welcome being
+  hidden behind Home's first-run screen. The sign-in page now installs as a
+  home-screen app with the right name, and the icon is named after your
+  workspace. Guide: `docs/PHONE_ALERTS.md`.
 - 2026-10-24 · **AI per person:** Settings → Account → Your AI (also in the
   welcome) lets each person choose shared AI, their own cloud account or no
   AI. They can set a monthly spending cap, and admins can cap members. AI
