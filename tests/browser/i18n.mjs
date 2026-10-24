@@ -108,6 +108,37 @@ try {
   await app.evaluate(() => window.__i18n.setLanguage('es-419'));
   const fromCode = await app.evaluate(() => [window.__i18n.t('Sign In'), window.__i18n.t('Good afternoon, {name}.', { name: 'Ana' }), window.__i18n.t('Not in catalog')]);
   assert.deepEqual(fromCode, ['Iniciar sesión', 'Buenas tardes, Ana.', 'Not in catalog']);
+  // ── Wave 2: sidebar, menus and toasts ──
+  await app.evaluate(() => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <nav id="sidebar"><div class="list-item"><span class="grow">Calendar</span></div>
+        <div class="list-item session-item"><span class="grow text-ellipsis">Notes</span></div>
+        <div class="session-folder-header"><span class="folder-name">Library</span></div></nav>
+      <div id="toast" class="toast" role="status"></div>`);
+  });
+  await app.waitForFunction(() => document.querySelector('#sidebar .grow').textContent === 'Calendario');
+  // A chat titled "Notes" and a folder named "Library" are people's words: untouched.
+  assert.equal(await app.evaluate(() => document.querySelector('.session-item .text-ellipsis').textContent), 'Notes');
+  assert.equal(await app.evaluate(() => document.querySelector('.folder-name').textContent), 'Library');
+  const toast = async text => {
+    await app.evaluate(t => { const el = document.getElementById('toast'); el.textContent = ''; const span = document.createElement('span'); span.textContent = t; el.append(span); }, text);
+    await app.waitForTimeout(50);
+    return app.evaluate(() => document.getElementById('toast').textContent);
+  };
+  assert.equal(await toast('Session deleted'), 'Sesión eliminada');
+  assert.equal(await toast('Session renamed to Plan B'), 'Sesión renombrada a Plan B');
+  assert.equal(await toast('Install failed: disk full'), 'No se pudo instalar: disk full');
+  assert.equal(await toast('3 sessions restored'), '3 sesiones restauradas');
+  assert.equal(await toast('Something brand new happened'), 'Something brand new happened');
+  // Menus appear later, anywhere in the page.
+  await app.evaluate(() => {
+    const menu = document.createElement('div');
+    menu.className = 'dropdown session-dropdown-menu';
+    menu.innerHTML = '<button class="dropdown-item-compact">Rename</button><button class="dropdown-item-compact" title="Delete chat">Delete</button>';
+    document.body.append(menu);
+  });
+  await app.waitForFunction(() => document.querySelector('.session-dropdown-menu button').textContent === 'Renombrar');
+  assert.equal(await app.evaluate(() => document.querySelectorAll('.session-dropdown-menu button')[1].getAttribute('title')), 'Eliminar chat');
   console.log('PASS: translations on sign-in, Home/Settings content, patterns, protected content, brand, restore');
 } finally {
   await browser.close();

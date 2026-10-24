@@ -14,9 +14,15 @@ export const LANGUAGE_EVENT = 'exodus:language-changed';
 const STORAGE_KEY = 'exodus-language';
 const TEXT_ATTRIBUTES = ['title', 'aria-label', 'placeholder', 'alt'];
 // Wave 1: sign-in ([data-i18n-scope]), Home and Settings.
-const SCOPES = ['#workspace-home', '#settings-modal', '[data-i18n-scope]'];
+// Wave 2: the sidebar, menus (chat "+" menu, chat/folder/message/email/document
+// menus) and toast notifications.
+const SCOPES = [
+  '#workspace-home', '#settings-modal', '[data-i18n-scope]',
+  '#sidebar', '#toast', '#overflow-menu', '.dropdown', '.msg-overflow-menu', '.email-card-dropdown', '[role="menu"]',
+];
 // Dropdown choices are the app's wording and are translated; their values never change.
-const SKIP = 'script, style, textarea, input, code, pre, [contenteditable=""], [contenteditable="true"], [data-i18n-skip]';
+// Never translated: people's chat titles and folder names in the sidebar.
+const SKIP = 'script, style, textarea, input, code, pre, [contenteditable=""], [contenteditable="true"], [data-i18n-skip], .session-item .text-ellipsis, .folder-name';
 
 let language = detectLanguage();
 let catalog = null;          // { messages: Map, patterns: [{ regex, names, target }] }
