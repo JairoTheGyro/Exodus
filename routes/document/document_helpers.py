@@ -52,6 +52,9 @@ def _doc_to_dict(doc: Document) -> Dict[str, Any]:
         "version_count": doc.version_count,
         "is_active": doc.is_active,
         "archived": bool(getattr(doc, "archived", False)),
+        # Exodus shared spaces
+        "owner": getattr(doc, "owner", None),
+        "space_id": getattr(doc, "space_id", None),
         "created_at": (doc.created_at.isoformat() + "Z") if doc.created_at else None,
         "updated_at": (doc.updated_at.isoformat() + "Z") if doc.updated_at else None,
         # Source-email provenance (set when doc was created from an email
@@ -96,6 +99,38 @@ def _verify_doc_owner(db, doc: Document, user: str):
     session = db.query(DbSession).filter(DbSession.id == doc.session_id).first()
     if not session or session.owner != user:
         raise HTTPException(404, "Document not found")
+
+
+def _verify_doc_access(db, doc: Document, user: str):
+    """Owner (via _verify_doc_owner) or, for Exodus shared spaces, a member of
+    the space a text document is shared in. Raises 404 otherwise. Spaces are
+    loaded lazily and fail closed to owner-only."""
+    try:
+        _verify_doc_owner(db, doc, user)
+        return
+    except HTTPException:
+        try:
+            from src import spaces
+            allowed = spaces.can_use_document(doc, user, db)
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise
+
+
+def _owner_or_space_filter(q, user, db):
+    """Like _owner_session_filter, plus documents shared in the user's spaces."""
+    if not user:
+        return _owner_session_filter(q, user)
+    try:
+        from src import spaces
+        member_of = spaces.space_ids_for(user, db)
+    except Exception:
+        member_of = []
+    if not member_of:
+        return _owner_session_filter(q, user)
+    from sqlalchemy import or_
+    return q.filter(or_(Document.owner == user, Document.space_id.in_(member_of)))
 
 
 def _owner_session_filter(q, user):

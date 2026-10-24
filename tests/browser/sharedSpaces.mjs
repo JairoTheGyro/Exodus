@@ -161,7 +161,40 @@ try {
     return box.querySelector('.spaces-meta').textContent;
   });
   assert.equal(meta, '2 members · 2 shared notes · 1 shared calendar');
-  console.log('PASS: spaces settings card, member actions, error message, note badge and share menu, calendar sharing');
+  // Library documents: tags, owner-only "Share to", and the server's reason on refusal.
+  const docs = await page.evaluate(async () => {
+    const mod = await import('/static/js/documentLibrarySpaces.js');
+    mod._resetDocSpacesForTests();
+    await mod.ensureDocSpaces({ fetchImpl: async () => new Response(JSON.stringify(window.__data)) });
+    const labels = [
+      mod.sharedLabel({ owner: 'mom', space_id: 's1' }),
+      mod.sharedLabel({ owner: 'dad', space_id: 's1' }),
+      mod.sharedLabel({ owner: 'mom', space_id: null }),
+    ];
+    const toasts = [];
+    const mine = { id: 'd1', owner: 'mom', space_id: null };
+    const menu = document.createElement('div');
+    mod.addDocShareItems(menu, mine, {
+      close() {}, onSaved() {}, toast: (text, err) => toasts.push([text, !!err]),
+      save: async id => { if (id === 's2') throw new Error('Documents made from a PDF or Word file, or with pictures, can\'t be shared yet.'); },
+    });
+    const choices = [...menu.querySelectorAll('[data-share-space]')].map(b => b.lastChild.textContent);
+    menu.querySelector('[data-share-space="s1"]').click();
+    await new Promise(r => setTimeout(r, 0));
+    menu.querySelector('[data-share-space="s2"]').click();
+    await new Promise(r => setTimeout(r, 0));
+    const others = document.createElement('div');
+    mod.addDocShareItems(others, { id: 'd2', owner: 'dad', space_id: 's1' }, { save: async () => {} });
+    return { labels, choices, toasts, nowShared: mine.space_id, othersItems: others.children.length,
+      owns: [mod.ownsDocument({ owner: 'mom' }), mod.ownsDocument({ owner: 'dad' })] };
+  });
+  assert.deepEqual(docs.labels, ['Shared in Family', 'Family · by dad', '']);
+  assert.deepEqual(docs.choices, ['Only me', 'Family', 'Book club']);
+  assert.deepEqual(docs.toasts, [['Shared with Family', false], ["Documents made from a PDF or Word file, or with pictures, can't be shared yet.", true]]);
+  assert.equal(docs.nowShared, 's1');
+  assert.equal(docs.othersItems, 0);
+  assert.deepEqual(docs.owns, [true, false]);
+  console.log('PASS: spaces settings card, member actions, error message, note badge and share menu, calendar sharing, document sharing');
 } finally {
   await browser.close();
 }

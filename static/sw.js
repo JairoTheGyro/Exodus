@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'odysseus-v667-exodus-shared-calendars';
+const CACHE_NAME = 'odysseus-v668-exodus-shared-documents';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -123,6 +123,7 @@ const PRECACHE = [
   // Exodus additions.
   '/static/js/libraryFiles.js',
   '/static/js/documentLibrary.js?v=20260911librarybulkdelete1',
+  '/static/js/documentLibrarySpaces.js',
   '/static/js/workshop.js',
   '/static/js/workshopRuntime.js',
   '/static/workshop-frame.html',

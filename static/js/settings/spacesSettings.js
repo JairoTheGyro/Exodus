@@ -24,6 +24,7 @@ function metaLine(doc, space) {
   const parts = [plural(space.members.length, 'member', 'members'),
     plural(space.note_count || 0, 'shared note', 'shared notes')];
   if (space.calendar_count) parts.push(plural(space.calendar_count, 'shared calendar', 'shared calendars'));
+  if (space.document_count) parts.push(plural(space.document_count, 'shared document', 'shared documents'));
   const meta = el(doc, 'span', { className: 'spaces-meta' });
   parts.forEach((part, i) => {
     if (i) meta.append(' · ');

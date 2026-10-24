@@ -1,4 +1,5 @@
 import { mountLibraryFiles } from './libraryFiles.js';
+import { ensureDocSpaces, ownsDocument, sharedLabel, addDocShareItems, saveDocumentSpace } from './documentLibrarySpaces.js';
 // static/js/documentLibrary.js
 /**
  * Document Library — modal with Chats / Documents / Research / Archive tabs.
@@ -459,6 +460,7 @@ function _setLibraryCountChipContent(chip, label, count) {
       const res = await fetch(`${API_BASE}/api/documents/library?${params}`);
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();
+      await ensureDocSpaces(); // Exodus: names for shared-document tags
 
       if (append) {
         _libraryDocs = _libraryDocs.concat(data.documents);
@@ -710,6 +712,8 @@ function _setLibraryCountChipContent(chip, label, count) {
       pieces.push(`<span>${_esc(doc.language)}</span>`);
     }
     pieces.push(`<span>${_esc(libraryRelativeTime(doc.updated_at))}</span>`);
+    const _shared = sharedLabel(doc); // Exodus shared spaces
+    if (_shared) pieces.push(`<span class="doclib-shared-tag">${_esc(_shared)}</span>`);
     meta.innerHTML = pieces.join('<span style="opacity:0.5;">\u00b7</span>');
     content.appendChild(meta);
     // Action buttons — "..." menu
@@ -898,8 +902,17 @@ function _setLibraryCountChipContent(chip, label, count) {
         if (uiModule) uiModule.showToast(toArchived ? 'Archived' : 'Restored');
       } catch { if (uiModule) uiModule.showError('Failed to ' + (toArchived ? 'archive' : 'restore')); }
     });
+    // Exodus shared spaces: "Share to" for the owner; archive and delete
+    // stay with the owner, so members don't see them.
+    addDocShareItems(dropdown, doc, {
+      close: hideCardDropdown,
+      save: spaceId => saveDocumentSpace(doc.id, spaceId),
+      onSaved: () => libraryRenderGrid(),
+      toast: (text, isError) => (isError ? uiModule?.showError?.(text) : uiModule?.showToast?.(text)),
+    });
     const actionDivider = document.createElement('div');
     actionDivider.className = 'dropdown-divider';
+    if (ownsDocument(doc)) {
     dropdown.appendChild(actionDivider);
     dropdown.appendChild(archiveItem);
 
@@ -911,6 +924,7 @@ function _setLibraryCountChipContent(chip, label, count) {
     deleteItem.innerHTML = _di(_deleteIco) + '<span>Delete</span>';
     deleteItem.addEventListener('click', (e) => { e.stopPropagation(); hideCardDropdown(); libraryDeleteSingle(doc.id, card); });
     dropdown.appendChild(deleteItem);
+    }
 
     menuWrap.appendChild(dropdown);
     actionsWrap.appendChild(menuWrap);

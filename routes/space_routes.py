@@ -15,6 +15,10 @@ class SpaceBody(BaseModel):
     name: Optional[str] = None
 
 
+class ShareBody(BaseModel):
+    space_id: Optional[str] = None
+
+
 class MemberBody(BaseModel):
     username: Optional[str] = None
     role: Optional[str] = "member"
@@ -73,5 +77,10 @@ def setup_space_routes() -> APIRouter:
         user, is_admin, _ = _who(request)
         _run(spaces.remove_member, user, space_id, username, is_admin=is_admin)
         return {"ok": True}
+
+    @router.put("/documents/{doc_id}")
+    def share_document(request: Request, doc_id: str, body: ShareBody):
+        user, _, _ = _who(request)
+        return _run(spaces.share_document, user, doc_id, body.space_id or "")
 
     return router

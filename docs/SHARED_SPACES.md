@@ -1,7 +1,8 @@
 # Shared spaces
 
 A **space** is a named group of accounts, such as "Family" or "Work". Notes,
-lists and calendars put in a space can be seen and edited by everyone in it.
+lists, calendars and documents put in a space can be seen and edited by
+everyone in it.
 Everything else stays private to its owner.
 
 ## Create a space and add people
@@ -48,6 +49,21 @@ edit and delete them.
 Calendars synced from another service (CalDAV, e.g. iCloud or Nextcloud) stay
 personal for now, because they sync with their owner's own login.
 
+## Share a document
+
+Library → **Documents** → a document's **⋯** menu → **Share to** → a space.
+Choose **Only me** to make it private again. Shared documents show "Shared in
+Family" (yours) or "Family · by mom" (someone else's).
+
+| Who | Can |
+|---|---|
+| The document's owner | Everything: edit, archive, delete, export, change who can see it |
+| Space members | Open it, edit its text, see and restore its versions |
+| Everyone else | Nothing |
+
+Documents made from a PDF or Word file, or that contain pictures, stay
+personal for now, because those files are stored per person.
+
 ## Good to know
 
 - **Pictures** in a shared note can only be added by its owner. Pictures are
@@ -58,7 +74,7 @@ personal for now, because they sync with their owner's own login.
   personal: each person sets their own.
 - Shared calendars appear in the Calendar. Home's agenda and the AI still show
   only your own calendars.
-- **Coming next:** shared files.
+- Uploaded files in Library → Files are still personal.
 
 ## Files
 
@@ -67,6 +83,10 @@ personal for now, because they sync with their owner's own login.
 - `routes/note/note_routes.py`: notes that respect spaces.
 - `routes/calendar_routes.py`: calendars that respect spaces.
 - `static/js/calendar/spaces.js`: the Share to choice in Calendar Settings.
+- `routes/document/document_routes.py` and `document_helpers.py`: documents
+  that respect spaces.
+- `static/js/documentLibrarySpaces.js`: the Library tag and Share to menu.
 - `static/js/settings/spacesSettings.js`: the Settings card.
 - `frontend/src/features/notes/ui/spaces.js`: the Notes badge and the Share to menu.
-- `tests/test_shared_spaces.py`, `tests/test_shared_calendars.py`: isolation tests.
+- `tests/test_shared_spaces.py`, `tests/test_shared_calendars.py`,
+  `tests/test_shared_documents.py`: isolation tests.
