@@ -11,6 +11,7 @@ try {
     document.body.innerHTML = '<div id="rows"></div>';
     window.__calls = [];
     window.__opened = [];
+    window.__accounts = [];
     window.__state = { me: 'mom', is_admin: true, source: null, ai_free: false, self_cap_usd: null, admin_cap_usd: null,
       cap_usd: null, spent_usd: 1.234, paused: false, connections: { own: [], shared: ['Home GPU'] } };
     window.__api = async (url, init = {}) => {
@@ -26,6 +27,15 @@ try {
         s.cap_usd = s.self_cap_usd;
         s.paused = s.cap_usd != null && s.spent_usd >= s.cap_usd;
       }
+      if (url === '/api/my-ai/providers') return new Response(JSON.stringify({ providers: [{ id: 'openrouter', name: 'OpenRouter' }, { id: 'openai', name: 'OpenAI' }] }));
+      if (url === '/api/my-ai/accounts' && method === 'GET') return new Response(JSON.stringify({ accounts: window.__accounts }));
+      if (url === '/api/my-ai/accounts' && method === 'POST') {
+        const b = JSON.parse(init.body);
+        if (b.api_key === 'bad-key-123') return new Response(JSON.stringify({ detail: "OpenAI didn't accept that key, or listed no models. Check the key and try again." }), { status: 400 });
+        window.__accounts.push({ id: 'acc1', provider: b.provider, provider_name: 'OpenRouter', models: 12 });
+        return new Response('{}');
+      }
+      if (url.startsWith('/api/my-ai/accounts/') && method === 'DELETE') { window.__accounts = []; return new Response('{}'); }
       if (url === '/api/ai-budget/members') return new Response(JSON.stringify({ members: [
         { username: 'kid', spent_usd: 4, admin_cap_usd: 5, paused: false }, { username: 'mom', spent_usd: 1.234, admin_cap_usd: null, paused: false }] }));
       if (url.startsWith('/api/ai-budget/members/')) return new Response('{}');
@@ -49,6 +59,23 @@ try {
   await page.click('[data-ai-source="own"]'); await settle();
   assert.deepEqual(await checked(), ['own']);
   assert.match(await text(), /You haven’t added an AI account yet\./);
+  // Connect your own account: provider list + key; a bad key shows the reason.
+  await page.waitForSelector('.ai-own-provider option', { state: 'attached' });
+  assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.ai-own-provider option')].map(o => o.textContent)), ['OpenRouter', 'OpenAI']);
+  await page.selectOption('.ai-own-provider', 'openai');
+  await page.fill('.ai-own-key', 'bad-key-123');
+  await page.click('[data-ai-action="connect-account"]'); await settle();
+  assert.match(await page.textContent('.ai-choice-msg'), /didn't accept that key/);
+  await page.selectOption('.ai-own-provider', 'openrouter');
+  await page.fill('.ai-own-key', 'sk-or-good-key-123');
+  await page.click('[data-ai-action="connect-account"]');
+  await page.waitForSelector('.ai-own-list [data-account="acc1"]');
+  assert.equal(await page.inputValue('.ai-own-key'), '');  // the key isn't left on screen
+  assert.match(await page.textContent('.ai-own-list'), /OpenRouter · 12 models/);
+  assert.equal(await page.getAttribute('.ai-own-key', 'type'), 'password');
+  await page.click('.ai-own-list [data-ai-action="remove-account"]');
+  await page.waitForFunction(() => !document.querySelector('.ai-own-list'));
+  // Admins also get a link to every connection.
   await page.click('[data-ai-action="add-account"]'); await settle();
   assert.deepEqual(await page.evaluate(() => window.__opened), ['added-models']);
 
@@ -64,6 +91,8 @@ try {
   assert.deepEqual(await checked(), ['off']);
   assert.equal(await page.$('.ai-choice-spend'), null); // no costs to show without AI
   assert.deepEqual(await page.evaluate(() => window.__changes), [[null, 'own'], ['own', 'own'], ['own', 'own'], ['own', 'off']]);
+  const keyPosts = await page.evaluate(() => window.__calls.filter(c => c[1] === '/api/my-ai/accounts' && c[0] === 'POST').map(c => JSON.parse(c[2]).provider));
+  assert.deepEqual(keyPosts, ['openai', 'openrouter']);
 
   // Admin: everyone's spending and a per-member cap.
   await page.click('[data-ai-source="shared"]'); await settle();

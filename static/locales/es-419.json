@@ -967,7 +967,19 @@
   "Choose shared, own or off.": "Elige compartida, propia o sin IA.",
   "The cap must be a number of dollars.": "El límite debe ser una cantidad en dólares.",
   "The cap must be between $0 and $100,000.": "El límite debe estar entre $0 y $100,000.",
-  "Choosing your AI needs a sign-in account.": "Para elegir tu IA necesitas una cuenta con inicio de sesión."
+  "Choosing your AI needs a sign-in account.": "Para elegir tu IA necesitas una cuenta con inicio de sesión.",
+  "Advanced: all AI connections": "Avanzado: todas las conexiones de IA",
+  "AI provider": "Proveedor de IA",
+  "Paste your API key": "Pega tu clave de API",
+  "Connect": "Conectar",
+  "Only you can use and see this account. Exodus stores the key encrypted and never shows it again. Create the key on the provider’s website; you pay them directly.": "Solo tú puedes usar y ver esta cuenta. Exodus guarda la clave cifrada y nunca vuelve a mostrarla. Crea la clave en el sitio web del proveedor; le pagas directamente.",
+  "Checking the key with the provider…": "Comprobando la clave con el proveedor…",
+  "Connected. Its models now appear in your model picker.": "Conectada. Sus modelos ya aparecen en tu selector de modelos.",
+  "Removed.": "Eliminada.",
+  "Choose a provider from the list.": "Elige un proveedor de la lista.",
+  "Paste the whole API key (no spaces).": "Pega la clave de API completa (sin espacios).",
+  "Your own AI accounts need a sign-in account.": "Tus propias cuentas de IA requieren una cuenta con inicio de sesión.",
+  "Account not found.": "No se encontró la cuenta."
  },
  "patterns": [
   [
@@ -1389,6 +1401,18 @@
   [
    "You've reached your monthly AI spending cap of {cap}. AI resumes on the 1st of next month, or raise the cap in Settings → Account → Your AI.",
    "Llegaste a tu límite mensual de gasto en IA de {cap}. La IA vuelve el día 1 del próximo mes, o sube el límite en Configuración → Cuenta → Tu IA."
+  ],
+  [
+   "{name} · {n} models",
+   "{name} · {n} modelos"
+  ],
+  [
+   "{name} didn't accept that key, or listed no models. Check the key and try again.",
+   "{name} no aceptó esa clave o no mostró modelos. Revisa la clave e inténtalo de nuevo."
+  ],
+  [
+   "You can connect up to {n} accounts.",
+   "Puedes conectar hasta {n} cuentas."
   ]
  ]
 }

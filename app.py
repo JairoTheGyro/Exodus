@@ -919,6 +919,8 @@ from routes.personal_alerts_routes import setup_personal_alerts_routes
 app.include_router(setup_personal_alerts_routes())
 from routes.ai_budget_routes import setup_ai_budget_routes
 app.include_router(setup_ai_budget_routes())
+from routes.my_ai_routes import setup_my_ai_routes
+app.include_router(setup_my_ai_routes())
 
 
 # MCP (Model Context Protocol)
