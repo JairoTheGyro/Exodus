@@ -910,6 +910,8 @@ from routes.calculator_routes import setup_calculator_routes
 app.include_router(setup_calculator_routes())
 from routes.workspace_brand_routes import setup_workspace_brand_routes
 app.include_router(setup_workspace_brand_routes())
+from routes.services_routes import setup_services_routes
+app.include_router(setup_services_routes())
 
 
 # MCP (Model Context Protocol)

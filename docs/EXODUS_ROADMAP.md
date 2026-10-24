@@ -28,8 +28,9 @@ _Nothing in progress._
   past the new baseline (88772b32 → 268636c9 on 2026-10-19).
 
 ### Stage 3 · Foundations
-- **Services manager:** each service On / Off / Removed (data kept unless chosen)
-  / Reinstall. Each person can hide apps and features they don't use.
+- **Turn on the Services manager add-on** once Docker is back (Jairo): add
+  `docker/service-manager.yml` to `COMPOSE_FILE` in `.env`, then hand-test it
+  (`docs/SERVICES_MANAGER.md`).
 - **Review Spanish wave 1** in the browser (Jairo) and fix any wording in
   `static/locales/es-419.json`.
 - **Performance:** measure where memory and time go, then trim. Rust only for
@@ -74,6 +75,11 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Services manager:** admins can turn each optional service on or
+  off, remove it (data kept unless chosen) and reinstall it, from Settings →
+  System → Services, through an opt-in, locked-down helper. Each person can
+  hide apps they don't use (Clock, Calculator, Code and more), and that choice
+  follows their account. Guide: `docs/SERVICES_MANAGER.md`.
 - 2026-10-25 · **Spanish wave 2:** the sidebar, menus and toast notifications
   are in Spanish too (858 strings and 77 patterns in total). Chat titles and
   folder names stay as people wrote them.

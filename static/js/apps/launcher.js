@@ -39,6 +39,7 @@ export function installApps({ loadPanel, toast, doc = document, apps = APPS, sch
       if (!anchor) continue;
       entry = menuEntry(app, doc);
       anchor.after(entry);
+      if (hiddenByChoice(app)) entry.style.display = 'none';
     }
     entry.addEventListener('click', async () => {
       try {
@@ -61,6 +62,17 @@ export function installApps({ loadPanel, toast, doc = document, apps = APPS, sch
     installed.push(app.id);
   }
   return installed;
+}
+
+// Settings → Appearance → Sidebar can hide an app (key tool-<id>); entries
+// created after the page applied that choice follow it.
+export function hiddenByChoice(app) {
+  try {
+    const saved = JSON.parse(globalThis.localStorage?.getItem('odysseus-ui-visibility') || '{}');
+    return saved[`tool-${app.id}`] === false;
+  } catch (_) {
+    return false;
+  }
 }
 
 function idle(fn) {

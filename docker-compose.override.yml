@@ -176,3 +176,4 @@ services:
       - ./static/js/apps:/app/static/js/apps:ro
       - ./routes/calculator_routes.py:/app/routes/calculator_routes.py:ro
       - ./routes/workspace_brand_routes.py:/app/routes/workspace_brand_routes.py:ro
+      - ./routes/services_routes.py:/app/routes/services_routes.py:ro
