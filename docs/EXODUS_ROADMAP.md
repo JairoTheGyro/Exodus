@@ -30,8 +30,10 @@ _Nothing in progress._
 ### Stage 3 · Foundations
 - **Services manager:** each service On / Off / Removed (data kept unless chosen)
   / Reinstall. Each person can hide apps and features they don't use.
-- **Languages:** a translation system plus Spanish (Latin America) wave 1:
-  sign-in, Home, Settings Essentials. Reviewed by Jairo in the browser.
+- **Review Spanish wave 1** in the browser (Jairo) and fix any wording in
+  `static/locales/es-419.json`.
+- **AI replies in your language:** include the person's language in the AI
+  instructions so chat answers come back in Spanish too.
 - **Performance:** measure where memory and time go, then trim. Rust only for
   proven hot spots (no full rewrite).
 
@@ -74,6 +76,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Translations and Spanish wave 1:** a translation system plus
+  Latin American Spanish for the sign-in page, Home and the everyday Settings.
+  Pick the language in Settings → Appearance or on the sign-in page; it's saved
+  with your account. See `docs/TRANSLATIONS.md`.
 - 2026-10-24 · **Your own workspace name and logo:** an admin sets them in
   Settings → System → Workspace name and logo. They replace "Exodus" in the
   sidebar, Home, welcome screen, Settings, browser tabs, tab icon, installed

@@ -99,7 +99,7 @@ export const SETTINGS_PANELS = Object.freeze([
     id: 'appearance',
     label: 'Appearance',
     group: 'experience',
-    keywords: ['appearance', 'theme', 'font', 'density', 'peek', 'look', 'app look', 'style'],
+    keywords: ['appearance', 'theme', 'font', 'density', 'peek', 'look', 'app look', 'style', 'language', 'idioma', 'spanish', 'español'],
   }),
   definePanel({
     id: 'shortcuts',
