@@ -123,3 +123,6 @@
 
 /* Reserve logo space until the selected palette is decoded; no original-color flash. */
 .exodus-logo[data-logo-pending] { visibility: hidden; }
+
+/* Settings → Appearance → App look: one aligned column of look dropdowns. */
+.app-look-row .app-look-select { width: 240px; max-width: 55%; flex-shrink: 0; }

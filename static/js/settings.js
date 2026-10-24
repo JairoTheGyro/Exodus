@@ -15,6 +15,7 @@ import { bindSettingsSearch } from './settings/search.js';
 import { bindSettingsSidebar } from './settings/sidebar.js';
 import { bindSettingsExperience } from './settings/experience.js';
 import { loadUpstreamUpdates } from './settings/upstream.js';
+import { mountAppLookPicker } from './settings/appLooks.js';
 import { bindSettingsNavigation } from './settings/navigation.js';
 import {
   bindSettingsDrag,
@@ -67,7 +68,10 @@ const _shell = createSettingsShell({
   isAdmin: () => !!window._isAdmin,
   getAdminModule: () => window.adminModule,
   // Exodus panels with their own activation work (License Tracker).
-  onPanelActivated: (tab) => { if (tab === 'licenses') loadUpstreamUpdates(); },
+  onPanelActivated: (tab) => {
+    if (tab === 'licenses') loadUpstreamUpdates();
+    if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); }
+  },
 });
 
 /* ═══════════════════════════════════════════
