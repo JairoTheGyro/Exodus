@@ -147,7 +147,7 @@ export const SETTINGS_PANELS = Object.freeze([
     group: 'administration',
     controller: 'admin',
     adminOnly: true,
-    keywords: ['system', 'admin', 'server'],
+    keywords: ['system', 'admin', 'server', 'workspace name', 'logo', 'branding', 'rename'],
   }),
 ]);
 

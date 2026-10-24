@@ -1,6 +1,7 @@
 // Render color variants of the supplied pixel-art mark locally. The source PNG
 // is never changed; UI images and the root favicon share the same rendered URL.
 import Storage from '../storage.js';
+import { BRAND_EVENT, startWorkspaceBrand, workspaceLogoUrl, workspaceName } from '../workspaceBrand.js';
 
 const SOURCE = new URL('../../icons/exodus.png', import.meta.url).href;
 const KEY = 'odysseus-logo-variant';
@@ -110,7 +111,10 @@ export async function applyExodusLogo(nextColors = colors) {
   const current = ++revision;
   const selected = choice;
   try {
-    const url = await logoURL(selected);
+    // Exodus: an admin-set workspace logo replaces the mark everywhere; the
+    // color choices below still apply to the default mark.
+    const custom = workspaceLogoUrl();
+    const url = custom || await logoURL(selected);
     // Decode off-screen so the first visible frame already has the saved colors.
     const decoded = new Image();
     decoded.src = url;
@@ -131,8 +135,10 @@ export async function applyExodusLogo(nextColors = colors) {
       if (apple) apple.href = url;
     }
     const status = document.getElementById('exodus-logo-status');
-    if (status) status.textContent = selected === 'auto'
-      ? 'The logo and Exodus tab icon follow your theme. Choice saved in this browser.'
+    if (status) status.textContent = custom
+      ? `${workspaceName()} uses a custom logo set by an admin. These colors apply to the default logo.`
+      : selected === 'auto'
+      ? `The logo and ${workspaceName()} tab icon follow your theme. Choice saved in this browser.`
       : `${variants.find(([key]) => key === selected)[1]} stays selected when you change themes. Choice saved in this browser.`;
     for (const button of document.querySelectorAll('[data-logo-choice]')) {
       button.setAttribute('aria-pressed', String(button.dataset.logoChoice === selected));
@@ -186,6 +192,9 @@ window.addEventListener('storage', event => {
     applyExodusLogo();
   }
 });
+// Exodus: workspace name and logo (both pages load this module).
+startWorkspaceBrand();
+document.addEventListener(BRAND_EVENT, () => applyExodusLogo());
 // Login has no theme picker, but should use the same saved logo choice.
 applyExodusLogo();
 

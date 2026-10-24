@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'odysseus-v662-exodus-app-look-picker';
+const CACHE_NAME = 'odysseus-v663-exodus-workspace-brand';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -127,6 +127,8 @@ const PRECACHE = [
   '/static/js/workshopRuntime.js',
   '/static/workshop-frame.html',
   '/static/js/settings/brand.js',
+  '/static/js/workspaceBrand.js',
+  '/static/js/settings/workspaceBrandSettings.js',
   '/static/js/settings/localServices.js',
   '/static/js/settings/code.js',
   '/static/js/settings/experience.js',

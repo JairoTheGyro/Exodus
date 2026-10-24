@@ -30,7 +30,6 @@ _Nothing in progress._
 ### Stage 3 · Foundations
 - **Services manager:** each service On / Off / Removed (data kept unless chosen)
   / Reinstall. Each person can hide apps and features they don't use.
-- **Your own workspace name and logo** (admin setting, used everywhere).
 - **Languages:** a translation system plus Spanish (Latin America) wave 1:
   sign-in, Home, Settings Essentials. Reviewed by Jairo in the browser.
 - **Performance:** measure where memory and time go, then trim. Rust only for
@@ -75,6 +74,11 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Your own workspace name and logo:** an admin sets them in
+  Settings → System → Workspace name and logo. They replace "Exodus" in the
+  sidebar, Home, welcome screen, Settings, browser tabs, tab icon, installed
+  app and sign-in page. People's own content and the legal credit are never
+  changed. Logos are cleaned and stored as PNG; back to the defaults any time.
 - 2026-10-24 · **Look picker in Settings:** Settings → Appearance → App look
   chooses Apple-like or Exodus for all built-in apps, or a different look for a
   single app. New apps from the app list appear there automatically. Saved per
