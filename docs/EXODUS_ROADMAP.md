@@ -12,6 +12,35 @@ Status: **Needs to get started** · **Working on it** · **Finished**
 
 ---
 
+## Waiting on Jairo
+
+Jairo gets a new computer with **36 GB of memory** in a few days (from
+2026-10-24). Docker comes back then, and these three steps happen in order.
+Claude reminds Jairo of them and walks through each one.
+
+1. **Update and hand-test on the new computer.**
+   - In the Exodus folder run `python3 scripts/update_local.py`. It backs up
+     data, then rebuilds and restarts only what changed.
+   - Try what was built while Docker was off:
+     - **Services manager:** add `docker/service-manager.yml` to `COMPOSE_FILE`
+       in `.env` first (`docs/SERVICES_MANAGER.md`).
+     - **Spaces:** create a Family space and share a note, a calendar and a
+       document (`docs/SHARED_SPACES.md`).
+     - **Your AI:** set a tiny spending cap and check that AI pauses at it.
+     - **Phone alerts:** subscribe in the ntfy app, then press Send test
+       (`docs/PHONE_ALERTS.md`).
+     - **Welcome setup:** invite a test account and walk through it.
+     - **Odysseus catch-up:** run `docker compose pull searxng chromadb ntfy`
+       for the new pinned images, and check search, memory, notifications and
+       email export.
+   - Click through the Spanish screens and note any wording that sounds off
+     (Claude fixes it in `static/locales/es-419.json`).
+2. **Pick the home server computer.** The new 36 GB computer could be it, or a
+   separate always-on mini PC or Mac mini. Then follow `docs/HOME_SERVER.md`
+   with Claude.
+3. **Invite family and friends:** Settings → Team & invitations, and add them
+   to Tailscale.
+
 ## Working on it
 
 _Nothing in progress._
@@ -26,11 +55,6 @@ _Nothing in progress._
   or "ntfy" bring up `notify_user`, but a live chat should confirm it.
 
 ### Stage 3 · Foundations
-- **Turn on the Services manager add-on** once Docker is back (Jairo): add
-  `docker/service-manager.yml` to `COMPOSE_FILE` in `.env`, then hand-test it
-  (`docs/SERVICES_MANAGER.md`).
-- **Review Spanish wave 1** in the browser (Jairo) and fix any wording in
-  `static/locales/es-419.json`.
 - **Performance:** measure where memory and time go, then trim. Rust only for
   proven hot spots (no full rewrite).
 
@@ -38,9 +62,7 @@ _Nothing in progress._
 - **Shared spaces, later:** shared PDF/Word documents and uploaded files
   (needs uploads that members can read); shared calendars on Home and for the
   AI.
-- **Set up the home server** (Jairo): pick the computer, then follow
-  `docs/HOME_SERVER.md`.
-- Invite family and friends.
+- Home server setup and inviting people: see **Waiting on Jairo**.
 
 ### Stage 5 · Looks, apps and convenience
 - Style packs: **Apple-like → Windows-like → Material-like**, plus per-app
