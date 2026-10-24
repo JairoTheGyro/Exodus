@@ -38,8 +38,8 @@ _Nothing in progress._
 - **Shared spaces, later:** shared PDF/Word documents and uploaded files
   (needs uploads that members can read); shared calendars on Home and for the
   AI.
-- **Home server** reachable privately (e.g. Tailscale), plus an "update the
-  server" step. Hardware choice is Jairo's.
+- **Set up the home server** (Jairo): pick the computer, then follow
+  `docs/HOME_SERVER.md`.
 - Invite family and friends.
 
 ### Stage 5 · Looks, apps and convenience
@@ -70,6 +70,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Home server prep:** install guide (`docs/HOME_SERVER.md`:
+  hardware choices, Docker, Tailscale with a private HTTPS address, first run,
+  backups). The updater now backs up data first, keeps a `:rollback` image and
+  the previous version, and `--rollback` goes back.
 - 2026-10-24 · **Phone polish:** checked the main screens at iPhone size in a
   throwaway copy of Exodus (none spill sideways). Fixed the welcome being
   hidden behind Home's first-run screen. The sign-in page now installs as a

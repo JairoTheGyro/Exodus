@@ -36,6 +36,7 @@ OPERATIONAL_GUIDES = {
     "EMAIL_SECURITY.md",
     "EXODUS_ROADMAP.md",
     "GO_PUBLIC_AUDIT.md",
+    "HOME_SERVER.md",
     "TRANSLATIONS.md",
     "LOCAL_BACKUPS.md",
     "PHONE_ALERTS.md",

@@ -48,11 +48,23 @@ class FakeRunner:
         self.docker_available = True
         self.fail_build = False
         self.fail_up = False
+        self.fail_backup = False
+        self.missing_images = set()
         self.containers = [{'service': name, 'hash': name + '-hash', 'running': True, 'oneoff': 'False',
                             'directory': str(root), 'files': ','.join(str(root / p) for p in updater.DEFAULT_FILES)} for name in self.current['services']]
 
     def run(self, args, **kwargs):
         self.calls.append(args)
+        if args[0] == sys.executable:  # scripts/odysseus-backup snapshot
+            if self.fail_backup: raise updater.UpdateError('Backup failed')
+            return ''
+        if args[:3] == ['docker', 'image', 'inspect'] and args[3:5] == ['--format', '{{.Id}}']:
+            if args[-1] in self.missing_images: raise updater.UpdateError('No such image')
+            return 'sha256:feed\n'
+        if args[:2] == ['docker', 'tag']: return ''
+        if args[:3] == ['git', 'reset', '--hard']:
+            self.head = args[3]
+            return ''
         if args[:2] == ['git', 'rev-parse']:
             return {'--show-toplevel': str(self.root), 'HEAD': self.head, 'FETCH_HEAD': self.target,
                     '--git-path': '.git/exodus-update.json'}[args[2]] + '\n'
@@ -93,6 +105,8 @@ class UpdaterTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve()
         for name in updater.DEFAULT_FILES: (self.root / name).write_text('services: {}\n')
+        (self.root / 'scripts').mkdir()
+        (self.root / 'scripts/odysseus-backup').write_text('# stand-in; the fake runner records the call\n')
         self.runner = FakeRunner(self.root)
         self.messages = []
 
@@ -118,7 +132,9 @@ class UpdaterTests(unittest.TestCase):
         self.assertEqual(private.read_text(), 'DO_NOT_PRINT=private-value\n')
         self.assertEqual((data / 'database.db').read_bytes(), b'private database')
         self.assertNotIn('private-value', ''.join(self.messages))
-        self.assertEqual(json.loads((self.root / '.git/exodus-update.json').read_text()), {'applied': NEW})
+        state = json.loads((self.root / '.git/exodus-update.json').read_text())
+        self.assertEqual(state['applied'], NEW)
+        self.assertEqual(state['rollback']['commit'], OLD)  # where --rollback goes back to
 
     def test_python_and_dependency_build_detection(self):
         self.assertFalse(self.plan(['src/mounted.py']).build)
