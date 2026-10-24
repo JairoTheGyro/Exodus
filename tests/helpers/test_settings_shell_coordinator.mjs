@@ -18,6 +18,10 @@ const REAL_MODULES = new Set([
   path.join(JS, 'settings/registry.js'),
   path.join(JS, 'settings/experience.js'),
   path.join(JS, 'settings/upstream.js'),
+  // Exodus: App look picker and the app registry/looks it reads (no import-time side effects).
+  path.join(JS, 'settings/appLooks.js'),
+  path.join(JS, 'apps/registry.js'),
+  path.join(JS, 'apps/looks.js'),
   path.join(JS, 'settings/search.js'),
   path.join(JS, 'settings/sidebar.js'),
   path.join(JS, 'settings/navigation.js'),

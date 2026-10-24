@@ -28,8 +28,6 @@ _Nothing in progress._
   past the new baseline (88772b32 → 268636c9 on 2026-10-19).
 
 ### Stage 3 · Foundations
-- **Look picker in Settings:** a place in Settings → Appearance to choose the
-  look for all apps or for one app (the switch itself exists; see Finished).
 - **Services manager:** each service On / Off / Removed (data kept unless chosen)
   / Reinstall. Each person can hide apps and features they don't use.
 - **Your own workspace name and logo** (admin setting, used everywhere).
@@ -77,6 +75,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Look picker in Settings:** Settings → Appearance → App look
+  chooses Apple-like or Exodus for all built-in apps, or a different look for a
+  single app. New apps from the app list appear there automatically. Saved per
+  browser for now.
 - 2026-10-23 · **Visible "Odysseus" text removed:** screens, download file
   names, server messages and what the AI calls itself now say "Exodus".
   Deliberately kept: the legal credit, the mythological hero persona, hidden
