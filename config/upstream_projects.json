@@ -4,11 +4,11 @@
     "name": "Odysseus",
     "repository": "odysseus-dev/odysseus",
     "branch": "dev",
-    "used_commit": "88772b3278183949413e9da7d57e741057302e5e",
-    "used_date": "2026-10-19",
+    "used_commit": "a0c93f38ef196aff5c2bdb90ba2c64419254d012",
+    "used_date": "2026-10-24",
     "used_version": "1.0.3",
     "version_file": "src/constants.py",
-    "used_note": "Exodus caught up with this upstream dev revision on 2026-10-19 (sync/odysseus-2026-10-18), keeping Exodus's local modifications. This is not an unmodified Odysseus installation."
+    "used_note": "Exodus caught up with this upstream dev revision on 2026-10-24 (sync/odysseus-2026-10-24), keeping Exodus's local modifications. This is not an unmodified Odysseus installation."
   },
   {
     "id": "vaultwarden",
@@ -37,12 +37,12 @@
     "name": "SearXNG",
     "repository": "searxng/searxng",
     "branch": "master",
-    "used_commit": "7159b8aed3c37cbc849782abf737ac83253b9fc8",
-    "used_date": "2026-05-31",
-    "used_version": "2026.5.31-7159b8aed",
-    "observed_at": "2026-10-06",
-    "used_image": "searxng/searxng@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f",
-    "used_note": "Recorded from the installed container image version and source-revision labels on 2026-10-06. Compose uses this dated image tag. This audit records the current installation; it does not establish the original installation date. The tracked branch may contain unreleased changes."
+    "used_commit": "ef0ec03da02b62d0a977264cb90a0833dfe001ae",
+    "used_date": "2026-10-24",
+    "used_version": "2026.10.24-ef0ec03da",
+    "observed_at": "2026-10-24",
+    "used_image": "searxng/searxng@sha256:7c7cbe509429e82755104b2a95f52085a98633c95d53f44e4e905fa3a59f08c8",
+    "used_note": "Pinned by tag and digest in docker-compose.yml since the 2026-10-24 Odysseus catch-up (upstream's trust-checked image). A computer that still runs an older SearXNG image gets this one on its next `docker compose pull searxng`. The tracked branch may contain unreleased changes."
   },
   {
     "id": "chromadb",

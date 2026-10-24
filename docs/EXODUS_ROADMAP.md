@@ -24,8 +24,6 @@ _Nothing in progress._
 - **Check the "notify me" AI tool in a real chat.** Upstream now offers tools per
   turn by intent; Exodus added a notifications family so phrases like "ping me"
   or "ntfy" bring up `notify_user`, but a live chat should confirm it.
-- **Next small catch-up:** the License Tracker already shows Odysseus `dev` moved
-  past the new baseline (88772b32 → 268636c9 on 2026-10-19).
 
 ### Stage 3 · Foundations
 - **Turn on the Services manager add-on** once Docker is back (Jairo): add
@@ -75,6 +73,11 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Odysseus catch-up (33 changes):** security fixes for a
+  compromised certificate authority (trusted-certificate updates, Chromium
+  policy), safer model-endpoint addresses, email export to EML or PDF, better
+  iPhone screen-edge layout, and a newer pinned SearXNG. All Exodus changes
+  kept. New baseline `a0c93f38`.
 - 2026-10-24 · **Services manager:** admins can turn each optional service on or
   off, remove it (data kept unless chosen) and reinstall it, from Settings →
   System → Services, through an opt-in, locked-down helper. Each person can
