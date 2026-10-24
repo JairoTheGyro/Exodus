@@ -100,8 +100,41 @@ def _get_or_404_event(db, uid: str, owner: str) -> CalendarEvent:
         raise HTTPException(404, "Event not found")
     cal = ev.calendar
     if owner and cal and (cal.owner is None or cal.owner != owner):
-        raise HTTPException(404, "Event not found")
+        # Exodus shared spaces: members may use events in a shared calendar.
+        if not _shared_calendar_access(cal, owner, db):
+            raise HTTPException(404, "Event not found")
     return ev
+
+
+# Exodus shared spaces. Imported lazily and failing closed: if spaces can't be
+# read, callers see only their own calendars, exactly as before spaces.
+def _shared_calendar_access(cal, owner: str, db) -> bool:
+    try:
+        from src import spaces
+        return spaces.can_use_calendar(cal, owner, db)
+    except Exception:
+        return False
+
+
+def _space_member(owner: str, space_id: str, db) -> bool:
+    try:
+        from src import spaces
+        return spaces.is_member(owner, space_id, db)
+    except Exception:
+        return False
+
+
+def _visible_calendar_filter(db, owner: str):
+    """Calendars the caller may see: their own plus local ones shared in their spaces."""
+    try:
+        from src import spaces
+        member_of = spaces.space_ids_for(owner, db)
+    except Exception:
+        member_of = []
+    if not member_of:
+        return CalendarCal.owner == owner
+    return or_(CalendarCal.owner == owner,
+               and_(CalendarCal.space_id.in_(member_of), CalendarCal.source == "local"))
 
 
 def _ics_escape(text: str) -> str:
@@ -1259,9 +1292,11 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             # Listing calendars intentionally lazily creates a durable default.
             # Other callers commit it with the event they are creating.
             db.commit()
-            cals = db.query(CalendarCal).filter(CalendarCal.owner == owner).all()
+            cals = db.query(CalendarCal).filter(_visible_calendar_filter(db, owner)).all()
             return {"calendars": [
-                {"name": c.name, "href": c.id, "color": c.color, "source": c.source}
+                {"name": c.name, "href": c.id, "color": c.color, "source": c.source,
+                 # Exodus shared spaces
+                 "space_id": c.space_id, "owner": c.owner, "mine": c.owner == owner}
                 for c in cals
             ]}
         except HTTPException:
@@ -1312,7 +1347,7 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             # DTSTART year.
             q = db.query(CalendarEvent).join(CalendarCal).filter(
                 CalendarEvent.status != "cancelled",
-                CalendarCal.owner == owner,
+                _visible_calendar_filter(db, owner),
                 or_(
                     # Non-recurring: event times must overlap the query window
                     and_(
@@ -1372,7 +1407,7 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
                 # passed null-owner (legacy) rows, letting any authenticated
                 # user write events into them. Same null-owner gate as
                 # `_get_or_404_calendar`.
-                if cal and (cal.owner is None or cal.owner != owner):
+                if cal and (cal.owner is None or cal.owner != owner) and not _shared_calendar_access(cal, owner, db):
                     raise HTTPException(404, "Calendar not found")
             if not cal:
                 cal = _ensure_default_calendar(db, owner)
@@ -1574,7 +1609,8 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
             db.close()
 
     @router.put("/calendars/{cal_id}")
-    async def update_calendar(request: Request, cal_id: str, name: str = None, color: str = None):
+    async def update_calendar(request: Request, cal_id: str, name: str = None, color: str = None,
+                              space_id: str = None):
         owner = _require_user(request)
         _reserve_calendar_uploads(request, color)
         db = SessionLocal()
@@ -1584,6 +1620,16 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
                 cal.name = name
             if color is not None:
                 cal.color = color
+            # Exodus shared spaces: "" = only me; otherwise a space you're in.
+            if space_id is not None:
+                if space_id == "":
+                    cal.space_id = None
+                elif (cal.source or "local") != "local":
+                    raise HTTPException(400, "Calendars synced from another service can't be shared yet.")
+                elif not _space_member(owner, space_id, db):
+                    raise HTTPException(404, "Space not found")
+                else:
+                    cal.space_id = space_id
             db.commit()
             return {"ok": True}
         except HTTPException:

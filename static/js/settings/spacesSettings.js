@@ -17,6 +17,21 @@ function btn(doc, label, action, extra = '') {
   return el(doc, 'button', { type: 'button', className: `admin-btn-sm ${extra}`.trim(), text: label, dataset: { spaceAction: action } });
 }
 
+// "3 members · 2 shared notes · 1 shared calendar" — one span per part so
+// each part translates on its own.
+function metaLine(doc, space) {
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const parts = [plural(space.members.length, 'member', 'members'),
+    plural(space.note_count || 0, 'shared note', 'shared notes')];
+  if (space.calendar_count) parts.push(plural(space.calendar_count, 'shared calendar', 'shared calendars'));
+  const meta = el(doc, 'span', { className: 'spaces-meta' });
+  parts.forEach((part, i) => {
+    if (i) meta.append(' · ');
+    meta.append(el(doc, 'span', { text: part }));
+  });
+  return meta;
+}
+
 export function renderSpaces(container, data, doc = container.ownerDocument || document) {
   container.replaceChildren();
   if (!data || data.error) {
@@ -28,7 +43,7 @@ export function renderSpaces(container, data, doc = container.ownerDocument || d
     const box = el(doc, 'div', { className: 'spaces-space', dataset: { spaceId: space.id } });
     const head = el(doc, 'div', { className: 'spaces-head' },
       el(doc, 'span', { className: 'spaces-name', text: space.name }),
-      el(doc, 'span', { className: 'spaces-meta', text: `${space.members.length} ${space.members.length === 1 ? 'member' : 'members'} · ${space.note_count} shared ${space.note_count === 1 ? 'note' : 'notes'}` }));
+      metaLine(doc, space));
     const actions = el(doc, 'span', { className: 'spaces-actions' });
     if (space.can_manage) actions.append(btn(doc, 'Rename', 'rename'), btn(doc, 'Delete', 'delete', 'admin-btn-danger'));
     if (space.role) actions.append(btn(doc, 'Leave', 'leave'));

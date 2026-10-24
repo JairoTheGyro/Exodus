@@ -879,7 +879,11 @@
   "routed via server": "a través del servidor",
   "your account": "tu cuenta",
   "↑↓ Rearrange": "↑↓ Reordenar",
-  "⌂  Home": "⌂  Inicio"
+  "⌂  Home": "⌂  Inicio",
+  "Who can see this calendar": "Quién puede ver este calendario",
+  "Now only you can see this calendar": "Ahora solo tú puedes ver este calendario",
+  "Could not change who can see this calendar": "No se pudo cambiar quién puede ver este calendario",
+  "Calendars synced from another service can't be shared yet.": "Los calendarios sincronizados desde otro servicio todavía no se pueden compartir."
  },
  "patterns": [
   [
@@ -1191,22 +1195,6 @@
    "{name} creado"
   ],
   [
-   "{a} member · {b} shared note",
-   "{a} miembro · {b} nota compartida"
-  ],
-  [
-   "{a} member · {b} shared notes",
-   "{a} miembro · {b} notas compartidas"
-  ],
-  [
-   "{a} members · {b} shared note",
-   "{a} miembros · {b} nota compartida"
-  ],
-  [
-   "{a} members · {b} shared notes",
-   "{a} miembros · {b} notas compartidas"
-  ],
-  [
    "{name} (you)",
    "{name} (tú)"
   ],
@@ -1237,6 +1225,34 @@
   [
    "Delete {name}? No notes are deleted: each goes back to the person who made it.",
    "¿Eliminar {name}? No se elimina ninguna nota: cada una vuelve a quien la creó."
+  ],
+  [
+   "{n} member",
+   "{n} miembro"
+  ],
+  [
+   "{n} members",
+   "{n} miembros"
+  ],
+  [
+   "{n} shared note",
+   "{n} nota compartida"
+  ],
+  [
+   "{n} shared notes",
+   "{n} notas compartidas"
+  ],
+  [
+   "{n} shared calendar",
+   "{n} calendario compartido"
+  ],
+  [
+   "{n} shared calendars",
+   "{n} calendarios compartidos"
+  ],
+  [
+   "Who can see {name}",
+   "Quién puede ver {name}"
   ]
  ]
 }
