@@ -1,18 +1,23 @@
-r"""Calculator tool window (`static/js/calculator/`).
+r"""Calculator tool window (`static/js/calculator/`, engine in `native/calculator/`).
+
+The Calculator's engine is Rust compiled to WebAssembly (`core.wasm`, committed
+so Exodus needs no build step). These tests drive that real module in Node
+through `engine.js`, the same loader the window uses.
 
 Every expected value below was captured from macOS Calculator 12.0 by typing
 the same keys into the real app (see the probe list in the reconstruction
 spec): precedence, repeated `=`, the iOS-style percent rule, exact decimal
 arithmetic, `Undefined` for division by zero and the display's rounding and
-e-notation thresholds. Also covers Programmer arithmetic, RPN, unit conversion
-and the lazy-panel wiring (panels.js registration, offline precache, sidebar
-entry and the Docker override mounts that let the running Exodus serve it).
+e-notation thresholds. Also covers Programmer arithmetic, RPN, unit conversion,
+that `core.wasm` matches its Rust source, and the lazy-panel wiring
+(registry, offline precache, Docker override mounts, the CSP that allows it).
 """
 
 import json
 import re
 import shutil
 import subprocess
+import sys
 import textwrap
 from pathlib import Path
 
@@ -21,8 +26,9 @@ import pytest
 _REPO = Path(__file__).resolve().parent.parent
 _CALC_DIR = _REPO / "static" / "js" / "calculator"
 _ENGINE = (_CALC_DIR / "engine.js").as_posix()
-_DECIMAL = (_CALC_DIR / "decimal.js").as_posix()
 _UNITS = (_CALC_DIR / "units.js").as_posix()
+_WASM = (_CALC_DIR / "core.wasm").as_posix()
+_CRATE = _REPO / "native" / "calculator"
 
 _needs_node = pytest.mark.skipif(not shutil.which("node"), reason="node binary not on PATH")
 
@@ -36,21 +42,27 @@ def _run(js: str):
     return json.loads(proc.stdout.strip())
 
 
-_DRIVER = f"""
-const E = await import('{_ENGINE}');
-const fmt = new E.NumberFormat({{ group: ',', decimal: '.' }});
+_LOAD = f"""
+import fs from 'node:fs';
+const {{ loadCore, plainText }} = await import('{_ENGINE}');
+const core = await loadCore(fs.readFileSync('{_WASM}'));
+core.set({{ groupSep: ',', decimalSep: '.' }});
+"""
+
+_KEYS = {
+    ".": ["point"], "+": ["op", "add"], "-": ["op", "sub"], "*": ["op", "mul"], "/": ["op", "div"],
+    "^": ["op", "pow"], "%": ["post", "pct"], "!": ["post", "fact"], "(": ["open"], ")": ["close"],
+    "=": ["equals"], "s": ["fn", "sin"], "r": ["fn", "sqrt"], "n": ["sign"], "<": ["back"],
+}
+
+_DRIVER = _LOAD + f"""
+const KEYS = {json.dumps(_KEYS)};
 function run(keys) {{
-  const c = new E.AlgebraicCalculator('decimal');
-  const act = {{
-    '.': () => c.inputPoint(), '+': () => c.inputOperator('add'), '-': () => c.inputOperator('sub'),
-    '*': () => c.inputOperator('mul'), '/': () => c.inputOperator('div'), '^': () => c.inputOperator('pow'),
-    '%': () => c.applyPostfix('pct'), '!': () => c.applyPostfix('fact'), '(': () => c.openParen(),
-    ')': () => c.closeParen(), '=': () => c.equals(), 's': () => c.applyFunction('sin'),
-    'r': () => c.applyFunction('sqrt'), 'n': () => c.toggleSign(), '<': () => c.backspace(),
-  }};
-  for (const ch of keys) {{ if (/[0-9]/.test(ch)) c.inputDigit(ch); else act[ch](); }}
-  if (c.evaluated) return [E.plainText(E.render(c.evaluated, fmt)), c.error ? c.error.message : fmt.format(c.result)];
-  return ['', E.plainText(E.render(c.tokens, fmt))];
+  core.reset();
+  core.set({{ groupSep: ',', decimalSep: '.' }});
+  let v = core.view();
+  for (const ch of keys) v = core.press(/[0-9]/.test(ch) ? ['digit', ch] : KEYS[ch]);
+  return [v.expr ? plainText(v.expr) : '', v.mainText];
 }}
 """
 
@@ -85,7 +97,7 @@ _PROBES = [
     ("1.23456789123*1=", "1.23456789123×1", "1.23456789"),
     ("5+=", "", "5+"),
     ("n5", "", "5"),
-    ("2+3=<", "", ""),
+    ("2+3=<", "", "0"),
     # Scientific (degrees by default)
     ("30s", "", "sin(30)"),
     ("30s=", "sin(30)", "0.5"),
@@ -108,21 +120,21 @@ def test_observed_keystroke_probes():
 
 
 @_needs_node
-def test_superscripts_and_implicit_multiply():
-    out = _run(f"""
-        const E = await import('{_ENGINE}');
-        const fmt = new E.NumberFormat({{ group: ',', decimal: '.' }});
-        const c = new E.AlgebraicCalculator();
-        c.inputDigit('2'); c.inputOperator('pow'); c.inputDigit('1'); c.inputDigit('0');
-        const pow = E.render(c.tokens, fmt);
+def test_superscripts_implicit_multiply_and_radians():
+    out = _run(_LOAD + """
+        let v;
+        for (const k of [['digit','2'], ['op','pow'], ['digit','1'], ['digit','0']]) v = core.press(k);
+        const pow = v.main;
         // Observed: 3, 2nd 2ˣ, 8 → "2³×8" = 64
-        const d = new E.AlgebraicCalculator();
-        d.inputDigit('3'); d.applyFunction('twoPow'); d.inputDigit('8');
-        const line = E.plainText(E.render(d.tokens, fmt));
-        d.equals();
-        const r = new E.AlgebraicCalculator(); r.angle = 'rad';
-        r.inputConstant('pi'); r.applyFunction('cos'); r.equals();
-        console.log(JSON.stringify({{ pow, line, val: d.result.toString(), cosPi: r.result.toString() }}));
+        core.reset(); core.set({ groupSep: ',', decimalSep: '.' });
+        for (const k of [['digit','3'], ['fn','twoPow'], ['digit','8']]) v = core.press(k);
+        const line = v.mainText;
+        v = core.press(['equals']);
+        const val = v.mainText;
+        core.reset(); core.set({ angle: 'rad' });
+        core.press(['pi']); core.press(['fn', 'cos']);
+        const cosPi = core.press(['equals']).mainText;
+        console.log(JSON.stringify({ pow, line, val, cosPi }));
     """)
     assert out["pow"] == [{"text": "2", "level": 0, "italic": False}, {"text": "10", "level": 1, "italic": False}]
     assert out["line"] == "23×8"
@@ -132,89 +144,145 @@ def test_superscripts_and_implicit_multiply():
 
 @_needs_node
 def test_programmer_mode():
-    out = _run(f"""
-        const E = await import('{_ENGINE}');
-        const fmt = new E.NumberFormat();
-        const p = new E.AlgebraicCalculator('programmer'); p.base = 16;
-        p.inputDigit('4'); p.inputDigit('1'); p.inputOperator('add'); p.inputDigit('1');
-        const line = E.plainText(E.render(p.tokens, fmt, {{ showsBase: true }}));
-        p.equals();
-        const octal = new E.AlgebraicCalculator('programmer'); octal.base = 8; octal.inputDigit('9');
-        console.log(JSON.stringify({{
-          line, result: p.intResult.toString(16),
-          flip8: E.intUnary('flip8', 0xABCDn).toString(16), flip16: E.intUnary('flip16', 0xABCD1234n).toString(16),
-          rol: E.intUnary('rol', BigInt.asIntN(64, 0x8000000000000001n)).toString(), not0: E.intUnary('not', 0n).toString(),
-          rejected: octal.tokens.length, hexNeg: E.integerString(-1n, 16),
-        }}));
+    out = _run(_LOAD + """
+        core.set({ mode: 'programmer', base: 16 });
+        let v;
+        for (const k of [['digit','4'], ['digit','1'], ['op','add'], ['digit','1']]) v = core.press(k);
+        const line = v.mainText;
+        v = core.press(['equals']);
+        const result = v.mainText, int = v.int;
+        v = core.toggleBit(0);
+        const flipped = v.mainText;
+        core.reset(); core.set({ mode: 'programmer', base: 16 });
+        for (const d of 'ABCD') v = core.press(['digit', d]);
+        v = core.press(['fn', 'flip8']); v = core.press(['equals']);
+        const flip8 = v.mainText;
+        core.reset(); core.set({ mode: 'programmer', base: 16 });
+        core.press(['digit', 'F']); core.press(['digit', 'F']); core.press(['fn', 'not']);
+        const notFF = core.press(['equals']).mainText;
+        core.reset(); core.set({ mode: 'programmer', base: 8 });
+        const rejected = core.press(['digit', '9']).mainText;
+        core.reset(); core.set({ mode: 'programmer', base: 16 });
+        const pasted = core.paste('0xff').mainText;
+        console.log(JSON.stringify({ line, result, int, flipped, flip8, notFF, rejected, pasted }));
     """)
     assert out == {
-        "line": "4116+116", "result": "42", "flip8": "cdab", "flip16": "1234abcd",
-        "rol": "3", "not0": "-1", "rejected": 0, "hexNeg": "FFFFFFFFFFFFFFFF",
+        "line": "4116+116", "result": "4216", "int": "66", "flipped": "4316",
+        "flip8": "CDAB16", "notFF": "FFFFFFFFFFFFFF0016", "rejected": "08", "pasted": "FF16",
     }
 
 
 @_needs_node
-def test_rpn_stack():
-    out = _run(f"""
-        const E = await import('{_ENGINE}');
-        const r = new E.RPNCalculator();
-        r.inputDigit('3'); r.enter(); r.inputDigit('4'); r.enter(); r.inputDigit('5');
-        const rows = r.rows.map(x => x.kind === 'value' ? x.value.toString() : x.text);
-        r.binary('mul'); r.binary('add');
-        const s = new E.RPNCalculator();
-        for (const d of ['1', '2', '3']) {{ s.inputDigit(d); s.enter(); }}
-        s.swap(); const swapped = s.stack.map(String);
-        s.rollDown(); const down = s.stack.map(String);
-        const p = new E.RPNCalculator(); p.inputDigit('2'); p.enter(); p.inputDigit('1'); p.inputDigit('0'); p.binary('pow');
-        console.log(JSON.stringify({{ rows, sum: r.stack.map(String), swapped, down, pow: p.stack.map(String) }}));
+def test_rpn_stack_and_memory():
+    out = _run(_LOAD + """
+        core.set({ rpn: true });
+        let v;
+        for (const k of [['digit','3'], ['equals'], ['digit','4'], ['equals'], ['digit','5']]) v = core.press(k);
+        const rows = v.rpn;
+        core.press(['op', 'mul']);
+        const sum = core.press(['op', 'add']).rpn;
+        core.press(['digit', '2']);
+        const swapped = core.press(['swap']).rpn;
+        const dropped = core.press(['drop']).rpn;
+        core.reset(); core.set({ rpn: true });
+        core.press(['digit','2']); core.press(['equals']); core.press(['digit','1']); core.press(['digit','0']);
+        const pow = core.press(['op', 'pow']).rpn;
+        core.reset();
+        core.press(['digit', '7']); core.press(['m+']); core.press(['clear']);
+        core.press(['digit', '3']); core.press(['op', 'add']); core.press(['mr']);
+        const mem = core.press(['equals']);
+        console.log(JSON.stringify({ rows, sum, swapped, dropped, pow, mem: [mem.mainText, mem.memory] }));
     """)
-    assert out == {"rows": ["3", "4", "5"], "sum": ["23"], "swapped": ["1", "3", "2"], "down": ["2", "1", "3"], "pow": ["1024"]}
+    assert out == {
+        "rows": ["3", "4", "5"], "sum": ["", "", "23"], "swapped": ["", "2", "23"], "dropped": ["", "", "2"],
+        "pow": ["", "", "1,024"], "mem": ["10", True],
+    }
 
 
 @_needs_node
-def test_decimal_and_formatting():
-    out = _run(f"""
-        const {{ Dec }} = await import('{_DECIMAL}');
-        const E = await import('{_ENGINE}');
-        const fixed = new E.NumberFormat({{ group: ',', decimal: '.', places: 2 }});
-        const plain = new E.NumberFormat({{ grouping: false, group: ',', decimal: '.' }});
-        const comma = new E.NumberFormat({{ group: '.', decimal: ',' }});
-        console.log(JSON.stringify({{
-          sum: Dec.parse('0.1').add(Dec.parse('0.2')).toString(),
-          third: Dec.from(1).div(3).mul(3).round(10).toString(),
-          fixed: fixed.format(Dec.parse('1234.5')), zero: fixed.format(Dec.from(0)),
-          plain: plain.format(Dec.from(1234567)), comma: comma.format(Dec.parse('1234.5')),
-          negSci: new E.NumberFormat().format(Dec.parse('-123456789012345678901234')),
-        }}));
+def test_formatting_settings_and_history_format():
+    out = _run(_LOAD + """
+        const type = (s) => { let v; for (const ch of s) v = core.press(ch === '.' ? ['point'] : ch === '*' ? ['op','mul'] : ch === '=' ? ['equals'] : ['digit', ch]); return v; };
+        core.set({ places: 2 });
+        const fixed = type('1234.5*1=').mainText;
+        core.reset(); core.set({ grouping: false });
+        const plain = type('1234567*1=').mainText;
+        core.reset(); core.set({ groupSep: '.', decimalSep: ',' });
+        const comma = type('1234.5*1=').mainText;
+        core.reset(); core.set({ groupSep: ',', decimalSep: '.' });
+        const record = type('199.99*1=').record;
+        const hist = core.format('214.98925', { trim3: true });
+        const histHex = core.format('255', { mode: 'programmer', base: 16 });
+        type('7.5*2=');
+        const copy = core.command({ cmd: 'copy' }).out;
+        console.log(JSON.stringify({ fixed, plain, comma, record: [record.result, record.mode], hist, histHex, copy }));
     """)
     assert out == {
-        "sum": "0.3", "third": "1", "fixed": "1,234.50", "zero": "0.00",
-        "plain": "1234567", "comma": "1.234,5", "negSci": "-1.2345679e23",
+        "fixed": "1,234.50", "plain": "1234567", "comma": "1.234,5", "record": ["199.99", "basic"],
+        "hist": "214.989", "histHex": "FF", "copy": "15",
     }
 
 
 @_needs_node
 def test_unit_conversion():
-    out = _run(f"""
+    out = _run(_LOAD + f"""
         const U = await import('{_UNITS}');
-        const E = await import('{_ENGINE}');
-        const {{ Dec }} = await import('{_DECIMAL}');
-        const f = new E.NumberFormat({{ group: ',', decimal: '.' }});
-        const c = (v, a, b) => f.format(U.convert(Dec.from(v), U.findUnit(a), U.findUnit(b)));
-        const rates = {{ rates: {{ USD: 1, EUR: 0.9 }}, updated: 0 }};
+        const catalog = core.units();
+        const conv = (value, from, to) => {{
+          core.reset(); core.set({{ groupSep: ',', decimalSep: '.', convert: {{ from, to }}, rates: {{ USD: 1, EUR: 0.9 }} }});
+          let v = core.view();
+          for (const ch of value) v = core.press(ch === '.' ? ['point'] : ['digit', ch]);
+          return v.converted;
+        }};
         console.log(JSON.stringify({{
-          temp: c(100, 'temperature.C', 'temperature.F'), mile: c(1, 'length.mi', 'length.km'),
-          fuel: c(30, 'fuel.mpg', 'fuel.l100km'), data: c(1, 'data.GiB', 'data.MB'),
-          eur: f.format(U.convert(Dec.from(100), U.findUnit('currency.USD', rates), U.findUnit('currency.EUR', rates))),
-          mixed: U.convert(Dec.from(1), U.findUnit('length.m'), U.findUnit('weight.kg')),
-          categories: U.CATEGORIES.length,
-          everyCategoryHasUnits: U.CATEGORIES.filter(k => k !== 'Currency').every(k => U.unitsIn(k).length >= 3),
+          temp: conv('100', 'temperature.C', 'temperature.F'), mile: conv('1', 'length.mi', 'length.km'),
+          fuel: conv('30', 'fuel.mpg', 'fuel.l100km'), data: conv('1', 'data.GiB', 'data.MB'),
+          eur: conv('100', 'currency.USD', 'currency.EUR'), mixed: conv('1', 'length.m', 'weight.kg'),
+          categories: catalog.categories.length,
+          units: catalog.units.length,
+          everyCategoryHasUnits: catalog.categories.filter(k => k !== 'Currency').every(k => U.unitsIn(k, catalog).length >= 3),
+          currencyName: U.findUnit('currency.EUR', catalog, {{ rates: {{ USD: 1, EUR: 0.9 }} }}).name,
         }}));
     """)
     assert out == {
         "temp": "212", "mile": "1.609344", "fuel": "7.8404861", "data": "1,073.741824",
-        "eur": "90", "mixed": None, "categories": 15, "everyCategoryHasUnits": True,
+        "eur": "90.00", "mixed": None, "categories": 15, "units": 112, "everyCategoryHasUnits": True,
+        "currencyName": "Euro",
     }
+
+
+def test_core_wasm_matches_its_rust_source():
+    """core.wasm is committed; a Rust change without a rebuild must fail here."""
+    sys.path.insert(0, str(_REPO / "scripts"))
+    try:
+        from build_calculator_wasm import source_fingerprint
+    finally:
+        sys.path.pop(0)
+    recorded = (_CRATE / "wasm-source.sha256").read_text().strip()
+    assert source_fingerprint(_CRATE) == recorded, (
+        "native/calculator changed: run `python3 scripts/build_calculator_wasm.py` and commit core.wasm"
+    )
+    assert (_CALC_DIR / "core.wasm").read_bytes()[:4] == b"\0asm"
+
+
+@_needs_node
+def test_core_wasm_needs_nothing_from_the_page():
+    out = _run(f"""
+        import fs from 'node:fs';
+        const mod = await WebAssembly.compile(fs.readFileSync('{_WASM}'));
+        console.log(JSON.stringify({{
+          imports: WebAssembly.Module.imports(mod),
+          exports: WebAssembly.Module.exports(mod).map(e => e.name).sort(),
+        }}));
+    """)
+    assert out == {"imports": [], "exports": ["calc_alloc", "calc_command", "calc_free", "memory"]}
+
+
+def test_csp_allows_webassembly_but_not_eval():
+    src = (_REPO / "core" / "middleware.py").read_text()
+    line = next(l for l in src.splitlines() if "script-src 'self' 'nonce-" in l)
+    assert "'wasm-unsafe-eval'" in line
+    assert "'unsafe-eval'" not in line.replace("'wasm-unsafe-eval'", "")
 
 
 def test_panel_registration_precache_and_sidebar():
@@ -270,3 +338,20 @@ def test_browser_check_regressions_stay_fixed():
     assert "html.theme-temple #calculator-modal .calc-key" in css and "var(--temple-blue)" in css
     # the mode menu has a fixed width so the decimal-places row wraps
     assert re.search(r"\.calc-menu \{\s*position: fixed;\s*width: 236px;", css)
+
+
+def test_window_updates_in_place_for_smooth_typing():
+    """Speed fixes measured in the 2026-10-25 browser run (median press+redraw
+    19.3 ms on the old window, 0.9 ms after): keep them from regressing."""
+    js = (_CALC_DIR / "index.js").read_text()
+    # Display text changes touch text nodes only; elements are rebuilt only
+    # when the layout changes (standard / RPN / Convert, per mode).
+    assert "function setSpans(el, spans)" in js and "el.firstChild.data = text" in js
+    assert "function ensureDisplay()" in js and "function updateDisplay()" in js
+    # The keypad is not part of the per-key work: AC/C updates in place and is
+    # left out of the keypad's layout signature.
+    assert "k.key[0] === 'clear' ? '' : k.text" in js and "btn.dataset.clear = ''" in js
+    # The 64-bit grid is built once and updated bit by bit.
+    assert "function buildBits()" in js and "function updateBits()" in js
+    # History re-renders only when it or its number format changed.
+    assert "historyDirty" in js

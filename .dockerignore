@@ -64,3 +64,8 @@ backups/
 # Include distribution notices despite the general documentation exclusion.
 !ACKNOWLEDGMENTS.md
 !services/hwfit/data/README.md
+
+# Rust build output for native/ engines (e.g. the Calculator). The compiled
+# WebAssembly that Exodus serves is committed under static/; the image never
+# needs the local cargo build folder.
+native/*/target/
