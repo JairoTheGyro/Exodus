@@ -110,6 +110,10 @@
 #calculator-modal .calc-pane[data-mode="scientific"] { width: min(674px, var(--calc-avail)); min-width: 360px; container-type: inline-size; }
 #calculator-modal .calc-pane[data-mode="programmer"] { width: min(488px, var(--calc-avail)); min-width: 330px; container-type: inline-size; }
 
+/* Stable regions the window updates independently (see update() in index.js);
+   they take no part in layout. */
+#calculator-modal .calc-region { display: contents; }
+
 /* ── Display ── */
 #calculator-modal .calc-display {
   position: relative;

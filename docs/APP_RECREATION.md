@@ -22,6 +22,15 @@ repo). When unsure, copy what it does.
   `static/js/<app>/`. No framework, no npm packages, no bundler.
 - **Logic separate from screen:** `engine.js` holds behaviour with no DOM, so it
   can be tested in Node. `index.js` holds the window and UI.
+- **Exception: an engine in Rust.** The Calculator's engine is Rust in
+  `native/calculator/`, compiled to WebAssembly (`static/js/calculator/core.wasm`)
+  and loaded by a small `engine.js`. The `.wasm` file is committed, so Exodus
+  still runs with no build step. After changing the Rust, run
+  `python3 scripts/build_calculator_wasm.py` (needs Rust plus
+  `rustup target add wasm32-unknown-unknown`) and commit the new `core.wasm`; a
+  test fails if the source and the committed file disagree. The UI stays in
+  JavaScript, since only JavaScript can drive the page. Only take this route
+  when the engine is large or speed-critical; plain JavaScript stays the default.
 - **A floating Exodus tool window:** use `makeWindowDraggable` from
   `static/js/windowDrag.js`. Export `open<App>`, `close<App>`, `is<App>Open`,
   `toggle<App>` (plus a default export of the same). No side effects on import.

@@ -9,6 +9,10 @@
  * whichever Exodus theme is active. All state lives in this browser
  * (`odysseus-calculator-v1`); the only network use is Convert → Currency,
  * which asks Exodus's own /api/calculator/rates route.
+ *
+ * Everything the Calculator computes runs in the Rust engine (`./engine.js`
+ * loads `core.wasm`, built from `native/calculator/`). This file only draws
+ * the view the engine returns and turns clicks and keys into commands.
  */
 
 import * as Modals from '../modalManager.js';
@@ -16,9 +20,8 @@ import { makeWindowDraggable } from '../windowDrag.js';
 import { topPortalZ } from '../toolWindowZOrder.js';
 import { bindMenuDismiss } from '../escMenuStack.js';
 import { applyLook } from '../apps/looks.js';
-import { Dec, PI, E } from './decimal.js';
-import { AlgebraicCalculator, RPNCalculator, NumberFormat, render, plainText, integerString } from './engine.js';
-import { CATEGORIES, UNITS, convert, unitsIn, findUnit, currencyUnits, cachedRates, refreshRates } from './units.js';
+import { loadCore, plainText } from './engine.js';
+import { unitsIn, findUnit, currencyUnits, cachedRates, refreshRates } from './units.js';
 
 const MODAL_ID = 'calculator-modal';
 const SIDEBAR_BTN_ID = 'tool-calculator-btn';
@@ -126,139 +129,90 @@ function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
 }
 
-// ── Model ───────────────────────────────────────────────────────────────
+// ── Model (the Rust engine) ─────────────────────────────────────────────
 
-const algebraic = new AlgebraicCalculator('decimal');
-const programmer = new AlgebraicCalculator('programmer');
-const rpnCalc = new RPNCalculator();
-let memory = null;          // Dec | null (not persisted, like Calculator.app)
+/** This browser's number separators, passed to the engine for display. */
+const SEPARATORS = (() => {
+  try {
+    const parts = new Intl.NumberFormat().formatToParts(12345.6);
+    return {
+      group: parts.find(p => p.type === 'group')?.value ?? ',',
+      decimal: parts.find(p => p.type === 'decimal')?.value ?? '.',
+    };
+  } catch (_) {
+    return { group: ',', decimal: '.' };
+  }
+})();
+
+// Loaded once when the window module is first imported (panels.js imports it on first use).
+const core = await loadCore();
+const catalog = core.units();
 let second = false;
 let shiftHeld = false;
 let rates = cachedRates();
 let ratesLoading = false;
 
-algebraic.angle = rpnCalc.angle = state.angle;
-programmer.base = state.base;
-
 const rpnActive = () => state.rpn && state.mode !== 'programmer';
 const historyAvailable = () => state.mode !== 'programmer' && !rpnActive();
 const showsSecond = () => second !== shiftHeld;
-const active = () => (state.mode === 'programmer' ? programmer : algebraic);
-const format = () => new NumberFormat({ grouping: state.thousands, places: state.places });
 
-function displayedValue() {
-  if (rpnActive()) return rpnCalc.x;
-  return active().currentValue;
+/** Everything in `state` that changes what the engine computes or shows. */
+function engineSettings() {
+  return {
+    mode: state.mode, rpn: state.rpn, angle: state.angle, base: state.base,
+    grouping: state.thousands, places: state.places,
+    groupSep: SEPARATORS.group, decimalSep: SEPARATORS.decimal,
+    convert: state.convert ? { from: state.inUnit, to: state.outUnit } : null,
+    rates: rates?.rates || {},
+  };
 }
 
-function clearLabel() {
-  if (rpnActive()) return rpnCalc.showsAllClear ? 'AC' : 'C';
-  return active().showsAllClear ? 'AC' : 'C';
+/** The engine's latest description of the display. */
+let view = core.set(engineSettings());
+
+function sync() {
+  view = core.set(engineSettings());
 }
 
-function record(tokens, value) {
-  const spans = render(tokens, format(), { showsBase: state.mode === 'programmer' });
+const clearLabel = () => view.clear;
+const currentInt = () => BigInt(view.int ?? '0');
+
+function record(rec) {
   state.history.unshift({
     id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-    at: Date.now(), expr: spans, result: value.toPlain(), mode: state.mode, base: active().base,
+    at: Date.now(), expr: rec.expr, result: rec.result, mode: rec.mode, base: rec.base,
   });
   if (state.history.length > MAX_HISTORY) state.history.length = MAX_HISTORY;
+  historyDirty = true;
   save();
 }
 
 function press(key) {
-  const [kind, arg] = key;
+  const [kind] = key;
   if (kind === 'second') { second = !second; return; }
   if (kind === 'angle') { setAngle(state.angle === 'deg' ? 'rad' : 'deg'); return; }
-  if (kind === 'mc') { memory = null; return; }
-  if (kind === 'm+' || kind === 'm-') {
-    const v = displayedValue();
-    if (v) memory = (memory || new Dec(0n))[kind === 'm+' ? 'add' : 'sub'](v);
-    return;
-  }
-  if (rpnActive()) { pressRPN(kind, arg); return; }
-  const c = active();
-  if (state.mode === 'programmer') c.base = state.base;
-  switch (kind) {
-    case 'digit':
-      if (arg === 'FF') { c.inputDigit('F'); c.inputDigit('F'); } else c.inputDigit(arg);
-      break;
-    case '00': c.inputDigit('0'); c.inputDigit('0'); break;
-    case 'point': c.inputPoint(); break;
-    case 'op': c.inputOperator(arg); break;
-    case 'equals': { const r = c.equals(); if (r) record(r.tokens, r.value); break; }
-    case 'post': c.applyPostfix(arg); break;
-    case 'fn': c.applyFunction(arg); break;
-    case 'sign': c.toggleSign(); break;
-    case 'back': c.backspace(); break;
-    case 'clear': c.clear(); break;
-    case 'clearAll': c.clearAll(); break;
-    case 'open': c.openParen(); break;
-    case 'close': c.closeParen(); break;
-    case 'pi': c.inputConstant('pi'); break;
-    case 'e': c.inputConstant('e'); break;
-    case 'rand': c.inputConstant(Dec.fromNumber(Math.random())); break;
-    case 'mr': if (memory) c.inputValue(memory); break;
-    case 'shl1': c.shiftByOne(true); break;
-    case 'shr1': c.shiftByOne(false); break;
-    default: break;
-  }
-}
-
-function pressRPN(kind, arg) {
-  const r = rpnCalc;
-  switch (kind) {
-    case 'digit': r.inputDigit(arg); break;
-    case '00': r.inputDigit('0'); r.inputDigit('0'); break;
-    case 'point': r.inputPoint(); break;
-    case 'op': r.binary(arg); break;
-    case 'equals': r.enter(); break;
-    case 'post': r.postfix(arg); break;
-    case 'fn': r.unary(arg); break;
-    case 'sign': r.toggleSign(); break;
-    case 'back': r.backspace(); break;
-    case 'clear': case 'clearAll': r.clear(); break;
-    case 'pi': r.push(PI); break;
-    case 'e': r.push(E); break;
-    case 'rand': r.push(Dec.fromNumber(Math.random())); break;
-    case 'mr': if (memory) r.push(memory); break;
-    case 'swap': r.swap(); break;
-    case 'rdown': r.rollDown(); break;
-    case 'rup': r.rollUp(); break;
-    case 'drop': r.drop(); break;
-    default: break;
-  }
+  view = core.press(kind === 'rand' ? ['rand', String(Math.random())] : key);
+  if (view.record) record(view.record);
 }
 
 function setAngle(angle) {
   state.angle = angle;
-  algebraic.angle = rpnCalc.angle = angle;
   save();
+  sync();
 }
 
 function setMode(mode) {
   if (mode === state.mode) return;
-  const old = state.mode;
   second = false;
-  // Carry the displayed value across decimal ↔ programmer.
-  if (mode === 'programmer' && old !== 'programmer') {
-    const v = algebraic.currentValue;
-    programmer.clearAll();
-    programmer.base = state.base;
-    if (v && !v.isZero) programmer.inputValue(v);
-  } else if (old === 'programmer' && mode !== 'programmer') {
-    const v = programmer.currentValue;
-    algebraic.clearAll();
-    if (v && !v.isZero) algebraic.inputValue(v);
-  }
-  state.mode = mode;
+  state.mode = mode;   // the engine carries the displayed value across decimal ↔ programmer
   save();
+  sync();
 }
 
 function setBase(base) {
   state.base = base;
-  programmer.convertBase(base);
   save();
+  sync();
 }
 
 function toggleConvert() {
@@ -266,6 +220,7 @@ function toggleConvert() {
   state.convert = !state.convert;
   if (state.convert) state.rpn = false;
   save();
+  sync();
 }
 
 function toggleRPN() {
@@ -273,10 +228,7 @@ function toggleRPN() {
   state.rpn = !state.rpn;
   if (state.rpn) state.convert = false;
   save();
-}
-
-function currentInt() {
-  return programmer.currentOperandInt;
+  sync();
 }
 
 // ── Keypads (layouts measured from Calculator 12.0) ─────────────────────
@@ -297,7 +249,7 @@ const clearKey = () => {
   return K(['clear'], t, 'util', t === 'AC' ? 'Clear all (or press Escape)' : 'Clear (or press Escape)');
 };
 const digit = (d, enabled = true) => K(['digit', d], d, 'digit', d, { disabled: !enabled });
-const decimalPoint = () => K(['point'], format().decimalSep, 'digit', 'Point');
+const decimalPoint = () => K(['point'], SEPARATORS.decimal, 'digit', 'Point');
 
 function basicColumns(rpn) {
   const ops = OPS();
@@ -507,9 +459,31 @@ function buildModal() {
 }
 
 // ── Rendering ───────────────────────────────────────────────────────────
+//
+// The pane keeps stable regions (`display: contents` wrappers) and only
+// rebuilds the ones whose content changed: the display on every key, the
+// keypad / Programmer controls / RPN bar only when their layout changes, and
+// the 64-bit grid updates its existing buttons in place. Keys are never
+// detached under the pointer, so presses stay smooth and keep their state.
+
+let regions = null;
+let controlsKey = '';
+let bitsEl = null;
+let rpnBarEl = null;
+let historyDirty = true;
+let historyKey = '';
+
+function ensureRegions() {
+  if (regions) return regions;
+  const region = (name) => h(`div.calc-region.calc-region-${name}`);
+  regions = { top: region('top'), controls: region('controls'), bits: region('bits'), keys: region('keys') };
+  pane.append(regions.top, regions.controls, regions.bits, regions.keys);
+  return regions;
+}
 
 function update() {
   if (!pane) return;
+  const r = ensureRegions();
   pane.dataset.mode = state.mode;
   // History needs 220px beside the keypad; when the workspace is too narrow it
   // hides for now without changing the saved preference.
@@ -521,33 +495,46 @@ function update() {
   historyBtn.title = showHistory ? 'Hide History' : 'Show History';
   historyBtn.setAttribute('aria-label', historyBtn.title);
   historyEl.hidden = !showHistory;
-  if (showHistory) renderHistory();
+  if (showHistory) {
+    const key = `${state.thousands}|${state.places}`;
+    if (historyDirty || key !== historyKey) { renderHistory(); historyDirty = false; historyKey = key; }
+  }
 
   const display = renderDisplay();
-  const parts = [];
-  if (rpnActive() && state.mode === 'scientific') {
-    parts.push(h('div.calc-display-wrap', {}, display, h('div.calc-rpn-bar', {}, RPN_BAR.map(keyButton))));
+  if (rpnActive()) {
+    rpnBarEl ??= h('div.calc-rpn-bar', {}, RPN_BAR.map(keyButton));
+    if (state.mode === 'scientific') r.top.replaceChildren(h('div.calc-display-wrap', {}, display, rpnBarEl));
+    else r.top.replaceChildren(display, rpnBarEl);
   } else {
-    parts.push(display);
-    if (rpnActive()) parts.push(h('div.calc-rpn-bar', {}, RPN_BAR.map(keyButton)));
-  }
-  if (state.mode === 'programmer') {
-    parts.push(renderProgrammerControls());
-    if (state.showBinary) parts.push(renderBits());
+    r.top.replaceChildren(display);
   }
 
-  // Rebuild the keypad only when its layout or labels change, so a key is not
-  // replaced under the pointer on every press.
+  if (state.mode === 'programmer') {
+    const key = `${state.charView}|${state.showBinary}|${state.base}`;
+    if (key !== controlsKey) { controlsKey = key; r.controls.replaceChildren(renderProgrammerControls()); }
+    if (state.showBinary) {
+      bitsEl ??= buildBits();
+      if (bitsEl.parentNode !== r.bits) r.bits.replaceChildren(bitsEl);
+      updateBits();
+    } else if (r.bits.firstChild) {
+      r.bits.replaceChildren();
+    }
+  } else if (controlsKey) {
+    controlsKey = '';
+    r.controls.replaceChildren();
+    r.bits.replaceChildren();
+  }
+
+  // Rebuild the keypad only when its layout or labels change.
   const rows = state.mode === 'basic' ? basicColumns(rpnActive())
-    : state.mode === 'scientific' ? scientificColumns(rpnActive()).map((r, i) => r.concat(basicColumns(rpnActive())[i]))
+    : state.mode === 'scientific' ? scientificColumns(rpnActive()).map((row, i) => row.concat(basicColumns(rpnActive())[i]))
       : programmerRows();
-  const signature = JSON.stringify(rows.map(r => r.map(k => [k.key, k.text, k.style, !!k.disabled])));
+  const signature = JSON.stringify(rows.map(row => row.map(k => [k.key, k.text, k.style, !!k.disabled])));
   if (signature !== keysSignature || !keysEl) {
     keysSignature = signature;
     keysEl = h('div.calc-keys', { style: `--calc-cols:${rows[0].length}` }, rows.flat().map(keyButton));
+    r.keys.replaceChildren(keysEl);
   }
-  parts.push(keysEl);
-  pane.replaceChildren(...parts);
   requestAnimationFrame(keepOnScreen);
 }
 
@@ -591,37 +578,10 @@ function mainLine(spans, base = 34, cls = 'calc-main-line') {
   return el;
 }
 
-function resultSpans(c) {
-  if (c.error) return [{ text: c.error.message, level: 0 }];
-  if (c.kind === 'programmer') {
-    const out = [{ text: integerString(c.intResult ?? 0n, state.base), level: 0 }];
-    return out.concat([{ text: String(state.base), level: -1 }]);
-  }
-  return [{ text: format().format(c.result ?? new Dec(0n)), level: 0 }];
-}
-
-function standardDisplay(c, showsBase) {
-  const parts = [];
-  if (c.evaluated) {
-    parts.push(spansEl('calc-expr', render(c.evaluated, format(), { showsBase })));
-    parts.push(mainLine(resultSpans(c)));
-  } else {
-    const spans = c.tokens.length
-      ? render(c.tokens, format(), { showsBase })
-      : [{ text: '0', level: 0 }].concat(showsBase ? [{ text: String(state.base), level: -1 }] : []);
-    parts.push(mainLine(spans));
-  }
-  return parts;
-}
-
 function renderDisplay() {
   const display = h('div.calc-display', { 'aria-live': 'polite' });
   if (rpnActive()) {
-    const rows = rpnCalc.rows.slice(-3);
-    while (rows.length < 3) rows.unshift(null);
-    for (const row of rows) {
-      const text = !row ? '' : row.kind === 'value' ? format().format(row.value)
-        : row.kind === 'typing' ? format().typed(row.text) : row.error.message;
+    for (const text of view.rpn || ['', '', '']) {
       const el = h('div.calc-rpn-row', { text });
       if (text) fit(el, 30);
       display.append(el);
@@ -629,11 +589,12 @@ function renderDisplay() {
   } else if (state.convert && state.mode !== 'programmer') {
     display.append(...convertDisplay());
   } else {
-    display.append(...standardDisplay(active(), state.mode === 'programmer'));
+    if (view.expr) display.append(spansEl('calc-expr', view.expr));
+    display.append(mainLine(view.main));
   }
   const badges = h('div.calc-badges');
   if (state.mode === 'scientific' && state.angle === 'rad') badges.append(h('span', { text: 'Rad' }));
-  if (state.mode === 'scientific' && memory) badges.append(h('span', { text: 'M', title: 'A value is stored in memory' }));
+  if (state.mode === 'scientific' && view.memory) badges.append(h('span', { text: 'M', title: 'A value is stored in memory' }));
   if (state.mode === 'programmer') {
     const ch = characterBadge();
     if (ch !== null) badges.append(h('span.calc-char', { text: ch || ' ' }));
@@ -679,19 +640,20 @@ function renderProgrammerControls() {
 }
 
 /** Two rows of eight nibbles, bit 63 top-left to bit 0 bottom-right. Click a bit to flip it. */
-function renderBits() {
-  const v = BigInt.asUintN(64, currentInt());
+function buildBits() {
   const grid = h('div.calc-bits', { role: 'group', 'aria-label': 'Binary view' });
+  grid._bits = new Array(64);
   const row = (high, labels) => {
     for (let n = 0; n < 8; n++) {
       const nib = h('span.calc-nibble');
       for (let b = 0; b < 4; b++) {
         const bit = high - n * 4 - b;
-        const on = ((v >> BigInt(bit)) & 1n) === 1n;
-        nib.append(h('button.calc-bit', {
-          type: 'button', text: on ? '1' : '0', 'aria-pressed': String(on), title: `Bit ${bit}`,
-          on: { click: () => { programmer.base = state.base; programmer.setCurrentOperand(BigInt.asIntN(64, currentInt() ^ (1n << BigInt(bit)))); update(); } },
-        }));
+        const btn = h('button.calc-bit', {
+          type: 'button', text: '0', 'aria-pressed': 'false', title: `Bit ${bit}`,
+          on: { click: () => { view = core.toggleBit(bit); update(); } },
+        });
+        grid._bits[bit] = btn;
+        nib.append(btn);
       }
       grid.append(nib);
     }
@@ -705,34 +667,36 @@ function renderBits() {
   return grid;
 }
 
+/** Writes only the bits that changed into the existing grid. */
+function updateBits() {
+  const v = BigInt.asUintN(64, currentInt());
+  for (let bit = 0; bit < 64; bit++) {
+    const on = ((v >> BigInt(bit)) & 1n) === 1n;
+    const btn = bitsEl._bits[bit];
+    const text = on ? '1' : '0';
+    if (btn.textContent !== text) {
+      btn.textContent = text;
+      btn.setAttribute('aria-pressed', String(on));
+    }
+  }
+}
+
 // ── Convert ─────────────────────────────────────────────────────────────
 
-function unitFor(id) { return findUnit(id, rates); }
+function unitFor(id) { return findUnit(id, catalog, rates); }
 
 function convertDisplay() {
-  const c = algebraic;
-  const valueSpans = c.evaluated ? resultSpans(c) : (c.tokens.length ? render(c.tokens, format()) : [{ text: '0', level: 0 }]);
   const from = unitFor(state.inUnit);
   const to = unitFor(state.outUnit);
-  let resultText = '—';
-  const value = displayedValue();
-  if (from && to) {
-    const out = convert(value ?? new Dec(0n), from, to);
-    if (out) {
-      const f = format();
-      if (to.category === 'Currency' && f.places === null) f.places = 2;
-      resultText = f.format(out);
-    }
-  } else if ((from?.category ?? to?.category ?? '') === 'Currency' || state.inUnit.startsWith('currency.')) {
-    resultText = ratesLoading ? '…' : '—';
-  }
+  const currency = state.inUnit.startsWith('currency.') || state.outUnit.startsWith('currency.');
+  const resultText = view.converted ?? (currency && ratesLoading ? '…' : '—');
   return [
-    mainLine(valueSpans, 34),
+    mainLine(view.main, 34),
     h('div.calc-convert-row', {}, unitChip(true, from)),
     h('div.calc-swap-row', {},
       h('button.calc-swap', {
         type: 'button', html: ICONS.swap, title: 'Swap Units', 'aria-label': 'Swap Units',
-        on: { click: () => { [state.inUnit, state.outUnit] = [state.outUnit, state.inUnit]; save(); update(); } },
+        on: { click: () => { [state.inUnit, state.outUnit] = [state.outUnit, state.inUnit]; save(); sync(); update(); } },
       }),
       h('hr')),
     mainLine([{ text: resultText, level: 0 }], 34, 'calc-main-line.calc-convert-result'),
@@ -753,7 +717,7 @@ function unitChip(isInput, unit) {
 function loadRates() {
   if (ratesLoading) return;
   ratesLoading = true;
-  refreshRates().then((r) => { rates = r; }).finally(() => { ratesLoading = false; update(); refreshPicker?.(); });
+  refreshRates().then((r) => { rates = r; }).finally(() => { ratesLoading = false; sync(); update(); refreshPicker?.(); });
 }
 
 function selectUnit(unit, isInput) {
@@ -762,12 +726,13 @@ function selectUnit(unit, isInput) {
   state[key] = unit.id;
   const other = unitFor(state[otherKey]);
   if (!other || other.category !== unit.category) {
-    const pool = unit.category === 'Currency' ? currencyUnits(rates) : UNITS.filter(x => x.category === unit.category);
+    const pool = unitsIn(unit.category, catalog, rates);
     const replacement = pool.find(x => x.id !== unit.id && (unit.category !== 'Currency' || x.abbr === 'EUR' || x.abbr === 'USD')) || pool.find(x => x.id !== unit.id);
     if (replacement) state[otherKey] = replacement.id;
   }
   state.recentUnits = [unit.id, ...state.recentUnits.filter(id => id !== unit.id)].slice(0, 8);
   save();
+  sync();
 }
 
 let refreshPicker = null;
@@ -787,7 +752,7 @@ function openUnitPicker(anchor, isInput) {
   const draw = () => {
     chips.hidden = !!query;
     chips.replaceChildren();
-    const cats = (state.recentUnits.length ? ['Recent Units'] : []).concat(CATEGORIES);
+    const cats = (state.recentUnits.length ? ['Recent Units'] : []).concat(catalog.categories);
     for (const c of cats) {
       const on = c === category;
       const chip = h('button.calc-chip', {
@@ -800,11 +765,11 @@ function openUnitPicker(anchor, isInput) {
     let items;
     if (query) {
       const q = query.toLowerCase();
-      items = UNITS.concat(currencyUnits(rates)).filter(x => x.name.toLowerCase().includes(q) || x.abbr.toLowerCase().includes(q));
+      items = catalog.units.concat(currencyUnits(rates)).filter(x => x.name.toLowerCase().includes(q) || x.abbr.toLowerCase().includes(q));
     } else if (category === 'Recent Units') {
       items = state.recentUnits.map(unitFor).filter(Boolean);
     } else {
-      items = unitsIn(category, rates);
+      items = unitsIn(category, catalog, rates);
     }
     list.replaceChildren();
     if (!items.length) {
@@ -904,7 +869,7 @@ function openModeMenu(anchor) {
     h('div.calc-menu-label', { text: 'Decimal Places' }),
     h('div.calc-menu-places', {}, [null, ...Array.from({ length: 16 }, (_, i) => i)].map(p => h('button', {
       type: 'button', text: p === null ? 'Auto' : String(p), 'aria-pressed': String(state.places === p),
-      on: { click: () => { state.places = p; save(); closePopup(); update(); } },
+      on: { click: () => { state.places = p; save(); sync(); closePopup(); update(); } },
     }))));
   const r = anchor.getBoundingClientRect();
   menu(r.left - 150, r.bottom + 6, [
@@ -917,7 +882,7 @@ function openModeMenu(anchor) {
     { label: 'Convert', checked: state.convert, disabled: prog, action: toggleConvert },
     { label: 'RPN Mode', checked: state.rpn, disabled: prog, action: toggleRPN },
     '-',
-    { label: 'Thousands Separator', checked: state.thousands, action: () => { state.thousands = !state.thousands; save(); } },
+    { label: 'Thousands Separator', checked: state.thousands, action: () => { state.thousands = !state.thousands; save(); sync(); } },
     { node: places },
   ], anchor);
 }
@@ -950,14 +915,7 @@ function historySections() {
 
 /** Observed: the sidebar shows 199.99+7.5% as 214.989 while the display shows 214.98925. */
 function historyResult(rec) {
-  if (rec.mode === 'programmer') return integerString(BigInt.asIntN(64, Dec.parse(rec.result).trunc().toBigInt()), rec.base);
-  const f = format();
-  if (f.places === null) {
-    f.places = 3;
-    const text = f.format(Dec.parse(rec.result));
-    return text.includes('e') || !text.includes(f.decimalSep) ? text : text.replace(/0+$/, '').replace(new RegExp(`\\${f.decimalSep}$`), '');
-  }
-  return f.format(Dec.parse(rec.result));
+  return core.format(rec.result, { mode: rec.mode, base: rec.base, trim3: true });
 }
 
 function renderHistory() {
@@ -980,7 +938,7 @@ function renderHistory() {
           { label: 'Copy Result', action: () => copyText(result) },
           { label: 'Copy Expression', action: () => copyText(plainText(rec.expr)) },
           '-',
-          { label: 'Delete', danger: true, action: () => { state.history = state.history.filter(r => r.id !== rec.id); save(); } },
+          { label: 'Delete', danger: true, action: () => { state.history = state.history.filter(r => r.id !== rec.id); historyDirty = true; save(); } },
           { label: 'Clear History…', danger: true, action: confirmClearHistory },
         ]);
       });
@@ -990,9 +948,7 @@ function renderHistory() {
 }
 
 function useRecord(rec) {
-  const v = Dec.parse(rec.result);
-  if (!v) return;
-  if (rpnActive()) rpnCalc.push(v); else active().inputValue(v);
+  view = core.insert(rec.result);
 }
 
 function confirmClearHistory() {
@@ -1003,7 +959,7 @@ function confirmClearHistory() {
     h('p', { text: 'All calculations will be deleted. This action cannot be undone.' }),
     h('div.calc-sheet-actions', {},
       h('button', { type: 'button', text: 'Cancel', on: { click: done } }),
-      h('button.calc-danger-btn', { type: 'button', text: 'Delete All', on: { click: () => { state.history = []; save(); done(); update(); } } }))));
+      h('button.calc-danger-btn', { type: 'button', text: 'Delete All', on: { click: () => { state.history = []; historyDirty = true; save(); done(); update(); } } }))));
   backdrop.addEventListener('mousedown', (e) => { if (e.target === backdrop) done(); });
   content.append(backdrop);
   requestAnimationFrame(() => backdrop.querySelector('button')?.focus());
@@ -1015,13 +971,9 @@ function copyText(text) {
   navigator.clipboard?.writeText(text).catch(() => {});
 }
 
+/** The displayed value for Copy, without grouping (Programmer: in its base). */
 function resultText() {
-  const v = displayedValue();
-  if (!v) return '';
-  if (state.mode === 'programmer') return integerString(BigInt.asIntN(64, v.trunc().toBigInt()), state.base);
-  const f = format();
-  f.grouping = false;
-  return f.format(v);
+  return core.command({ cmd: 'copy' }).out;
 }
 
 function onCopy(e) {
@@ -1037,22 +989,7 @@ function onPaste(e) {
   let text = (e.clipboardData?.getData('text/plain') || '').trim();
   if (!text) return;
   e.preventDefault();
-  if (state.mode === 'programmer') {
-    text = text.replace(/^0x/i, '').toUpperCase();
-    let v = 0n;
-    for (const ch of text) {
-      const d = parseInt(ch, 16);
-      if (Number.isNaN(d) || d >= state.base) return;
-      v = v * BigInt(state.base) + BigInt(d);
-    }
-    programmer.base = state.base;
-    programmer.inputValue(new Dec(BigInt.asIntN(64, v)));
-  } else {
-    const f = format();
-    const v = Dec.parse(text.split(f.groupSep).join('').replace(f.decimalSep, '.'));
-    if (!v) return;
-    if (rpnActive()) rpnCalc.push(v); else algebraic.inputValue(v);
-  }
+  view = core.paste(text);   // the engine parses it for the current mode and base
   update();
 }
 
@@ -1128,7 +1065,7 @@ function onKeydown(e) {
       return;
     }
     // Esc clears first (Calculator.app); once already clear it closes the window as usual in Exodus.
-    if (clearLabel() === 'C' || (!rpnActive() && active().showingResult)) {
+    if (clearLabel() === 'C' || view.showingResult) {
       press(['clear']); update();
       e.preventDefault(); e.stopImmediatePropagation();
     }
