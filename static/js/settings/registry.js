@@ -113,7 +113,7 @@ export const SETTINGS_PANELS = Object.freeze([
     id: 'account',
     label: 'Account',
     group: 'account',
-    keywords: ['account', 'password', 'logout', 'spaces', 'family', 'share', 'shared', 'members', 'phone', 'alerts', 'ntfy', 'notifications', 'welcome', 'setup', 'getting started', 'your ai', 'spending', 'cap', 'budget', 'cost', 'ai-free', 'move', 'import', 'takeout', 'google', 'icloud', 'outlook'],
+    keywords: ['account', 'password', 'logout', 'spaces', 'family', 'share', 'shared', 'members', 'phone', 'alerts', 'ntfy', 'notifications', 'welcome', 'setup', 'getting started', 'your ai', 'spending', 'cap', 'budget', 'cost', 'ai-free', 'local ai', 'lm studio', 'ollama', 'memory', 'ram', 'what fits', 'move', 'import', 'takeout', 'google', 'icloud', 'outlook'],
   }),
   definePanel({
     id: 'licenses',

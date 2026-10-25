@@ -1029,9 +1029,32 @@ export async function _hwfitFetch(fresh = false, opts = {}) {
 
 // Renders a non-blocking hardware visibility warning when Cookbook is using
 // container-visible hardware that may not match the user's actual host machine.
+// Exodus: inside Docker, the server ranks against the whole computer when
+// scripts/host_hardware.py measured it; say so, with when it was measured.
+export function hostSnapshotNote(sys) {
+  if (sys?.manual_hardware || sys?.probe_scope !== 'host_snapshot') return '';
+  const when = String(sys.host_measured_at || '').slice(0, 10);
+  const docker = Number(sys.container_ram_gb) > 0 ? ` Docker itself is given ${Math.round(sys.container_ram_gb)} GB.` : '';
+  return `Using the whole computer's hardware${when ? `, measured on ${when}` : ''}.${docker} After changing hardware, run python3 scripts/host_hardware.py on the computer again.`;
+}
+
+function _renderHostSnapshotNote(sys, row) {
+  let note = document.getElementById('hwfit-hw-host-note');
+  const text = hostSnapshotNote(sys);
+  if (!text) { if (note) note.remove(); return; }
+  if (!note) {
+    note = document.createElement('div');
+    note.id = 'hwfit-hw-host-note';
+    note.className = 'hwfit-loading hwfit-hw-host-note';
+    row.insertAdjacentElement('afterend', note);
+  }
+  note.textContent = text;
+}
+
 function _renderHwVisibilityWarning(sys) {
   const row = document.getElementById('hwfit-hw-row');
   if (!row) return;
+  _renderHostSnapshotNote(sys, row);
 
   let box = document.getElementById('hwfit-hw-visibility-warning');
 

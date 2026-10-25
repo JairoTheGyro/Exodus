@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'odysseus-v672-exodus-move-in';
+const CACHE_NAME = 'odysseus-v673-exodus-local-ai';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -139,6 +139,7 @@ const PRECACHE = [
   '/static/js/settings/phoneAlerts.js',
   '/static/js/settings/aiChoice.js',
   '/static/js/settings/moveIn.js',
+  '/static/js/settings/localAi.js',
   '/static/js/welcome/welcomeSetup.js',
   '/static/js/settings/localServices.js',
   '/static/js/settings/code.js',

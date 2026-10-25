@@ -240,3 +240,17 @@ body.exodus-welcome-open #home-choice { display: none !important; }
 .move-in-choice { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; }
 .move-in-done { font-size: 12px; margin: 6px 0; padding-left: 18px; }
 .move-in-msg:empty { display: none; }
+
+/* Exodus Local AI (static/js/settings/localAi.js) and the Cookbook's whole-computer note. */
+.local-ai-machine { font-weight: 600; font-size: 13px; margin: 6px 0 2px; }
+.local-ai-usable { font-size: 13px; margin: 8px 0 2px; }
+.local-ai-title { font-weight: 600; font-size: 12px; margin: 10px 0 4px; }
+.local-ai-models { font-size: 12px; margin: 0 0 8px; padding-left: 18px; line-height: 1.6; overflow-wrap: anywhere; }
+.local-ai-warn { font-size: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; margin: 6px 0; }
+.local-ai-other { font-size: 12px; margin: 8px 0; }
+.local-ai-other summary { cursor: pointer; }
+.local-ai-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.local-ai-row input { width: 9em; }
+.local-ai-steps { font-size: 12px; margin: 8px 0; padding-left: 20px; line-height: 1.5; }
+.local-ai-msg:empty { display: none; }
+.hwfit-hw-host-note { font-size: 12px; opacity: 0.85; }

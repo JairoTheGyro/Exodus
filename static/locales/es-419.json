@@ -1003,7 +1003,45 @@
   "Mail archives aren’t imported: connect the email account in Settings → Email instead.": "Los archivos de correo no se importan: conecta la cuenta de correo en Configuración → Correo.",
   "The upload didn’t work. Try again.": "La subida no funcionó. Inténtalo de nuevo.",
   "The upload didn’t work. Check the connection and try again.": "La subida no funcionó. Revisa la conexión e inténtalo de nuevo.",
-  "The import didn’t work.": "La importación no funcionó."
+  "The import didn’t work.": "La importación no funcionó.",
+  "Local AI": "IA local",
+  "Run AI on a computer you own: no per-message cost, and nothing leaves your home. See what fits this computer's memory.": "Usa IA en una computadora tuya: sin costo por mensaje y nada sale de tu casa. Mira qué cabe en la memoria de esta computadora.",
+  "Models up to about 8 billion parameters fit: good for quick helpers and simple chat.": "Caben modelos de hasta unos 8 mil millones de parámetros: buenos para ayudas rápidas y chat sencillo.",
+  "Models up to about 14 billion parameters fit: a solid everyday assistant.": "Caben modelos de hasta unos 14 mil millones de parámetros: un buen asistente para todos los días.",
+  "Models up to about 32 billion parameters fit (or “30B-A3B” style models, which are faster): the best quality most homes can run.": "Caben modelos de hasta unos 32 mil millones de parámetros (o modelos tipo “30B-A3B”, que son más rápidos): la mejor calidad que la mayoría de los hogares puede usar.",
+  "Models up to about 70 billion parameters fit: close to cloud quality.": "Caben modelos de hasta unos 70 mil millones de parámetros: casi la calidad de la nube.",
+  "Very large models (100 billion parameters and more) fit.": "Caben modelos muy grandes (100 mil millones de parámetros o más).",
+  "Using the computer you described.": "Usando la computadora que describiste.",
+  "Whole computer.": "Toda la computadora.",
+  "Measured on this computer just now.": "Medido en esta computadora ahora mismo.",
+  "Good fits from official publishers:": "Buenas opciones de publicadores oficiales:",
+  "No model fits comfortably. A cloud AI is the better choice for this computer.": "Ningún modelo cabe con holgura. Una IA en la nube es mejor opción para esta computadora.",
+  "Kind of computer": "Tipo de computadora",
+  "Mac with an Apple chip": "Mac con chip de Apple",
+  "PC with an NVIDIA graphics card": "PC con tarjeta gráfica NVIDIA",
+  "PC without a graphics card": "PC sin tarjeta gráfica",
+  "Memory in GB": "Memoria en GB",
+  "Memory (GB)": "Memoria (GB)",
+  "Graphics memory in GB": "Memoria gráfica en GB",
+  "Graphics memory (GB)": "Memoria gráfica (GB)",
+  "The AI will run on a different computer": "La IA va a funcionar en otra computadora",
+  "Check this computer": "Revisar esa computadora",
+  "On the AI computer, install LM Studio (lmstudio.ai) or Ollama (ollama.com).": "En la computadora de la IA, instala LM Studio (lmstudio.ai) u Ollama (ollama.com).",
+  "Download one of the models above and start its server.": "Descarga uno de los modelos de arriba e inicia su servidor.",
+  "Connect it in Added Models and share it. Everyone can then pick Shared AI in Your AI.": "Conéctalo en Modelos agregados y compártelo. Así todos pueden elegir IA compartida en Tu IA.",
+  "Check again": "Revisar de nuevo",
+  "All models in Cookbook": "Todos los modelos en Cookbook",
+  "Open Added Models": "Abrir Modelos agregados",
+  "Checking…": "Revisando…",
+  "Could not check this computer. Try again in a moment.": "No se pudo revisar esta computadora. Inténtalo de nuevo en un momento.",
+  "That computer": "Esa computadora",
+  "The list of AI models hasn’t been downloaded yet. Press Update model list (needs the internet).": "La lista de modelos de IA todavía no se descargó. Presiona Actualizar lista de modelos (necesita internet).",
+  "Update model list": "Actualizar lista de modelos",
+  "Downloading the model list… this can take a minute.": "Descargando la lista de modelos… puede tardar un minuto.",
+  "Could not download the model list. Check the internet connection and try again.": "No se pudo descargar la lista de modelos. Revisa la conexión a internet e inténtalo de nuevo.",
+  "Good fits for this computer:": "Buenas opciones para esta computadora:",
+  "Small models (up to about 8 billion parameters) only just fit. They’re fine for quick helpers; a cloud AI is better for everyday chat.": "Los modelos pequeños (hasta unos 8 mil millones de parámetros) apenas caben. Sirven para ayudas rápidas; una IA en la nube es mejor para el chat diario.",
+  "Good fits for that computer:": "Buenas opciones para esa computadora:"
  },
  "patterns": [
   [
@@ -1497,6 +1535,30 @@
   [
    "Files skipped: {n}",
    "Archivos omitidos: {n}"
+  ],
+  [
+   "{name}: {n} memory",
+   "{name}: {n} de memoria"
+  ],
+  [
+   "Whole computer, measured on {date}.",
+   "Toda la computadora, medida el {date}."
+  ],
+  [
+   "About {n} usable by the graphics chip.",
+   "Unos {n} que puede usar el chip gráfico."
+  ],
+  [
+   "About {n} of graphics memory.",
+   "Unos {n} de memoria gráfica."
+  ],
+  [
+   "About {n} for models running on the processor (slower; no graphics chip found).",
+   "Unos {n} para modelos en el procesador (más lento; no se encontró chip gráfico)."
+  ],
+  [
+   "Exodus runs in Docker here, so it only sees {n}, Docker’s share. To use the whole computer’s memory, run python3 scripts/host_hardware.py from the Exodus folder on the computer itself, then press Check again. Or describe the computer below.",
+   "Aquí Exodus funciona en Docker, así que solo ve {n}, la parte de Docker. Para usar toda la memoria de la computadora, ejecuta python3 scripts/host_hardware.py desde la carpeta de Exodus en la propia computadora y luego presiona Revisar de nuevo. O describe la computadora abajo."
   ]
  ]
 }
