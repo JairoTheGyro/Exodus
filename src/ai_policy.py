@@ -87,6 +87,8 @@ def allowed_without_ai(path, method):
         return True
     if path == '/api/ai-budget' or path.startswith('/api/ai-budget/'):
         return True
+    if path.startswith('/api/move-in/'):
+        return True
     if path == '/api/workspace/brand' or path.startswith('/api/workspace/brand/'):
         return True
     if path == '/api/services' or path.startswith('/api/services/'):

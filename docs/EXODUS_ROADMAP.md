@@ -72,8 +72,8 @@ _Nothing in progress._
 - More apps (small utilities). Familiar layouts for Documents, Email, Calendar
   and Contacts. Spreadsheet and presentations later.
 - Remaining Spanish waves.
-- **"Move to Exodus"** wizard for Google, Apple/iCloud, Microsoft, Dropbox
-  export files.
+- "Move to Exodus" follow-ups: live Google/Microsoft account connections,
+  photos into Gallery, Keep note pictures, mail archives (`.mbox`).
 - **One-click updates:** the License Tracker checks daily, prepares tested
   update PRs and notifies; Jairo approves; Exodus updates itself.
 
@@ -93,6 +93,10 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-24 · **Move to Exodus:** in Settings → Account, anyone can upload a
+  Google Takeout, iCloud or Microsoft export, see what's inside, and import
+  calendars, Keep notes and files (contacts for the admin). Guide:
+  `docs/MOVE_TO_EXODUS.md`.
 - 2026-10-24 · **Members' own AI accounts:** in Your AI → My own cloud account,
   anyone can connect a private account at a well-known provider by pasting
   its key. Members can't type a web address, so their accounts can't reach the

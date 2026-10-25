@@ -4,6 +4,7 @@ import logging
 import json
 import re
 import uuid
+from types import SimpleNamespace
 from datetime import datetime, date, timedelta, timezone
 from typing import Optional, List
 
@@ -78,6 +79,146 @@ def _require_user(request: Request) -> str:
     # require_user returned "" — auth is off or unconfigured (single-user).
     # Use FALLBACK_OWNER so calendar rows have a stable owner for filtering.
     return FALLBACK_OWNER
+
+
+def import_ics_content(db, owner, cal_data, calendar_name: str = "", filename: str = "") -> dict:
+    """Import parsed VEVENTs into the owner's calendar (named after the file).
+
+    Shared by POST /api/calendar/import and the Move to Exodus wizard.
+    """
+    file = SimpleNamespace(filename=filename)
+
+    # Sanitize display name — length cap + strip control chars
+    raw_name = calendar_name.strip() or re.sub(r"\.(?:calendar|ics|ical)$", "", file.filename or "", flags=re.IGNORECASE).replace("_", " ").strip() or "Imported"
+    cal_display = "".join(c for c in raw_name if c.isprintable())[:120] or "Imported"
+
+    target_cal = db.query(CalendarCal).filter(
+        CalendarCal.name == cal_display,
+        CalendarCal.owner == owner,
+    ).first()
+    if not target_cal:
+        target_cal = CalendarCal(
+            id=str(uuid.uuid4()),
+            owner=owner,
+            name=cal_display,
+            color="#7c4dff",
+            source="import",
+        )
+        db.add(target_cal)
+        db.commit()
+        db.refresh(target_cal)
+
+    imported = skipped = repaired = 0
+    event_uids = []
+    for comp in cal_data.walk():
+        if comp.name != "VEVENT":
+            continue
+        # Generate a fresh uid for each import. The old code reused
+        # the VEVENT uid from the file, which leaked across users:
+        # a uid present on ANY user's calendar caused this user's
+        # row to be silently skipped (and enabled enumeration).
+        # Using a fresh uuid scopes uniqueness per-row.
+        uid_val = str(uuid.uuid4())
+        dtstart = comp.get("dtstart")
+        if not dtstart:
+            skipped += 1
+            continue
+
+        # Dedup INSIDE this user's target calendar only — same
+        # source-uid + same dtstart in the same target = duplicate.
+        source_uid = str(comp.get("uid", "")) or None
+        if source_uid:
+            src_dtstart = dtstart.dt
+            # Normalize to the SAME naive form import_ics stores, so a
+            # re-import of a tz-aware event matches the existing row.
+            # The old code stripped tzinfo WITHOUT converting to UTC
+            # (wall clock), while storage converts to UTC first, so
+            # every re-import of a TZID event created a duplicate.
+            naive_src = _ics_naive_dtstart(src_dtstart)
+            existing = (
+                db.query(CalendarEvent)
+                .filter(
+                    CalendarEvent.calendar_id == target_cal.id,
+                    CalendarEvent.dtstart == naive_src,
+                    CalendarEvent.summary == str(comp.get("summary", "")),
+                )
+                .first()
+            )
+            if existing:
+                # An import predating the clamp below may have stored
+                # this same event with a non-positive duration, which
+                # the list_events overlap filter hides. Re-importing
+                # lands here and would skip without touching that row,
+                # so the event would stay invisible. Backfill the clamp
+                # onto the stored row before skipping it.
+                fixed_end = _ensure_positive_duration(
+                    existing.dtstart, existing.dtend, bool(existing.all_day)
+                )
+                if fixed_end != existing.dtend:
+                    existing.dtend = fixed_end
+                    repaired += 1
+                event_uids.append(existing.uid)
+                skipped += 1
+                continue
+
+        dt_val = dtstart.dt
+        all_day = isinstance(dt_val, date) and not isinstance(dt_val, datetime)
+        # For timed events, preserve the source timezone by converting
+        # to UTC before stripping tzinfo (DB stores naive). We mark
+        # the row with is_utc=True so the serializer adds the Z
+        # suffix on output — without this, the frontend would parse
+        # the naive ISO as the user's CURRENT local, which is exactly
+        # the bug where imported events fire reminders at wrong times.
+        from datetime import timezone as _tz
+        row_is_utc = False
+        if all_day:
+            start_dt = datetime(dt_val.year, dt_val.month, dt_val.day)
+            dtend = comp.get("dtend")
+            end_dt = datetime(dtend.dt.year, dtend.dt.month, dtend.dt.day) if dtend else start_dt + timedelta(days=1)
+        else:
+            if hasattr(dt_val, 'tzinfo') and dt_val.tzinfo is not None:
+                start_dt = dt_val.astimezone(_tz.utc).replace(tzinfo=None)
+                row_is_utc = True
+            else:
+                start_dt = dt_val
+            dtend = comp.get("dtend")
+            if dtend:
+                d_end = dtend.dt
+                if hasattr(d_end, 'tzinfo') and d_end.tzinfo is not None:
+                    end_dt = d_end.astimezone(_tz.utc).replace(tzinfo=None)
+                else:
+                    end_dt = d_end
+            else:
+                end_dt = start_dt + timedelta(hours=1)
+
+        end_dt = _ensure_positive_duration(start_dt, end_dt, all_day)
+
+        ev = CalendarEvent(
+            uid=uid_val,
+            calendar_id=target_cal.id,
+            summary=str(comp.get("summary", "")),
+            description=str(comp.get("description", "")),
+            location=str(comp.get("location", "")),
+            dtstart=start_dt,
+            dtend=end_dt,
+            all_day=all_day,
+            is_utc=row_is_utc,
+            rrule=(comp.get("rrule").to_ical().decode() if comp.get("rrule") else ""),
+        )
+        db.add(ev)
+        event_uids.append(uid_val)
+        imported += 1
+
+    db.commit()
+    return {
+        "ok": True,
+        "imported": imported,
+        "skipped": skipped,
+        "repaired": repaired,
+        "calendar": cal_display,
+        "calendar_id": target_cal.id,
+        "event_uids": event_uids,
+    }
 
 
 def _get_or_404_calendar(db, cal_id: str, owner: str) -> CalendarCal:
@@ -1659,138 +1800,7 @@ def setup_calendar_routes(upload_handler=None) -> APIRouter:
                 cal_data = iCal.from_ical(content)
             except Exception as e:
                 raise HTTPException(400, f"Invalid ICS file: {e}")
-
-            # Sanitize display name — length cap + strip control chars
-            raw_name = calendar_name.strip() or re.sub(r"\.(?:calendar|ics|ical)$", "", file.filename or "", flags=re.IGNORECASE).replace("_", " ").strip() or "Imported"
-            cal_display = "".join(c for c in raw_name if c.isprintable())[:120] or "Imported"
-
-            target_cal = db.query(CalendarCal).filter(
-                CalendarCal.name == cal_display,
-                CalendarCal.owner == owner,
-            ).first()
-            if not target_cal:
-                target_cal = CalendarCal(
-                    id=str(uuid.uuid4()),
-                    owner=owner,
-                    name=cal_display,
-                    color="#7c4dff",
-                    source="import",
-                )
-                db.add(target_cal)
-                db.commit()
-                db.refresh(target_cal)
-
-            imported = skipped = repaired = 0
-            event_uids = []
-            for comp in cal_data.walk():
-                if comp.name != "VEVENT":
-                    continue
-                # Generate a fresh uid for each import. The old code reused
-                # the VEVENT uid from the file, which leaked across users:
-                # a uid present on ANY user's calendar caused this user's
-                # row to be silently skipped (and enabled enumeration).
-                # Using a fresh uuid scopes uniqueness per-row.
-                uid_val = str(uuid.uuid4())
-                dtstart = comp.get("dtstart")
-                if not dtstart:
-                    skipped += 1
-                    continue
-
-                # Dedup INSIDE this user's target calendar only — same
-                # source-uid + same dtstart in the same target = duplicate.
-                source_uid = str(comp.get("uid", "")) or None
-                if source_uid:
-                    src_dtstart = dtstart.dt
-                    # Normalize to the SAME naive form import_ics stores, so a
-                    # re-import of a tz-aware event matches the existing row.
-                    # The old code stripped tzinfo WITHOUT converting to UTC
-                    # (wall clock), while storage converts to UTC first, so
-                    # every re-import of a TZID event created a duplicate.
-                    naive_src = _ics_naive_dtstart(src_dtstart)
-                    existing = (
-                        db.query(CalendarEvent)
-                        .filter(
-                            CalendarEvent.calendar_id == target_cal.id,
-                            CalendarEvent.dtstart == naive_src,
-                            CalendarEvent.summary == str(comp.get("summary", "")),
-                        )
-                        .first()
-                    )
-                    if existing:
-                        # An import predating the clamp below may have stored
-                        # this same event with a non-positive duration, which
-                        # the list_events overlap filter hides. Re-importing
-                        # lands here and would skip without touching that row,
-                        # so the event would stay invisible. Backfill the clamp
-                        # onto the stored row before skipping it.
-                        fixed_end = _ensure_positive_duration(
-                            existing.dtstart, existing.dtend, bool(existing.all_day)
-                        )
-                        if fixed_end != existing.dtend:
-                            existing.dtend = fixed_end
-                            repaired += 1
-                        event_uids.append(existing.uid)
-                        skipped += 1
-                        continue
-
-                dt_val = dtstart.dt
-                all_day = isinstance(dt_val, date) and not isinstance(dt_val, datetime)
-                # For timed events, preserve the source timezone by converting
-                # to UTC before stripping tzinfo (DB stores naive). We mark
-                # the row with is_utc=True so the serializer adds the Z
-                # suffix on output — without this, the frontend would parse
-                # the naive ISO as the user's CURRENT local, which is exactly
-                # the bug where imported events fire reminders at wrong times.
-                from datetime import timezone as _tz
-                row_is_utc = False
-                if all_day:
-                    start_dt = datetime(dt_val.year, dt_val.month, dt_val.day)
-                    dtend = comp.get("dtend")
-                    end_dt = datetime(dtend.dt.year, dtend.dt.month, dtend.dt.day) if dtend else start_dt + timedelta(days=1)
-                else:
-                    if hasattr(dt_val, 'tzinfo') and dt_val.tzinfo is not None:
-                        start_dt = dt_val.astimezone(_tz.utc).replace(tzinfo=None)
-                        row_is_utc = True
-                    else:
-                        start_dt = dt_val
-                    dtend = comp.get("dtend")
-                    if dtend:
-                        d_end = dtend.dt
-                        if hasattr(d_end, 'tzinfo') and d_end.tzinfo is not None:
-                            end_dt = d_end.astimezone(_tz.utc).replace(tzinfo=None)
-                        else:
-                            end_dt = d_end
-                    else:
-                        end_dt = start_dt + timedelta(hours=1)
-
-                end_dt = _ensure_positive_duration(start_dt, end_dt, all_day)
-
-                ev = CalendarEvent(
-                    uid=uid_val,
-                    calendar_id=target_cal.id,
-                    summary=str(comp.get("summary", "")),
-                    description=str(comp.get("description", "")),
-                    location=str(comp.get("location", "")),
-                    dtstart=start_dt,
-                    dtend=end_dt,
-                    all_day=all_day,
-                    is_utc=row_is_utc,
-                    rrule=(comp.get("rrule").to_ical().decode() if comp.get("rrule") else ""),
-                )
-                db.add(ev)
-                event_uids.append(uid_val)
-                imported += 1
-
-            db.commit()
-            return {
-                "ok": True,
-                "imported": imported,
-                "skipped": skipped,
-                "repaired": repaired,
-                "calendar": cal_display,
-                "calendar_id": target_cal.id,
-                "event_uids": event_uids,
-            }
+            return import_ics_content(db, owner, cal_data, calendar_name, file.filename or "")
         except HTTPException:
             raise
         except Exception as e:

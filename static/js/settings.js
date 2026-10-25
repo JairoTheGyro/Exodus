@@ -22,6 +22,7 @@ import { mountServicesManager } from './settings/servicesManager.js';
 import { mountSpacesSettings } from './settings/spacesSettings.js';
 import { mountPhoneAlerts } from './settings/phoneAlerts.js';
 import { mountAiChoice } from './settings/aiChoice.js';
+import { mountMoveIn } from './settings/moveIn.js';
 import { APPS } from './apps/registry.js';
 import { bindSettingsNavigation } from './settings/navigation.js';
 import {
@@ -81,6 +82,7 @@ const _shell = createSettingsShell({
       mountAiChoice(byId('ai-choice-rows'));
       mountSpacesSettings(byId('spaces-rows'));
       mountPhoneAlerts(byId('phone-alerts-rows'));
+      mountMoveIn(byId('move-in-rows'));
       const rerun = byId('welcome-setup-rerun');
       if (rerun && !rerun.dataset.bound) {
         rerun.dataset.bound = '1';

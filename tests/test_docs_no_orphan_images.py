@@ -40,6 +40,7 @@ OPERATIONAL_GUIDES = {
     "TRANSLATIONS.md",
     "LOCAL_AI.md",
     "LOCAL_BACKUPS.md",
+    "MOVE_TO_EXODUS.md",
     "PHONE_ALERTS.md",
     "PRACTICE_TESTS.md",
     "SERVICES_MANAGER.md",

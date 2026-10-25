@@ -184,3 +184,5 @@ services:
       - ./src/ai_budget.py:/app/src/ai_budget.py:ro
       - ./routes/ai_budget_routes.py:/app/routes/ai_budget_routes.py:ro
       - ./routes/my_ai_routes.py:/app/routes/my_ai_routes.py:ro
+      - ./routes/move_in_routes.py:/app/routes/move_in_routes.py:ro
+      - ./src/move_in.py:/app/src/move_in.py:ro
