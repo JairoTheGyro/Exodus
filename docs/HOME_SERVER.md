@@ -43,15 +43,25 @@ Then on either:
 
 ## 3. Get Exodus
 
-```
-git clone https://github.com/JairoTheGyro/Exodus.git ~/exodus
-cd ~/exodus
-cp .env.example .env
-```
-
-Edit `.env`. These are the lines that matter for a home server:
+The installer downloads Exodus to `~/exodus`, writes `.env`, builds and starts
+it, measures the computer for Local AI and sets up one-click updates
+(`docs/INSTALL.md`):
 
 ```
+curl -fsSL https://raw.githubusercontent.com/JairoTheGyro/Exodus/main/install.sh | bash
+```
+
+When Tailscale is already set up (step 2), it fills in the phone-alert address
+too. At the end it shows the first admin account's temporary password.
+
+To do it by hand instead: `git clone` the repository, `cp .env.example .env`,
+then edit `.env`. Always keep `COMPOSE_PROJECT_NAME=sovereign-hub`: the updater
+looks for that name. These are the lines that matter for a home server:
+
+```
+# The Docker project name the updater expects.
+COMPOSE_PROJECT_NAME=sovereign-hub
+
 # Keep the app on the server itself; Tailscale Serve publishes it privately.
 APP_BIND=127.0.0.1
 APP_PORT=7011
@@ -70,7 +80,7 @@ NTFY_PUBLIC_URL=https://<server-name>.<tailnet>.ts.net:8443
 Replace `<server-name>.<tailnet>.ts.net` with the name Tailscale shows for
 this computer. Never commit `.env`: it holds secrets and stays on the server.
 
-Start it:
+Start it (the installer does this for you):
 
 ```
 docker compose up -d

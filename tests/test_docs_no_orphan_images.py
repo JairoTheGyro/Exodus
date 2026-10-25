@@ -37,6 +37,7 @@ OPERATIONAL_GUIDES = {
     "EXODUS_ROADMAP.md",
     "GO_PUBLIC_AUDIT.md",
     "HOME_SERVER.md",
+    "INSTALL.md",
     "TRANSLATIONS.md",
     "UPDATES.md",
     "LOCAL_AI.md",

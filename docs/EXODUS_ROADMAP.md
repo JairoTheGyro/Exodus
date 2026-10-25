@@ -53,6 +53,21 @@ _Nothing in progress._
 
 ## Needs to get started
 
+### Next up, in order (agreed 2026-10-25)
+1. **Looks:** Apple-like style first, then Windows-like and Google-like
+   (Material), plus the **app launcher** (Dock / Start menu / app drawer,
+   following the chosen look).
+2. **More Spanish:** Notes, Calendar, Email and Documents, then menus and
+   messages still in English.
+3. **Smaller follow-ups:**
+   - Move to Exodus: photos into Gallery, Keep note pictures, mail archives
+     (`.mbox`), then live Google/Microsoft account connections.
+   - Updates card: show new versions of SearXNG, Vaultwarden, ntfy and the
+     other tracked projects.
+   - Prepare tested catch-up PRs from the original Odysseus automatically.
+4. **Waits for the new computer (Docker back on):** measure performance, then
+   trim (Stage 3).
+
 ### Odysseus catch-up follow-ups (2026-10-19)
 - **Small regular catch-ups** from now on: when the License Tracker shows new
   upstream changes, merge them on a `sync/odysseus-<date>` branch.
@@ -82,7 +97,8 @@ _Nothing in progress._
   Vaultwarden, ntfy…) in the same Updates card.
 
 ### Stage 6 · Public
-- A downloadable Exodus anyone can run (installer, setup guide, clean first run).
+- Installer follow-ups: Windows support, and a prebuilt Exodus image so the
+  first install doesn't need a 20–60 minute build.
 - Small teams (stronger isolation between accounts).
 - Later: a hosted version with open signups.
 
@@ -97,6 +113,13 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-25 · **One-command installer:** `curl … install.sh | bash` (or
+  `./install.sh`) checks Docker, writes `.env` (invitation-only, local-only,
+  a free port, the updater's project name), builds and starts Exodus,
+  measures the computer, sets up one-click updates and shows the first admin's
+  temporary password. Guide: `docs/INSTALL.md`. The home server guide now uses
+  it, and by-hand installs keep `COMPOSE_PROJECT_NAME=sovereign-hub` (without
+  it the updater wouldn't find a fresh install).
 - 2026-10-25 · **One-click updates:** Exodus checks GitHub daily, and when a
   newer version has passed all its tests it notifies admins. Settings →
   License Tracker → Updates shows what's new; **Update now** has the update
