@@ -923,6 +923,11 @@ from routes.my_ai_routes import setup_my_ai_routes
 app.include_router(setup_my_ai_routes())
 from routes.move_in_routes import setup_move_in_routes
 app.include_router(setup_move_in_routes())
+# Exodus one-click updates: daily check for tested updates; an admin approves
+# and the update helper on the server installs it (src/exodus_updates.py).
+from routes.exodus_update_routes import setup_exodus_update_routes
+_exodus_update_router = setup_exodus_update_routes()
+app.include_router(_exodus_update_router)
 
 
 # MCP (Model Context Protocol)
@@ -1425,6 +1430,18 @@ async def _startup_event():
                 await asyncio.sleep(3600)
 
     _startup_tasks.append(asyncio.create_task(_null_owner_sweep_loop()))
+
+    # Exodus: daily check for tested updates; notifies admins once per version.
+    from src.exodus_updates import daily_loop as _exodus_update_loop
+
+    def _exodus_admins():
+        try:
+            return [u["username"] for u in auth_manager.list_users() if u.get("is_admin")]
+        except Exception:
+            return []
+
+    _startup_tasks.append(asyncio.create_task(
+        _exodus_update_loop(_exodus_update_router.updates, _exodus_admins, task_scheduler)))
 
     # Skills Audit is scheduled per owner by TaskScheduler. Do not also start
     # an ownerless audit here: its sidecar results cannot be read back through

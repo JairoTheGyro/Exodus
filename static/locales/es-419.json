@@ -1041,7 +1041,28 @@
   "Could not download the model list. Check the internet connection and try again.": "No se pudo descargar la lista de modelos. Revisa la conexión a internet e inténtalo de nuevo.",
   "Good fits for this computer:": "Buenas opciones para esta computadora:",
   "Small models (up to about 8 billion parameters) only just fit. They’re fine for quick helpers; a cloud AI is better for everyday chat.": "Los modelos pequeños (hasta unos 8 mil millones de parámetros) apenas caben. Sirven para ayudas rápidas; una IA en la nube es mejor para el chat diario.",
-  "Good fits for that computer:": "Buenas opciones para esa computadora:"
+  "Good fits for that computer:": "Buenas opciones para esa computadora:",
+  "Updates": "Actualizaciones",
+  "New versions of Exodus, tested before they reach you. You choose when to install them.": "Nuevas versiones de Exodus, probadas antes de llegarte. Tú eliges cuándo instalarlas.",
+  "This server’s version isn’t known yet. It’s recorded once the update helper or the updater runs.": "Todavía no se conoce la versión de este servidor. Se registra cuando se ejecuta el asistente de actualizaciones o el actualizador.",
+  "Exodus is up to date.": "Exodus está al día.",
+  "All tests passed": "Pasó todas las pruebas",
+  "Still being tested; check again later": "Todavía se está probando; vuelve a revisar más tarde",
+  "Some tests failed, so it can’t be installed yet": "Algunas pruebas fallaron, así que todavía no se puede instalar",
+  "No test results yet": "Todavía no hay resultados de pruebas",
+  "See every change on GitHub": "Ver todos los cambios en GitHub",
+  "Details": "Detalles",
+  "Check for updates": "Buscar actualizaciones",
+  "Update now": "Actualizar ahora",
+  "To update with one click, set up the update helper once. On the server, in the Exodus folder, run:": "Para actualizar con un clic, configura una vez el asistente de actualizaciones. En el servidor, dentro de la carpeta de Exodus, ejecuta:",
+  "Or update by hand with python3 scripts/update_local.py. Either way, your data is backed up first and the previous version is kept so you can go back.": "O actualiza a mano con python3 scripts/update_local.py. De cualquier forma, primero se respaldan tus datos y se guarda la versión anterior para que puedas volver.",
+  "Checking GitHub…": "Revisando GitHub…",
+  "The check didn’t work.": "La revisión no funcionó.",
+  "Install this Exodus update now? Your data is backed up first. Exodus restarts and may be unavailable for a few minutes.": "¿Instalar ahora esta actualización de Exodus? Primero se respaldan tus datos. Exodus se reinicia y puede no estar disponible unos minutos.",
+  "The update couldn’t start.": "La actualización no pudo empezar.",
+  "Waiting for the update helper…": "Esperando al asistente de actualizaciones…",
+  "Updating: backing up, downloading and restarting Exodus. This can take several minutes.": "Actualizando: respaldando, descargando y reiniciando Exodus. Puede tardar varios minutos.",
+  "Exodus is up to date. Reload the page.": "Exodus está al día. Recarga la página."
  },
  "patterns": [
   [
@@ -1559,6 +1580,26 @@
   [
    "Exodus runs in Docker here, so it only sees {n}, Docker’s share. To use the whole computer’s memory, run python3 scripts/host_hardware.py from the Exodus folder on the computer itself, then press Check again. Or describe the computer below.",
    "Aquí Exodus funciona en Docker, así que solo ve {n}, la parte de Docker. Para usar toda la memoria de la computadora, ejecuta python3 scripts/host_hardware.py desde la carpeta de Exodus en la propia computadora y luego presiona Revisar de nuevo. O describe la computadora abajo."
+  ],
+  [
+   "This server runs version {v}.",
+   "Este servidor usa la versión {v}."
+  ],
+  [
+   "A newer version is available: {v} from {date}.",
+   "Hay una versión más nueva: {v} del {date}."
+  ],
+  [
+   "Newest version: {v} from {date}.",
+   "Versión más nueva: {v} del {date}."
+  ],
+  [
+   "What’s new ({n} changes)",
+   "Novedades ({n} cambios)"
+  ],
+  [
+   "Last checked {date}. Exodus checks once a day and tells admins when a tested update is ready.",
+   "Última revisión: {date}. Exodus revisa una vez al día y avisa a los administradores cuando hay una actualización probada lista."
   ]
  ]
 }

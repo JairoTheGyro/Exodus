@@ -186,3 +186,5 @@ services:
       - ./routes/my_ai_routes.py:/app/routes/my_ai_routes.py:ro
       - ./routes/move_in_routes.py:/app/routes/move_in_routes.py:ro
       - ./src/move_in.py:/app/src/move_in.py:ro
+      - ./routes/exodus_update_routes.py:/app/routes/exodus_update_routes.py:ro
+      - ./src/exodus_updates.py:/app/src/exodus_updates.py:ro

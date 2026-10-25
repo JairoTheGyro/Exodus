@@ -38,6 +38,7 @@ OPERATIONAL_GUIDES = {
     "GO_PUBLIC_AUDIT.md",
     "HOME_SERVER.md",
     "TRANSLATIONS.md",
+    "UPDATES.md",
     "LOCAL_AI.md",
     "LOCAL_BACKUPS.md",
     "MOVE_TO_EXODUS.md",

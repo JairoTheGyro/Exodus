@@ -137,7 +137,15 @@ keys, so copy them to a second disk or another computer you trust. See
 
 ## 7. Updating the server
 
-When a change is merged on GitHub, update the server from its folder:
+**One click:** set up the update helper once, then install tested updates
+from Settings → License Tracker → Updates. Exodus checks daily and tells
+admins when one is ready. See `docs/UPDATES.md`.
+
+```
+python3 scripts/update_agent.py install
+```
+
+**By hand:** update the server from its folder:
 
 ```
 python3 scripts/update_local.py --dry-run   # preview: what would rebuild or reload
