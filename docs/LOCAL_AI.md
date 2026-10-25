@@ -1,38 +1,81 @@
 # Local AI on your own computer
 
-Exodus can use AI models that run on your own computer instead of a paid
+Exodus can use AI models that run on a computer you own instead of a paid
 cloud service. Nothing leaves your home, there's no per-message cost, and it
 becomes the **Shared AI** everyone can pick in Settings → Account → Your AI.
 
-This guide is written for a computer with **36 GB of memory**, such as an
-Apple silicon Mac.
+What you can run depends on **how much memory the AI computer has**. Exodus
+measures it for you.
 
-## How big a model fits
+## 1. See what fits your computer
 
-On an Apple silicon Mac, memory is shared between the processor and the
-graphics chip. Exodus (and macOS) count about **two-thirds of the memory** as
-usable for AI, so a 36 GB Mac has about **24 GB** for a model. Leave the rest
-for Exodus, the browser and macOS.
+Open **Settings → Account → Local AI** (admins). It shows:
 
-| Model size | Fits? | Feels like |
+- the computer's memory;
+- how much of it AI models can use;
+- what size of model fits, and the best official models for it, ranked by
+  the Cookbook;
+- the three setup steps below.
+
+If the AI will run on a different computer than Exodus, open **The AI will
+run on a different computer**, choose the kind of computer, type its memory,
+and press **Check this computer**.
+
+### Exodus in Docker: measure the whole computer
+
+On a Mac or a Windows PC, Docker only gets part of the computer's memory, so
+Exodus can't see the rest by itself. Local AI says so when this happens. To
+fix it, open a terminal on the computer itself (not inside Docker), go to the
+Exodus folder and run:
+
+```
+python3 scripts/host_hardware.py
+```
+
+It saves the computer's memory, processor and graphics to
+`data/host-hardware.json`. Local AI and the Cookbook then use the whole
+computer, and say when it was measured. `scripts/update_local.py` refreshes it
+on every update; run it again yourself after changing hardware. Nothing is
+sent anywhere.
+
+When Exodus runs without Docker (`start-macos.sh`), or on Linux, it already
+sees the whole computer.
+
+### Rough guide by memory
+
+How much memory AI can use:
+
+- **Mac with an Apple chip:** memory is shared with the graphics chip, which
+  can use about two-thirds of it on 16 GB Macs, three-quarters up to 64 GB,
+  and four-fifths above that.
+- **PC with an NVIDIA graphics card:** the card's own graphics memory
+  (8, 12, 16 or 24 GB, for example) is what counts.
+- **PC without a graphics card:** models run on the processor using about
+  60% of the memory. It works, but slowly.
+
+| Memory AI can use | What fits | Feels like |
 |---|---|---|
-| 7–9 billion parameters, 4–8 bit (5–10 GB) | Easily | Fast; good for quick helpers (titles, summaries) |
-| 12–16 billion, 4–5 bit (8–14 GB) | Yes | A solid everyday assistant |
-| 24–32 billion, 4 bit (14–20 GB) | Yes, one at a time | The best quality that fits |
-| "MoE" models such as *30B-A3B* | Yes, at 4 bit | Big-model quality and much faster, because only a small part works on each word |
-| 70 billion and larger | No | Use a cloud model for these |
+| Under 6 GB (an 8 GB Mac) | Small models, up to about 8 billion parameters, only just | Quick helpers; a cloud AI is better for chat |
+| 6–12 GB (a 16 GB Mac, an 8 GB card) | Up to about 8 billion | Quick helpers and simple chat |
+| 12–20 GB (a 24 GB Mac, a 12–16 GB card) | Up to about 14 billion | A solid everyday assistant |
+| 20–40 GB (a 32–48 GB Mac, a 24 GB card) | Up to about 32 billion, or "30B-A3B" models | The best quality most homes can run |
+| 40–80 GB (a 64–96 GB Mac) | Up to about 70 billion | Close to cloud quality |
+| Over 80 GB (a 128 GB+ Mac) | 100 billion and more | Very large models |
 
-"4-bit" (often written Q4 or 4bit) is a compressed copy of the model: a little
-less precise, about a quarter of the size. It's the usual choice.
+Sizes assume **4-bit** versions (often written Q4 or 4bit): compressed copies
+that are a little less precise and about a quarter of the size. That's the
+usual choice. "MoE" models such as *30B-A3B* are big-model quality and much
+faster, because only a small part works on each word. Leave the rest of the
+memory for Exodus, the browser and the operating system.
 
-## 1. Install a model server (on the 36 GB computer)
+## 2. Install a model server (on the AI computer)
 
 On a Mac, Docker can't use the graphics chip, so the model runs in a normal
 app next to Exodus. Pick one:
 
-- **LM Studio** (easiest; lmstudio.ai): download models with a search box. It
-  runs both **MLX** models (made for Apple silicon, usually fastest) and
-  **GGUF** models. To serve:
+- **LM Studio** (easiest; lmstudio.ai): download models with a search box. On
+  a Mac it runs both **MLX** models (made for Apple chips, usually fastest)
+  and **GGUF** models. To serve:
   1. Open the **Developer** tab.
   2. Load a model.
   3. Press **Start Server**. It listens on port **1234**.
@@ -43,13 +86,13 @@ app next to Exodus. Pick one:
 
 Both speak the same "OpenAI-compatible" language Exodus uses.
 
-## 2. Pick models with Exodus's model-fit tool
+## 3. Pick models
 
-Exodus ranks models for your exact computer in the **Cookbook** (sidebar →
-Tools → Cookbook), on its model list:
+Local AI shows the top five. For the full list, press **All models in
+Cookbook** (or sidebar → Tools → Cookbook):
 
 1. Press the **refresh** button ("Refresh selected server hardware and
-   cached models"). It detects the 36 GB and downloads today's model list
+   cached models"). It checks the hardware and downloads today's model list
    from Hugging Face. **Rescan** re-checks the hardware.
 2. Turn on **Official only**, then sort by **Fit** or **Score**, and filter by
    use: general, coding, reasoning, or multimodal (reads pictures).
@@ -58,27 +101,21 @@ Tools → Cookbook), on its model list:
 4. Skip "abliterated" or "uncensored" variants. Those have their safety
    training removed, which isn't what you want for family.
 
-A good starting set (two models loaded at once still fit):
+A good starting set, if both fit together:
 
-- **Main assistant:** the best-scoring *general* model around **14–20 GB** at
-  4 bit, or a *30B-A3B* MoE model for speed.
+- **Main assistant:** the best-scoring *general* model that uses no more than
+  about **two-thirds** of the memory AI can use, so a second model still fits.
 - **Quick helper:** a *7–8B* model at 4 bit (about 5 GB), for titles,
-  summaries and background tasks.
-- **Coding (optional):** a *Coder 30B-A3B* model at 4 bit, when you use Code.
+  summaries and background tasks. On small computers, use just one model.
+- **Coding (optional):** a *Coder* model, when you use Code.
 
-When we ran the model-fit tool for a 36 GB Apple computer on 2026-10-24, the
-top official picks that fit included:
+New models come out every month, so trust Local AI and the Cookbook over any
+list written down.
 
-- *Qwen 3.x 27B* at 4 bit, about 16 GB;
-- *Gemma 27B / 31B* (QAT) at 4–6 bit, 16–25 GB;
-- *Mistral Small 24B*, 19–27 GB;
-- *Qwen3-Coder-30B-A3B* at 4 bit, about 25 GB, for coding.
+## 4. Connect it to Exodus (admin)
 
-New models come out every month, so trust the model-fit screen over this list.
-
-## 3. Connect it to Exodus (admin)
-
-Settings → **Added Models** → **Add Models** → connect a local model:
+Settings → **Added Models** → **Add Models** → connect a local model
+(Local AI's **Open Added Models** goes there):
 
 - **Address**, from inside Docker:
   - LM Studio: `http://host.docker.internal:1234/v1`
@@ -95,10 +132,10 @@ Settings → **Added Models** → **Add Models** → connect a local model:
 Then Settings → **AI Defaults**: choose the main assistant as the default
 model, and the quick helper as the *utility* model.
 
-## 4. If the AI computer isn't the Exodus server
+## 5. If the AI computer isn't the Exodus server
 
 If Exodus runs on a separate home server (`docs/HOME_SERVER.md`), the server
-reaches the 36 GB computer over Tailscale:
+reaches the AI computer over Tailscale:
 
 1. In LM Studio, turn on **Serve on Local Network**. For Ollama, it already
    listens on `0.0.0.0`.
@@ -115,9 +152,9 @@ ports on your router.
 
 - **Cost:** local models count as **$0** toward each person's monthly AI
   cap (Settings → Account → Your AI).
-- **Speed:** the first answer after loading a model is slower. 4-bit
-  27–32B models are comfortable for chat. Use the quick helper for anything
-  that runs often.
+- **Speed:** the first answer after loading a model is slower. Local AI
+  shows a rough speed for each model. Use the quick helper for anything that
+  runs often.
 - **Memory:** loading a second big model can push the computer into
   swapping. Unload models you aren't using (LM Studio's eject button, or
   `ollama stop <model>`).
@@ -127,6 +164,7 @@ ports on your router.
 
 ## Checklist
 
+- [ ] Local AI shows the computer's real memory (not only Docker's share).
 - [ ] The model server runs, and its **Test** in Settings → Added Models passes.
 - [ ] A chat with the shared model answers.
 - [ ] With tools on, "What's on my calendar this week?" uses the calendar.

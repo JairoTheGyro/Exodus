@@ -51,7 +51,7 @@ The source tree reads **117** `ODYSSEUS_*` variables: 81 an operator may want to
 
 | Variable | Default | Read in | What it does |
 |---|---|---|---|
-| `ODYSSEUS_DATA_DIR` | `get_default_data_dir()` | `src/constants.py` (+1 more) | Root directory for every persisted file. Prefer this over the per-path overrides; the rest of `src/constants.py` derives from it. |
+| `ODYSSEUS_DATA_DIR` | `get_default_data_dir()` | `src/constants.py` (+2 more) | Root directory for every persisted file. Prefer this over the per-path overrides; the rest of `src/constants.py` derives from it. |
 | `ODYSSEUS_MAIL_ATTACHMENTS_DIR` | `os.path.join(DATA_DIR, 'mail-attachments')` | `src/constants.py` | Dedicated override for the mail attachment store, which otherwise lives under the data directory. |
 
 ### Model routing and providers

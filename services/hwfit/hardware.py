@@ -740,7 +740,9 @@ def _hardware_visibility_warning(result):
             "message": (
                 "Cookbook is scanning hardware from inside the Odysseus container. "
                 "If your host has a GPU, Docker may not be exposing it to the container, "
-                "so model recommendations may be CPU-only or too conservative."
+                "so model recommendations may be CPU-only or too conservative. "
+                f"To use the whole computer's hardware, run `{HOST_SNAPSHOT_HINT}` on the computer itself "
+                "(not inside Docker), then press Rescan."
             ),
             "actions": [
                 "manual_hardware",
@@ -757,7 +759,9 @@ def _hardware_visibility_warning(result):
             "title": "Container-visible RAM may be lower than host RAM",
             "message": (
                 "Cookbook is seeing the RAM available inside the container. "
-                "If your host has more memory, validate host RAM separately or use Manual Hardware."
+                "If your host has more memory, run "
+                f"`{HOST_SNAPSHOT_HINT}` on the computer itself (not inside Docker), then press Rescan, "
+                "or use Manual Hardware."
             ),
             "actions": [
                 "manual_hardware",
@@ -787,6 +791,79 @@ def _attach_probe_context(result, host=""):
         result.pop("hardware_visibility_warning", None)
 
     return result
+
+
+HOST_SNAPSHOT_NAME = "host-hardware.json"
+HOST_SNAPSHOT_HINT = "python3 scripts/host_hardware.py"
+_SNAPSHOT_FIELDS = (
+    "total_ram_gb", "available_ram_gb", "cpu_cores", "cpu_name", "cpu_arch",
+    "has_gpu", "gpu_name", "gpu_vram_gb", "gpu_count", "gpu_cores", "gpus",
+    "gpu_groups", "homogeneous", "backend", "unified_memory",
+)
+_SNAPSHOT_BACKENDS = {"cuda", "rocm", "metal", "cpu_x86", "cpu_arm", "vulkan", "sycl"}
+
+
+def _host_snapshot_path():
+    try:
+        from src.constants import DATA_DIR
+    except Exception:
+        DATA_DIR = os.environ.get("ODYSSEUS_DATA_DIR") or "data"
+    return os.path.join(DATA_DIR, HOST_SNAPSHOT_NAME)
+
+
+def _num(value, low, high):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and low <= value <= high
+
+
+def load_host_snapshot(path=None):
+    """The whole computer's hardware, measured outside Docker by
+    scripts/host_hardware.py. Returns (system, measured_at) or None.
+    Values are bounds-checked: the file only steers recommendations."""
+    try:
+        with open(path or _host_snapshot_path(), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("format") != "exodus.host-hardware":
+        return None
+    raw = data.get("system")
+    if not isinstance(raw, dict) or not _num(raw.get("total_ram_gb"), 0.5, 65536):
+        return None
+    system = {k: raw[k] for k in _SNAPSHOT_FIELDS if k in raw}
+    if not _num(system.get("available_ram_gb"), 0, 65536):
+        system["available_ram_gb"] = system["total_ram_gb"]
+    if system.get("has_gpu"):
+        if not _num(system.get("gpu_vram_gb"), 0.1, 65536) or system.get("backend") not in _SNAPSHOT_BACKENDS:
+            return None
+        system["has_gpu"] = True
+    else:
+        system.update({"has_gpu": False, "gpu_name": None, "gpu_vram_gb": None, "gpu_count": 0,
+                       "gpus": [], "gpu_groups": []})
+        if system.get("backend") not in {"cpu_x86", "cpu_arm"}:
+            system["backend"] = "cpu_arm" if system.get("cpu_arch") == "arm64" else "cpu_x86"
+    for key in ("cpu_name", "gpu_name", "cpu_arch"):
+        if system.get(key) is not None:
+            system[key] = str(system[key])[:120]
+    measured_at = str(data.get("measured_at") or "")[:40]
+    return system, measured_at
+
+
+def _apply_host_snapshot(result):
+    """Inside Docker, rank against the whole computer when it was measured."""
+    if not isinstance(result, dict) or result.get("error") or result.get("probe_scope") != "container":
+        return result
+    found = load_host_snapshot()
+    if not found:
+        return result
+    system, measured_at = found
+    merged = dict(system)
+    merged.update({
+        "probe_scope": "host_snapshot",
+        "containerized": True,
+        "container_ram_gb": result.get("total_ram_gb"),
+        "host_measured_at": measured_at,
+    })
+    return merged
 
 
 def detect_system(host="", ssh_port="", platform="", fresh=False):
@@ -901,6 +978,8 @@ def detect_system(host="", ssh_port="", platform="", fresh=False):
         }
 
     result = _attach_probe_context(result, host=host)
+    if not host:
+        result = _apply_host_snapshot(result)
     _remote_host = None
     _remote_platform = None
     _cache_by_host[cache_key] = (now, result)

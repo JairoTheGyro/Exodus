@@ -37,6 +37,65 @@ def _is_official_model(model: dict) -> bool:
     return namespace in _OFFICIAL_NAMESPACES
 
 
+# Exodus "recommended" picks (Settings → Account → Local AI): models a family
+# can safely start with. Official publishers, or the well-known conversion
+# publishers that repackage them for LM Studio / Ollama / Apple chips.
+_CONVERSION_NAMESPACES = {"mlx-community", "lmstudio-community", "ggml-org"}
+_NOT_FOR_FAMILY = re.compile(r"abliterat|uncensor|heretic|nsfw|jailbreak|lewd|roleplay|\bdpo-?unc", re.I)
+_NOT_A_CHAT_MODEL = re.compile(r"embed|rerank|guard|safeguard|whisper|tts|speech|ocr|paligemma|"
+                               r"medgemma|medical|diffusion|captioner|preview|(?:^|[-_])sae[-_]|"
+                               r"(?:^|[-_/])(?:pt|base)(?:$|[-_])", re.I)
+_VARIANT_TOKENS = re.compile(r"[-_.](?:\d+(?:\.\d+)?bit|mxfp\d+|nvfp\d+|dwq\w*|gguf|mlx|qat|q\d\w*|"
+                             r"bf16|fp16|fp8|int[48]|awq|gptq|\d{6})(?=$|[-_.])", re.I)
+
+
+def _recommended_key(name: str) -> str:
+    repo = name.split("/", 1)[-1].lower()
+    previous = None
+    while previous != repo:
+        previous, repo = repo, _VARIANT_TOKENS.sub("", repo)
+    return repo
+
+
+_RECOMMENDED_USES = {"general", "multimodal", "reasoning"}
+_FIT_RANK = {"perfect": 0, "good": 1}
+
+
+def _official_keys(catalog):
+    return {_recommended_key(str(m.get("name") or "")) for m in catalog or [] if _is_official_model(m)}
+
+
+def _recommended(results, limit, official_keys):
+    """The best well-fitting chat models a family can trust, one per model.
+
+    A model counts when an official publisher released it, or when it is a
+    conversion (MLX, GGUF) by a well-known publisher of a model an official
+    publisher released — matched by name, so fine-tunes and remixes don't
+    count. Ordered by quality, then fit, then size."""
+    picks, seen = [], set()
+    ranked = sorted(
+        results,
+        key=lambda m: (-((m.get("scores") or {}).get("quality") or 0), _FIT_RANK.get(m.get("fit_level"), 9),
+                       -(m.get("params_b") or 0)),
+    )
+    for model in ranked:
+        name = str(model.get("name") or "")
+        namespace = name.split("/", 1)[0].lower() if "/" in name else ""
+        if model.get("fit_level") not in _FIT_RANK or model.get("use_case") not in _RECOMMENDED_USES:
+            continue
+        key = _recommended_key(name)
+        trusted = _is_official_model(model) or (namespace in _CONVERSION_NAMESPACES and key in official_keys)
+        if not trusted or _NOT_FOR_FAMILY.search(name) or _NOT_A_CHAT_MODEL.search(name.split("/", 1)[-1]):
+            continue
+        if key in seen or any(key + suffix in official_keys for suffix in ("-instruct", "-it", "-chat")):
+            continue  # already listed, or a base model whose chat version exists
+        seen.add(key)
+        picks.append(model)
+        if len(picks) >= limit:
+            break
+    return picks
+
+
 def _validate_detection_target(host: str = "", ssh_port: str = "") -> tuple[str, str]:
     host_value = validate_remote_host(host) or ""
     port_value = validate_ssh_port(ssh_port) or ""
@@ -214,8 +273,9 @@ def setup_hwfit_routes():
         return detect_system(host=host, ssh_port=ssh_port, platform=platform, fresh=fresh)
 
     @router.get("/models")
-    def get_models(use_case: str = "", sort: str = "newest", limit: int = 50, search: str = "", host: str = "", quant: str = "", ctx: str = "", gpu_count: str = "", gpu_group: str = "", ssh_port: str = "", platform: str = "", fresh: bool = False, refresh_catalog: bool = False, manual_mode: str = "", manual_gpu_count: str = "", manual_vram_gb: str = "", manual_ram_gb: str = "", manual_backend: str = "", ignore_detected_gpu: bool = False, ignore_detected_ram: bool = False, fit_only: bool = False, official_only: bool = False):
+    def get_models(use_case: str = "", sort: str = "newest", limit: int = 50, search: str = "", host: str = "", quant: str = "", ctx: str = "", gpu_count: str = "", gpu_group: str = "", ssh_port: str = "", platform: str = "", fresh: bool = False, refresh_catalog: bool = False, manual_mode: str = "", manual_gpu_count: str = "", manual_vram_gb: str = "", manual_ram_gb: str = "", manual_backend: str = "", ignore_detected_gpu: bool = False, ignore_detected_ram: bool = False, fit_only: bool = False, official_only: bool = False, recommended: bool = False):
         """Rank LLM models against detected hardware and return scored results.
+        recommended=true: Exodus's short list for Local AI (see _recommended).
         gpu_count: override GPU count (0 = CPU only, 1-N = simulate N GPUs of the
             active group). gpu_group: index into system.gpu_groups (the homogeneous
             pools) to target — empty/auto = the largest pool. vLLM can only
@@ -236,7 +296,9 @@ def setup_hwfit_routes():
                 catalog_refresh = {"error": str(e)}
         if not get_models():
             return {
-                "system": system,
+                # Still describe the hardware the person asked about.
+                "system": _apply_manual_hardware(system, manual_mode, manual_gpu_count, manual_vram_gb, manual_ram_gb, manual_backend),
+                "catalog_empty": True,
                 "models": [],
                 "error": "Model catalog is empty. Use Rescan in Cookbook while online to populate runtime model data; offline recommendations require a previously populated cache.",
                 **({"catalog_refresh": catalog_refresh} if catalog_refresh is not None else {}),
@@ -316,13 +378,16 @@ def setup_hwfit_routes():
         if target_context is not None:
             target_context = max(1024, min(target_context, 1000000))
 
+        # Filters applied after ranking need the whole ranked list first, or
+        # the top `limit` rows can all be filtered away.
+        post_filter = official_only or recommended
         rank_kwargs = {
             "use_case": use_case or None,
-            "limit": limit,
+            "limit": 100000 if post_filter else limit,
             "search": search or None,
             "sort": sort,
             "quant": quant or None,
-            "fit_only": fit_only,
+            "fit_only": fit_only or recommended,
         }
         if target_context is not None:
             rank_kwargs["target_context"] = target_context
@@ -336,6 +401,10 @@ def setup_hwfit_routes():
         results = rank_models(system, **rank_kwargs)
         if official_only:
             results = [m for m in results if _is_official_model(m)]
+        if recommended:
+            results = _recommended(results, max(1, min(limit, 20)), _official_keys(get_models()))
+        elif post_filter:
+            results = results[:limit]
         payload = {"system": system, "models": results}
         if catalog_refresh is not None:
             payload["catalog_refresh"] = catalog_refresh

@@ -93,6 +93,12 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-25 · **Local AI for any computer:** Settings → Account → Local AI
+  (admins) shows the AI computer's real memory, what size of model fits and
+  the best official models for it, or checks another computer you describe.
+  In Docker, `scripts/host_hardware.py` measures the whole computer (the
+  updater refreshes it), so the Cookbook no longer sees only Docker's share.
+  `docs/LOCAL_AI.md` now has a guide by memory size.
 - 2026-10-24 · **Move to Exodus:** in Settings → Account, anyone can upload a
   Google Takeout, iCloud or Microsoft export, see what's inside, and import
   calendars, Keep notes and files (contacts for the admin). Guide:

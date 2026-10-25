@@ -11,6 +11,8 @@ Exodus safety net (home server):
   (skip with --no-backup).
 - Before rebuilding, each rebuilt app image is kept as <image>:rollback and
   the previous code revision is recorded.
+- After updating, scripts/host_hardware.py records the whole computer's
+  memory and graphics for the Cookbook (Docker only sees part of it).
 - --rollback goes back to that revision and image, and reloads the services
   the update touched. A failed update is never undone automatically; rerun
   the update to retry, or use --rollback to go back.
@@ -483,6 +485,19 @@ def rollback(runner, root=ROOT, *, say=print):
     return commit
 
 
+def record_host_hardware(root=ROOT, say=print):
+    """Refresh data/host-hardware.json so the Cookbook sees the whole computer,
+    not only Docker's share. Never stops an update."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('exodus_host_hardware', root / 'scripts' / 'host_hardware.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.record(root, say=say)
+    except Exception as exc:  # hardware probing is a convenience
+        say(f'Could not measure this computer for the Cookbook: {exc}')
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true', help='Fetch remote metadata and preview without pulling or changing containers.')
@@ -494,6 +509,8 @@ def main(argv=None):
             rollback(Runner(ROOT))
         else:
             update(Runner(ROOT), dry_run=args.dry_run, backup=not args.no_backup)
+            if not args.dry_run:
+                record_host_hardware(ROOT)
     except (UpdateError, OSError) as exc:
         print(f'Update stopped: {exc}')
         return 1

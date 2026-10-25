@@ -79,6 +79,16 @@ docker compose up -d
 The first build takes a while. When it finishes, `docker compose ps` shows the
 services as running or healthy.
 
+Let Exodus see this computer's full memory and graphics (Docker only gets part
+of them on a Mac or Windows PC). Settings → Account → Local AI and the Cookbook
+use it to suggest AI models that fit:
+
+```
+python3 scripts/host_hardware.py
+```
+
+The updater refreshes it after every update.
+
 ## 4. Give it a private HTTPS address
 
 ```
