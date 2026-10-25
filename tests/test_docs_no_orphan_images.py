@@ -208,6 +208,9 @@ def test_pages_site_owns_its_entrypoint_and_media():
     assert "destination: _site" in workflow
     assert "path: _site" in workflow
     assert "cancel-in-progress: false" in workflow
+    # Skips (instead of failing) while GitHub Pages is turned off.
+    assert "needs.check.outputs.enabled == 'true'" in workflow
+    assert 'gh api "repos/${REPOSITORY}/pages"' in workflow
 
 
 def test_pages_guides_keep_relative_links_inside_site():

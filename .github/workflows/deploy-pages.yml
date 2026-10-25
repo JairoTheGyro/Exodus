@@ -15,8 +15,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Exodus: skip publishing while GitHub Pages is turned off for the repository,
+  # instead of failing on every merge. Turning Pages on (Settings → Pages →
+  # Source: GitHub Actions) makes the next run publish again.
+  check:
+    name: Check GitHub Pages is on
+    runs-on: ubuntu-latest
+    permissions:
+      pages: read
+    outputs:
+      enabled: ${{ steps.pages.outputs.enabled }}
+    steps:
+      - name: Look up the Pages site
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if output=$(gh api "repos/${REPOSITORY}/pages" --jq .build_type 2>&1); then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif printf '%s' "$output" | grep -q 'HTTP 404'; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is turned off for this repository, so the website was not published. Turn it on in Settings → Pages (Source: GitHub Actions)."
+          else
+            echo "::error::Could not check whether GitHub Pages is on: $output"
+            exit 1
+          fi
+
   build:
     name: Package static site
+    needs: check
+    if: needs.check.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
