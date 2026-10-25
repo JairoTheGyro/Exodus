@@ -228,3 +228,15 @@ body.exodus-welcome-open #home-choice { display: none !important; }
 .ai-own-list li > span { flex: 1; }
 .ai-own-provider, .ai-own-key { padding: 4px 6px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; font: inherit; font-size: 12px; }
 .ai-own-key { flex: 1; min-width: 120px; }
+
+/* Exodus Move to Exodus (static/js/settings/moveIn.js). */
+.move-in-guides details { margin: 4px 0; font-size: 12px; }
+.move-in-guides summary { cursor: pointer; }
+.move-in-guides ol { margin: 6px 0 8px; padding-left: 20px; line-height: 1.5; }
+.move-in-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.move-in-file { flex: 1; min-width: 0; font-size: 12px; }
+.move-in-progress { width: 100%; }
+.move-in-title { font-weight: 600; font-size: 13px; margin: 6px 0; }
+.move-in-choice { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; }
+.move-in-done { font-size: 12px; margin: 6px 0; padding-left: 18px; }
+.move-in-msg:empty { display: none; }

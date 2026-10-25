@@ -979,7 +979,31 @@
   "Choose a provider from the list.": "Elige un proveedor de la lista.",
   "Paste the whole API key (no spaces).": "Pega la clave de API completa (sin espacios).",
   "Your own AI accounts need a sign-in account.": "Tus propias cuentas de IA requieren una cuenta con inicio de sesión.",
-  "Account not found.": "No se encontró la cuenta."
+  "Account not found.": "No se encontró la cuenta.",
+  "Move to Exodus": "Mudarse a Exodus",
+  "Bring in calendars, contacts, Google Keep notes and files exported from Google, Apple or Microsoft. Nothing is imported until you choose.": "Trae calendarios, contactos, notas de Google Keep y archivos exportados de Google, Apple o Microsoft. No se importa nada hasta que tú elijas.",
+  "Go to takeout.google.com and choose Calendar, Contacts, Keep and Drive (and anything else you want).": "Ve a takeout.google.com y elige Calendar, Contactos, Keep y Drive (y lo que quieras).",
+  "Choose a .zip export split into 2 GB parts, then download every part.": "Elige una exportación .zip dividida en partes de 2 GB y descarga todas las partes.",
+  "Upload one part at a time here.": "Sube aquí una parte a la vez.",
+  "Contacts: on icloud.com open Contacts, select all, then Export vCard.": "Contactos: en icloud.com abre Contactos, selecciona todos y luego Exportar vCard.",
+  "Calendars: in the Calendar app on a Mac, choose File → Export, or share a calendar and download the .ics file.": "Calendarios: en la app Calendario de una Mac, elige Archivo → Exportar, o comparte un calendario y descarga el archivo .ics.",
+  "Files: download them from iCloud Drive as a .zip.": "Archivos: descárgalos de iCloud Drive como .zip.",
+  "Calendar: in Outlook on the web, Settings → Calendar → Shared calendars → publish, then download the .ics link; or export it from Outlook on a computer.": "Calendario: en Outlook en la web, Configuración → Calendario → Calendarios compartidos → publicar, y descarga el enlace .ics; o expórtalo desde Outlook en una computadora.",
+  "Contacts: People → Manage contacts → Export contacts (a .csv file).": "Contactos: Personas → Administrar contactos → Exportar contactos (un archivo .csv).",
+  "Files: download from OneDrive as a .zip.": "Archivos: descárgalos de OneDrive como .zip.",
+  "Export file": "Archivo exportado",
+  "Look inside": "Ver contenido",
+  "Done.": "Listo.",
+  "Import another export": "Importar otra exportación",
+  "Nothing new was found to import.": "No se encontró nada nuevo para importar.",
+  "Choose your export file first.": "Primero elige tu archivo exportado.",
+  "Uploading…": "Subiendo…",
+  "Looking inside…": "Revisando el contenido…",
+  "Importing… this can take a few minutes for big exports.": "Importando… puede tardar unos minutos si la exportación es grande.",
+  "Mail archives aren’t imported: connect the email account in Settings → Email instead.": "Los archivos de correo no se importan: conecta la cuenta de correo en Configuración → Correo.",
+  "The upload didn’t work. Try again.": "La subida no funcionó. Inténtalo de nuevo.",
+  "The upload didn’t work. Check the connection and try again.": "La subida no funcionó. Revisa la conexión e inténtalo de nuevo.",
+  "The import didn’t work.": "La importación no funcionó."
  },
  "patterns": [
   [
@@ -1413,6 +1437,66 @@
   [
    "You can connect up to {n} accounts.",
    "Puedes conectar hasta {n} cuentas."
+  ],
+  [
+   "From {name}",
+   "Desde {name}"
+  ],
+  [
+   "Found in {name}:",
+   "Encontrado en {name}:"
+  ],
+  [
+   "Calendars: {n}",
+   "Calendarios: {n}"
+  ],
+  [
+   "Contact files: {n}",
+   "Archivos de contactos: {n}"
+  ],
+  [
+   "Contact files: {n} (only the admin can import contacts)",
+   "Archivos de contactos: {n} (solo el administrador puede importar contactos)"
+  ],
+  [
+   "Google Keep notes: {n}",
+   "Notas de Google Keep: {n}"
+  ],
+  [
+   "Files ({size}): {n}",
+   "Archivos ({size}): {n}"
+  ],
+  [
+   "Photos left out for now: {n}.",
+   "Fotos que quedaron fuera por ahora: {n}."
+  ],
+  [
+   "Word, Excel or PowerPoint files left out: {n}. Save them as PDF to bring them in.",
+   "Archivos de Word, Excel o PowerPoint que quedaron fuera: {n}. Guárdalos como PDF para traerlos."
+  ],
+  [
+   "Other items skipped: {n}.",
+   "Otros elementos omitidos: {n}."
+  ],
+  [
+   "Calendar “{name}”: {n} events added",
+   "Calendario “{name}”: se agregaron {n} eventos"
+  ],
+  [
+   "Contacts: {n} added",
+   "Contactos: se agregaron {n}"
+  ],
+  [
+   "Notes: {n} added",
+   "Notas: se agregaron {n}"
+  ],
+  [
+   "Files: {n} added to Library",
+   "Archivos: se agregaron {n} a la Biblioteca"
+  ],
+  [
+   "Files skipped: {n}",
+   "Archivos omitidos: {n}"
   ]
  ]
 }

@@ -921,6 +921,8 @@ from routes.ai_budget_routes import setup_ai_budget_routes
 app.include_router(setup_ai_budget_routes())
 from routes.my_ai_routes import setup_my_ai_routes
 app.include_router(setup_my_ai_routes())
+from routes.move_in_routes import setup_move_in_routes
+app.include_router(setup_move_in_routes())
 
 
 # MCP (Model Context Protocol)
