@@ -16,15 +16,16 @@ Exodus is not an official Odysseus release.
 
 ### Run Exodus
 
+On a Mac or Linux computer with Docker running:
+
 ```bash
-git clone https://github.com/JairoTheGyro/Exodus.git
-cd Exodus
-cp .env.example .env
-docker compose up -d --build
+curl -fsSL https://raw.githubusercontent.com/JairoTheGyro/Exodus/main/install.sh | bash
 ```
 
-Open `http://localhost:7011` (or the `APP_PORT` you set in `.env`). The first
-admin password is printed in `docker compose logs odysseus`.
+The installer sets everything up, starts Exodus, and shows the address to open
+and the first admin account's temporary password. See
+[`docs/INSTALL.md`](docs/INSTALL.md). For an always-on server that family and
+friends can reach privately, see [`docs/HOME_SERVER.md`](docs/HOME_SERVER.md).
 
 *The rest of this page is the original Odysseus README, kept for reference.*
 
