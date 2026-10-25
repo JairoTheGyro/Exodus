@@ -15,6 +15,7 @@ import { bindSettingsSearch } from './settings/search.js';
 import { bindSettingsSidebar } from './settings/sidebar.js';
 import { bindSettingsExperience } from './settings/experience.js';
 import { loadUpstreamUpdates } from './settings/upstream.js';
+import { mountUpdates } from './settings/exodusUpdates.js';
 import { mountAppLookPicker } from './settings/appLooks.js';
 import { mountLanguagePicker } from './settings/languagePicker.js';
 import { mountWorkspaceBrandSettings } from './settings/workspaceBrandSettings.js';
@@ -78,7 +79,7 @@ const _shell = createSettingsShell({
   getAdminModule: () => window.adminModule,
   // Exodus panels with their own activation work (License Tracker).
   onPanelActivated: (tab) => {
-    if (tab === 'licenses') loadUpstreamUpdates();
+    if (tab === 'licenses') { loadUpstreamUpdates(); mountUpdates(byId('exodus-updates-rows')); }
     if (tab === 'account') {
       mountAiChoice(byId('ai-choice-rows'));
       mountLocalAi(byId('local-ai-rows'));

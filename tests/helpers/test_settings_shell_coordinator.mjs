@@ -29,6 +29,7 @@ const REAL_MODULES = new Set([
   path.join(JS, 'settings/aiChoice.js'),
   path.join(JS, 'settings/moveIn.js'),
   path.join(JS, 'settings/localAi.js'),
+  path.join(JS, 'settings/exodusUpdates.js'),
   path.join(JS, 'workspaceBrand.js'),
   path.join(JS, 'apps/registry.js'),
   path.join(JS, 'apps/looks.js'),

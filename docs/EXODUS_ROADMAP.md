@@ -37,7 +37,10 @@ Claude reminds Jairo of them and walks through each one.
      (Claude fixes it in `static/locales/es-419.json`).
    - Try **local AI** on the 36 GB computer with `docs/LOCAL_AI.md`: a model
      server (LM Studio or Ollama), model picks from the Cookbook, and
-     connecting it as **Shared AI**.
+     connecting it as **Shared AI**. First run `python3 scripts/host_hardware.py`
+     so Exodus sees the whole computer's memory.
+   - **One-click updates:** run `python3 scripts/update_agent.py install`, then
+     check Settings → License Tracker → Updates (`docs/UPDATES.md`).
 2. **Pick the home server computer.** The new 36 GB computer could be it, or a
    separate always-on mini PC or Mac mini. Then follow `docs/HOME_SERVER.md`
    with Claude.
@@ -74,8 +77,9 @@ _Nothing in progress._
 - Remaining Spanish waves.
 - "Move to Exodus" follow-ups: live Google/Microsoft account connections,
   photos into Gallery, Keep note pictures, mail archives (`.mbox`).
-- **One-click updates:** the License Tracker checks daily, prepares tested
-  update PRs and notifies; Jairo approves; Exodus updates itself.
+- Updates follow-ups: prepare tested catch-up PRs from the original Odysseus
+  automatically, and show the other tracked projects' new versions (SearXNG,
+  Vaultwarden, ntfy…) in the same Updates card.
 
 ### Stage 6 · Public
 - A downloadable Exodus anyone can run (installer, setup guide, clean first run).
@@ -93,6 +97,11 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-25 · **One-click updates:** Exodus checks GitHub daily, and when a
+  newer version has passed all its tests it notifies admins. Settings →
+  License Tracker → Updates shows what's new; **Update now** has the update
+  helper on the server (`scripts/update_agent.py`) back up, install exactly
+  that version and restart, with rollback. Guide: `docs/UPDATES.md`.
 - 2026-10-25 · **Local AI for any computer:** Settings → Account → Local AI
   (admins) shows the AI computer's real memory, what size of model fits and
   the best official models for it, or checks another computer you describe.

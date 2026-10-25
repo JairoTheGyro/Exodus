@@ -371,7 +371,7 @@ def backup_data(runner, root, say):
     runner.run([sys.executable, str(script), 'snapshot'], timeout=3600)
 
 
-def update(runner, root=ROOT, *, dry_run=False, backup=True, say=print):
+def update(runner, root=ROOT, *, dry_run=False, backup=True, say=print, expect=None):
     root = root.resolve()
     if Path(git(runner, 'rev-parse', '--show-toplevel')).resolve() != root:
         raise UpdateError('Run the updater saved inside the Exodus checkout.')
@@ -401,6 +401,8 @@ def update(runner, root=ROOT, *, dry_run=False, backup=True, say=print):
     say('Checking GitHub for a fast-forward update…')
     runner.run(['git', 'fetch', '--no-tags', 'origin', 'main'], timeout=180)
     target = git(runner, 'rev-parse', 'FETCH_HEAD')
+    if expect and target != expect:
+        raise UpdateError('GitHub changed after this update was approved. Nothing was changed; check for updates again.')
     git(runner, 'merge-base', '--is-ancestor', head, target)
     tracked = runner.run(['git', 'ls-tree', '-r', '--name-only', '-z', target]).split('\0')
     if any(private_path(p) for p in tracked if p):
@@ -498,19 +500,36 @@ def record_host_hardware(root=ROOT, say=print):
         say(f'Could not measure this computer for the Cookbook: {exc}')
 
 
+def record_installed(root=ROOT, say=print):
+    """Tell Exodus which revision now runs (data/exodus-update/installed.json)."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('exodus_update_agent', root / 'scripts' / 'update_agent.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.record_installed(root)
+    except Exception as exc:  # informational only
+        say(f'Could not record the installed version for Exodus: {exc}')
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true', help='Fetch remote metadata and preview without pulling or changing containers.')
     parser.add_argument('--no-backup', action='store_true', help='Skip the data backup made before updating.')
     parser.add_argument('--rollback', action='store_true', help='Go back to the code and app image from before the last update.')
+    parser.add_argument('--expect', metavar='REVISION', help='Only update if GitHub main is exactly this revision (used by one-click updates).')
     args = parser.parse_args(argv)
     try:
         if args.rollback:
             rollback(Runner(ROOT))
+            record_installed(ROOT)
         else:
-            update(Runner(ROOT), dry_run=args.dry_run, backup=not args.no_backup)
+            if args.expect and not re.fullmatch(r'[0-9a-f]{40}', args.expect):
+                raise UpdateError('--expect needs a full 40-character revision.')
+            update(Runner(ROOT), dry_run=args.dry_run, backup=not args.no_backup, expect=args.expect)
             if not args.dry_run:
                 record_host_hardware(ROOT)
+                record_installed(ROOT)
     except (UpdateError, OSError) as exc:
         print(f'Update stopped: {exc}')
         return 1

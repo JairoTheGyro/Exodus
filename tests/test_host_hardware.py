@@ -147,7 +147,8 @@ def test_outside_docker_the_snapshot_is_ignored(container_box, monkeypatch):
 
 def test_updater_records_hardware_after_updating_not_on_preview():
     import scripts.update_local as updater
-    with patch.object(updater, "update"), patch.object(updater, "record_host_hardware") as record:
+    with patch.object(updater, "update"), patch.object(updater, "record_host_hardware") as record, \
+            patch.object(updater, "record_installed"):
         assert updater.main(["--dry-run"]) == 0
         record.assert_not_called()
         assert updater.main([]) == 0

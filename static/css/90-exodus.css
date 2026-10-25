@@ -254,3 +254,17 @@ body.exodus-welcome-open #home-choice { display: none !important; }
 .local-ai-steps { font-size: 12px; margin: 8px 0; padding-left: 20px; line-height: 1.5; }
 .local-ai-msg:empty { display: none; }
 .hwfit-hw-host-note { font-size: 12px; opacity: 0.85; }
+
+/* Exodus one-click updates (static/js/settings/exodusUpdates.js). */
+.exodus-updates-line { font-size: 13px; margin: 4px 0; }
+.exodus-updates-tested { font-size: 12px; margin: 4px 0; font-weight: 600; }
+.exodus-updates-tested.is-failed { color: var(--red, #e06c75); }
+.exodus-updates-changes { font-size: 12px; margin: 6px 0; padding-left: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+.exodus-updates-link { font-size: 12px; }
+.exodus-updates-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 6px; }
+.exodus-updates-status, .exodus-updates-warn, .exodus-updates-setup { font-size: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+.exodus-updates-status.is-failed { border-color: var(--red, #e06c75); }
+.exodus-updates-status p, .exodus-updates-setup p { margin: 0 0 6px; }
+.exodus-updates-setup code { display: block; overflow-x: auto; white-space: pre; padding: 6px 8px; margin: 4px 0 8px; }
+.exodus-updates-log { max-height: 220px; overflow: auto; font-size: 11px; white-space: pre-wrap; }
+.exodus-updates-msg:empty { display: none; }

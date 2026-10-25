@@ -146,12 +146,14 @@ class SafetyNetTests(unittest.TestCase):
 
     def test_command_line_flags(self):
         with patch.object(updater, 'update') as update, patch.object(updater, 'rollback') as rollback, \
-                patch.object(updater, 'record_host_hardware') as hardware:
+                patch.object(updater, 'record_host_hardware') as hardware, \
+                patch.object(updater, 'record_installed') as installed:
             self.assertEqual(updater.main(['--no-backup']), 0)
             self.assertFalse(update.call_args.kwargs['backup'])
             self.assertEqual(updater.main(['--rollback']), 0)
             rollback.assert_called_once()
             hardware.assert_called_once()  # after the update, not after the rollback
+            self.assertEqual(installed.call_count, 2)  # after the update and after the rollback
 
 
 if __name__ == '__main__':

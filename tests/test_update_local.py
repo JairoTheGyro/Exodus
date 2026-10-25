@@ -118,6 +118,15 @@ class UpdaterTests(unittest.TestCase):
         return updater.plan_update(self.root, paths, before, after or before,
                                    self.runner.containers, {c['service']: c['hash'] for c in self.runner.containers})
 
+    def test_expected_revision_must_match_github(self):
+        with self.assertRaises(updater.UpdateError) as caught:
+            self.update(expect='f' * 40)
+        self.assertIn('changed after this update was approved', str(caught.exception))
+        self.assertFalse(any(c[:2] == ['git', 'pull'] for c in self.runner.calls))
+        self.runner.calls.clear()
+        self.update(expect=self.runner.target)
+        self.assertIn(['git', 'pull', '--ff-only', 'origin', 'main'], self.runner.calls)
+
     def test_mounted_ui_recreates_without_build_and_retains_data(self):
         private = self.root / '.env'; private.write_text('DO_NOT_PRINT=private-value\n')
         data = self.root / 'data'; data.mkdir(); (data / 'database.db').write_bytes(b'private database')
