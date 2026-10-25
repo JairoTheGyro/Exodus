@@ -143,6 +143,8 @@
   mask-image: linear-gradient(90deg, transparent 0, #000 12%);
 }
 #calculator-modal .calc-expr > span { direction: ltr; unicode-bidi: isolate; }
+#calculator-modal .calc-expr[hidden],
+#calculator-modal .calc-badges[hidden] { display: none; }
 #calculator-modal .calc-main-line {
   font-size: 34px;
   font-weight: 300;

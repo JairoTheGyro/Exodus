@@ -326,6 +326,7 @@ function keyButton(spec) {
     disabled: !!spec.disabled, dataset: { style: spec.style },
   });
   if (spec.wide) btn.dataset.wide = '';
+  if (spec.key[0] === 'clear') btn.dataset.clear = '';
   if (typeof spec.text === 'object') btn.innerHTML = ICONS[spec.text.icon];
   // One inline wrapper: flex children ignore vertical-align, which <sup>/<sub> rely on.
   else btn.append(h('span.calc-key-label', {}, spansToNodes(label(spec.text))));
@@ -455,7 +456,7 @@ function buildModal() {
   window.addEventListener('keydown', onKeydown, true);
   window.addEventListener('keyup', onShift, true);
   window.addEventListener('blur', () => { if (shiftHeld) { shiftHeld = false; update(); } });
-  window.addEventListener('resize', () => { if (open) update(); });
+  window.addEventListener('resize', () => { if (!open) return; disp = null; update(); });
 }
 
 // ── Rendering ───────────────────────────────────────────────────────────
@@ -500,14 +501,7 @@ function update() {
     if (historyDirty || key !== historyKey) { renderHistory(); historyDirty = false; historyKey = key; }
   }
 
-  const display = renderDisplay();
-  if (rpnActive()) {
-    rpnBarEl ??= h('div.calc-rpn-bar', {}, RPN_BAR.map(keyButton));
-    if (state.mode === 'scientific') r.top.replaceChildren(h('div.calc-display-wrap', {}, display, rpnBarEl));
-    else r.top.replaceChildren(display, rpnBarEl);
-  } else {
-    r.top.replaceChildren(display);
-  }
+  updateDisplay();
 
   if (state.mode === 'programmer') {
     const key = `${state.charView}|${state.showBinary}|${state.base}`;
@@ -529,11 +523,19 @@ function update() {
   const rows = state.mode === 'basic' ? basicColumns(rpnActive())
     : state.mode === 'scientific' ? scientificColumns(rpnActive()).map((row, i) => row.concat(basicColumns(rpnActive())[i]))
       : programmerRows();
-  const signature = JSON.stringify(rows.map(row => row.map(k => [k.key, k.text, k.style, !!k.disabled])));
+  // The AC/C label changes with input, so it is updated in place, not part of the layout.
+  const signature = JSON.stringify(rows.map(row => row.map(k => [k.key, k.key[0] === 'clear' ? '' : k.text, k.style, !!k.disabled])));
   if (signature !== keysSignature || !keysEl) {
     keysSignature = signature;
     keysEl = h('div.calc-keys', { style: `--calc-cols:${rows[0].length}` }, rows.flat().map(keyButton));
     r.keys.replaceChildren(keysEl);
+  }
+  const clearBtn = keysEl.querySelector('.calc-key[data-clear]');
+  const clearText = clearLabel();
+  if (clearBtn && clearBtn.textContent !== clearText) {
+    setSpans(clearBtn.querySelector('.calc-key-label'), [{ text: clearText, level: 0 }]);
+    clearBtn.title = clearText === 'AC' ? 'Clear all (or press Escape)' : 'Clear (or press Escape)';
+    clearBtn.setAttribute('aria-label', clearBtn.title);
   }
   requestAnimationFrame(keepOnScreen);
 }
@@ -555,15 +557,34 @@ function keepOnScreen() {
   if (top !== r.top) content.style.top = `${top}px`;
 }
 
-function spansEl(cls, spans) {
-  const el = h(`div.${cls}`);
-  if (cls === 'calc-expr') el.append(h('span', {}, spansToNodes(spans)));
-  else el.append(spansToNodes(spans));
-  return el;
+/**
+ * Write spans into an element, touching the DOM as little as possible: plain
+ * text only changes a text node (about 0.1 ms in Exodus), while replacing
+ * elements makes the browser restyle far more of the page (about 5 ms).
+ */
+function setSpans(el, spans) {
+  if (spans.every(s => s.level === 0 && !s.italic)) {
+    const text = spans.map(s => s.text).join('');
+    el._spansKey = null;
+    if (el.childNodes.length === 1 && el.firstChild.nodeType === Node.TEXT_NODE) {
+      if (el.firstChild.data !== text) el.firstChild.data = text;
+    } else {
+      el.replaceChildren(document.createTextNode(text));
+    }
+    return;
+  }
+  const key = JSON.stringify(spans);
+  if (el._spansKey !== key) {
+    el._spansKey = key;
+    el.replaceChildren(spansToNodes(spans));
+  }
 }
 
-/** Shrinks the main line's font until it fits, like the original (min 42%). */
+/** Shrinks a line's font until it fits, like the original (min 42%); only when its text changed. */
 function fit(el, base) {
+  const text = el.textContent;
+  if (el._fitText === text) return;
+  el._fitText = text;
   el.style.fontSize = `${base}px`;
   requestAnimationFrame(() => {
     const avail = el.clientWidth;
@@ -572,35 +593,87 @@ function fit(el, base) {
   });
 }
 
-function mainLine(spans, base = 34, cls = 'calc-main-line') {
-  const el = spansEl(cls, spans);
-  fit(el, base);
-  return el;
+// The display is built once per layout (standard / RPN / Convert, per mode)
+// and then updated in place on every key.
+let disp = null;
+
+function ensureDisplay() {
+  const kind = rpnActive() ? 'rpn' : (state.convert && state.mode !== 'programmer') ? 'convert' : 'standard';
+  const key = `${kind}|${state.mode}`;
+  if (disp && disp.key === key) return disp;
+  const display = h('div.calc-display', { 'aria-live': 'polite' });
+  disp = { key, kind, display, badges: h('div.calc-badges'), badgesKey: '', chipsKey: '' };
+  if (kind === 'rpn') {
+    disp.rows = [0, 1, 2].map(() => h('div.calc-rpn-row'));
+    display.append(...disp.rows);
+  } else if (kind === 'convert') {
+    disp.main = h('div.calc-main-line');
+    disp.chipIn = h('div.calc-convert-row');
+    disp.result = h('div.calc-main-line.calc-convert-result');
+    disp.chipOut = h('div.calc-convert-row');
+    display.append(disp.main, disp.chipIn,
+      h('div.calc-swap-row', {},
+        h('button.calc-swap', {
+          type: 'button', html: ICONS.swap, title: 'Swap Units', 'aria-label': 'Swap Units',
+          on: { click: () => { [state.inUnit, state.outUnit] = [state.outUnit, state.inUnit]; save(); sync(); update(); } },
+        }),
+        h('hr')),
+      disp.result, disp.chipOut);
+  } else {
+    disp.expr = h('div.calc-expr', { hidden: true }, h('span'));
+    disp.main = h('div.calc-main-line');
+    display.append(disp.expr, disp.main);
+  }
+  display.append(disp.badges);
+  const top = regions.top;
+  if (kind === 'rpn') {
+    rpnBarEl ??= h('div.calc-rpn-bar', {}, RPN_BAR.map(keyButton));
+    if (state.mode === 'scientific') top.replaceChildren(h('div.calc-display-wrap', {}, display, rpnBarEl));
+    else top.replaceChildren(display, rpnBarEl);
+  } else {
+    top.replaceChildren(display);
+  }
+  return disp;
 }
 
-function renderDisplay() {
-  const display = h('div.calc-display', { 'aria-live': 'polite' });
-  if (rpnActive()) {
-    for (const text of view.rpn || ['', '', '']) {
-      const el = h('div.calc-rpn-row', { text });
-      if (text) fit(el, 30);
-      display.append(el);
+function updateDisplay() {
+  const d = ensureDisplay();
+  if (d.kind === 'rpn') {
+    (view.rpn || ['', '', '']).forEach((text, i) => {
+      setSpans(d.rows[i], [{ text, level: 0 }]);
+      if (text) fit(d.rows[i], 30);
+    });
+  } else if (d.kind === 'convert') {
+    setSpans(d.main, view.main);
+    fit(d.main, 34);
+    const currency = state.inUnit.startsWith('currency.') || state.outUnit.startsWith('currency.');
+    setSpans(d.result, [{ text: view.converted ?? (currency && ratesLoading ? '…' : '—'), level: 0 }]);
+    fit(d.result, 34);
+    const chipsKey = `${state.inUnit}|${state.outUnit}|${rates?.updated ?? ''}`;
+    if (chipsKey !== d.chipsKey) {
+      d.chipsKey = chipsKey;
+      d.chipIn.replaceChildren(unitChip(true, unitFor(state.inUnit)));
+      d.chipOut.replaceChildren(unitChip(false, unitFor(state.outUnit)));
     }
-  } else if (state.convert && state.mode !== 'programmer') {
-    display.append(...convertDisplay());
   } else {
-    if (view.expr) display.append(spansEl('calc-expr', view.expr));
-    display.append(mainLine(view.main));
+    d.expr.hidden = !view.expr;
+    if (view.expr) setSpans(d.expr.firstChild, view.expr);
+    setSpans(d.main, view.main);
+    fit(d.main, 34);
   }
-  const badges = h('div.calc-badges');
-  if (state.mode === 'scientific' && state.angle === 'rad') badges.append(h('span', { text: 'Rad' }));
-  if (state.mode === 'scientific' && view.memory) badges.append(h('span', { text: 'M', title: 'A value is stored in memory' }));
+  const badges = [];
+  if (state.mode === 'scientific' && state.angle === 'rad') badges.push(['', 'Rad', '']);
+  if (state.mode === 'scientific' && view.memory) badges.push(['', 'M', 'A value is stored in memory']);
   if (state.mode === 'programmer') {
     const ch = characterBadge();
-    if (ch !== null) badges.append(h('span.calc-char', { text: ch || ' ' }));
+    if (ch !== null) badges.push(['.calc-char', ch || ' ', '']);
   }
-  if (badges.childNodes.length) display.append(badges);
-  return display;
+  const badgesKey = JSON.stringify(badges);
+  if (badgesKey !== d.badgesKey) {
+    d.badgesKey = badgesKey;
+    d.badges.hidden = !badges.length;
+    d.badges.replaceChildren(...badges.map(([cls, text, title]) => h(`span${cls}`, { text, title: title || null })));
+  }
 }
 
 function characterBadge() {
@@ -684,25 +757,6 @@ function updateBits() {
 // ── Convert ─────────────────────────────────────────────────────────────
 
 function unitFor(id) { return findUnit(id, catalog, rates); }
-
-function convertDisplay() {
-  const from = unitFor(state.inUnit);
-  const to = unitFor(state.outUnit);
-  const currency = state.inUnit.startsWith('currency.') || state.outUnit.startsWith('currency.');
-  const resultText = view.converted ?? (currency && ratesLoading ? '…' : '—');
-  return [
-    mainLine(view.main, 34),
-    h('div.calc-convert-row', {}, unitChip(true, from)),
-    h('div.calc-swap-row', {},
-      h('button.calc-swap', {
-        type: 'button', html: ICONS.swap, title: 'Swap Units', 'aria-label': 'Swap Units',
-        on: { click: () => { [state.inUnit, state.outUnit] = [state.outUnit, state.inUnit]; save(); sync(); update(); } },
-      }),
-      h('hr')),
-    mainLine([{ text: resultText, level: 0 }], 34, 'calc-main-line.calc-convert-result'),
-    h('div.calc-convert-row', {}, unitChip(false, to)),
-  ];
-}
 
 function unitChip(isInput, unit) {
   const chip = h('button.calc-unit-chip', {

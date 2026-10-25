@@ -338,3 +338,20 @@ def test_browser_check_regressions_stay_fixed():
     assert "html.theme-temple #calculator-modal .calc-key" in css and "var(--temple-blue)" in css
     # the mode menu has a fixed width so the decimal-places row wraps
     assert re.search(r"\.calc-menu \{\s*position: fixed;\s*width: 236px;", css)
+
+
+def test_window_updates_in_place_for_smooth_typing():
+    """Speed fixes measured in the 2026-10-25 browser run (median press+redraw
+    19.3 ms on the old window, 0.9 ms after): keep them from regressing."""
+    js = (_CALC_DIR / "index.js").read_text()
+    # Display text changes touch text nodes only; elements are rebuilt only
+    # when the layout changes (standard / RPN / Convert, per mode).
+    assert "function setSpans(el, spans)" in js and "el.firstChild.data = text" in js
+    assert "function ensureDisplay()" in js and "function updateDisplay()" in js
+    # The keypad is not part of the per-key work: AC/C updates in place and is
+    # left out of the keypad's layout signature.
+    assert "k.key[0] === 'clear' ? '' : k.text" in js and "btn.dataset.clear = ''" in js
+    # The 64-bit grid is built once and updated bit by bit.
+    assert "function buildBits()" in js and "function updateBits()" in js
+    # History re-renders only when it or its number format changed.
+    assert "historyDirty" in js
