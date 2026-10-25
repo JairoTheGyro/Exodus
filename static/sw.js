@@ -6,7 +6,7 @@
 //   - Other static assets (images/fonts/libs): cache-first with bg refresh.
 //   - API / non-GET: never cached.
 // Bump CACHE_NAME whenever the precache list or SW logic changes.
-const CACHE_NAME = 'odysseus-v675-calculator-rust';
+const CACHE_NAME = 'odysseus-v676-exodus-apple-look';
 
 // KaTeX resolves these from its own stylesheet, so caching the CSS without them
 // gives offline math fallback glyphs instead of proper typesetting.
@@ -40,12 +40,14 @@ const PRECACHE = [
   // Exodus additions.
   '/static/css/90-exodus.css?v=20260929csssplit',
   '/static/home.css?v=20260929csssplit',
+  '/static/css/91-look-apple.css?v=20260929csssplit',
   '/static/js/home.js',
   '/static/js/homeUpdates.js',
   '/static/js/homeScratchpad.js',
   '/static/js/workspaceEvents.js',
   '/static/js/settings/upstream.js',
   '/static/js/settings/appLooks.js',
+  '/static/js/settings/workspaceLookSettings.js',
   '/static/temple.css?v=20260929csssplit',
   '/static/js/temple.js',
   '/static/icons/exodus.png',
@@ -159,6 +161,8 @@ const PRECACHE = [
   // Built-in app registry and launcher (imported by app.js at startup).
   '/static/js/apps/registry.js',
   '/static/js/apps/launcher.js',
+  '/static/js/apps/workspaceLook.js',
+  '/static/js/apps/dock.js',
   '/static/js/modalSnap.js',
   '/static/js/windowResize.js',
   '/static/js/modalManager.js',

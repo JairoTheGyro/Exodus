@@ -26,6 +26,18 @@
     var vp = document.querySelector('meta[name="viewport"]');
     if (isIOS && vp) vp.setAttribute('content', vp.getAttribute('content') + ', maximum-scale=1');
   })();
+  // Workspace look (js/apps/workspaceLook.js) before the first paint, so the
+  // Apple-like look doesn't flash in after the app loads.
+  (function(){
+    var r = document.documentElement;
+    r.dataset.uiFont = 'mono';
+    r.dataset.dockMode = 'auto';
+    try {
+      var w = JSON.parse(localStorage.getItem('exodus-workspace-look-v1'));
+      if (w && w.look === 'apple') r.dataset.uiLook = 'apple';
+      if (w && (w.dock === 'always' || w.dock === 'off')) r.dataset.dockMode = w.dock;
+    } catch (e) {}
+  })();
   (function(){
     try {
       var t = JSON.parse(localStorage.getItem('odysseus-theme'));
@@ -286,6 +298,7 @@
   <script type="module" src="/static/js/i18nStart.js"></script>
   <link rel="stylesheet" href="/static/css/90-exodus.css?v=20260929csssplit">
   <link rel="stylesheet" href="/static/home.css?v=20260929csssplit">
+  <link rel="stylesheet" href="/static/css/91-look-apple.css?v=20260929csssplit">
   <link rel="modulepreload" href="/static/app.js?v=20260929csssplit">
 <link rel="modulepreload" href="/static/js/chat.js?v=20260917toolttft1">
   <link rel="modulepreload" href="/static/js/ui.js?v=20260916largetoolscroll1">
@@ -2146,6 +2159,11 @@
               <span class="vis-label">Language</span>
               <select id="settings-language" class="theme-fd-select app-look-select" aria-label="Language"></select>
             </label>
+          </div>
+          <div class="admin-card" id="workspace-look-card" style="padding-bottom:6px;">
+            <h2 style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>Workspace look</h2>
+            <p class="admin-toggle-sub">How all of Exodus looks: its own style, or Apple-like, with the system font, rounder windows and a Dock for your apps. Your colour theme stays the same.</p>
+            <div class="vis-toggles" id="workspace-look-rows"></div>
           </div>
           <div class="admin-card" id="app-look-card" style="padding-bottom:6px;">
             <h2 style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;opacity:0.6" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="6.5" cy="6.5" r="0.5"/></svg>App look</h2>

@@ -16,6 +16,8 @@ import documentModule from './js/document.js?v=20260916docctx2';
 import searchChatModule from './js/search-chat.js';
 import { makeWindowDraggable } from './js/windowDrag.js';
 import { installApps } from './js/apps/launcher.js';
+import { applyWorkspaceLook, followWorkspaceLook } from './js/apps/workspaceLook.js';
+import { mountDock } from './js/apps/dock.js';
 import {
   revealApplicationShellAfterPaint,
   runDeferredRouteOpener,
@@ -1114,6 +1116,12 @@ function initializeEventListeners() {
     loadPanel: name => import('./js/panels.js?v=20260909movepicklayer1').then(({ loadPanel }) => loadPanel(name)),
     toast: message => uiModule.showToast?.(message),
   });
+
+  // Workspace look (Exodus or Apple-like) and the Apple-like look's launcher,
+  // the Dock, built from the same app list plus the main sections.
+  followWorkspaceLook();
+  applyWorkspaceLook();
+  mountDock();
 
   // Notes tool button
   const toolNotesBtn = el('tool-notes-btn');
