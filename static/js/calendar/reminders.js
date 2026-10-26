@@ -26,10 +26,10 @@ function _formatReminderBody(note) {
     if (!isNaN(start.getTime())) {
       const now = new Date();
       const mins = Math.round((start - now) / 60000);
-      const when = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      const when = start.toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' });
       let when2 = '';
       const sameDay = start.toDateString() === now.toDateString();
-      if (!sameDay) when2 = ' ' + start.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      if (!sameDay) when2 = ' ' + start.toLocaleDateString(globalThis.__exodusLocale, { month: 'short', day: 'numeric' });
       if (mins >= 1 && mins <= 60) return `Starts in ${mins} min (${when}${when2})`;
       if (mins === 0) return `Starting now (${when}${when2})`;
       if (mins > 60) {

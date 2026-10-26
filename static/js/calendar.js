@@ -671,8 +671,8 @@ async function _createEventReminder(ev, dueDate) {
   // when displayed.
   const iso = new Date(dueDate).toISOString();
   const startFmt = ev.all_day
-    ? new Date(ev.dtstart).toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' })
-    : new Date(ev.dtstart).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    ? new Date(ev.dtstart).toLocaleDateString(globalThis.__exodusLocale, { weekday:'short', month:'short', day:'numeric' })
+    : new Date(ev.dtstart).toLocaleString(globalThis.__exodusLocale, { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
   const summary = ev.summary || '(no title)';
   const loc = ev.location ? ` @ ${ev.location}` : '';
   const text = `${summary}${loc} — ${startFmt}`;
@@ -695,7 +695,7 @@ async function _createEventReminder(ev, dueDate) {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('Failed');
-    const fmt = dueDate.toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    const fmt = dueDate.toLocaleString(globalThis.__exodusLocale, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
     if (uiModule.showToast) uiModule.showToast(`Reminder set for ${fmt}`);
     try { window.notesModule?.refreshDueBadge?.({ force: true }); } catch {}
     if ('Notification' in window && Notification.permission === 'default') {
@@ -1041,7 +1041,7 @@ function _headerHTML() {
     <div class="cal-toolbar-nav">
       ${_view === 'agenda' ? '' : '<button class="cal-nav cal-toolbar-arrow" id="cal-prev" title="Previous" aria-label="Previous"><span class="cal-toolbar-arrow-glyph" aria-hidden="true">&lsaquo;</span></button>'}
       <button class="cal-nav cal-today-btn" id="cal-today">Today</button>
-      <span class="cal-title">${_view === 'agenda' ? 'Upcoming' : MONTHS[_currentDate.getMonth()] + ' ' + _currentDate.getFullYear()}${weekSuffix}<span class="cal-toolbar-clock" id="cal-toolbar-clock">${_e(_nowClock())}</span></span>
+      <span class="cal-title">${_view === 'agenda' ? 'Upcoming' : '<span class="cal-title-month">' + MONTHS[_currentDate.getMonth()] + '</span> ' + _currentDate.getFullYear()}${weekSuffix}<span class="cal-toolbar-clock" id="cal-toolbar-clock">${_e(_nowClock())}</span></span>
       ${_view === 'agenda' ? '' : '<button class="cal-nav cal-toolbar-arrow" id="cal-next" title="Next" aria-label="Next"><span class="cal-toolbar-arrow-glyph" aria-hidden="true">&rsaquo;</span></button>'}
     </div>
     <div class="cal-toolbar-right">
@@ -4040,7 +4040,7 @@ function _showEventForm(existing, defaultDate, defaultEndDate) {
 
 // ── Helpers ──
 
-function _fmtDate(s) { return new Date(s + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }); }
+function _fmtDate(s) { return new Date(s + 'T00:00:00').toLocaleDateString(globalThis.__exodusLocale, { weekday: 'long', month: 'long', day: 'numeric' }); }
 
 // Hero clock helpers — used by the bespoke event form.
 // _clockFace returns the colon-separated digits ("HH : MM"), _clockAmpm
@@ -4069,12 +4069,12 @@ function _clockAmpm(hhmm) {
 }
 function _clockDate(ds) {
   if (!ds) return '';
-  return new Date(ds + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(ds + 'T00:00:00').toLocaleDateString(globalThis.__exodusLocale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 function _nowClock() {
   // Live wall-clock string for the "Today is …" header. Locale-aware so
   // 24-h users don't see AM/PM.
-  return new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return new Date().toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' });
 }
 
 function _updateToolbarClock() {

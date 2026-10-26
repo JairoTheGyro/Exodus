@@ -50,9 +50,9 @@ export function createReminderPicker({
       document.body.appendChild(menu);
 
       const presetItems = [
-        { label: 'Later today', sub: _laterTodayDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_laterTodayDate())) },
-        { label: 'Tomorrow', sub: _tomorrowDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_tomorrowDate())) },
-        { label: 'Next week', sub: _nextWeekDate().toLocaleDateString([], { weekday: 'short' }) + ' ' + _nextWeekDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_nextWeekDate())) },
+        { label: 'Later today', sub: _laterTodayDate().toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_laterTodayDate())) },
+        { label: 'Tomorrow', sub: _tomorrowDate().toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_tomorrowDate())) },
+        { label: 'Next week', sub: _nextWeekDate().toLocaleDateString(globalThis.__exodusLocale, { weekday: 'short' }) + ' ' + _nextWeekDate().toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }), action: () => _setReminder(_toLocalDatetimeStr(_nextWeekDate())) },
         { label: 'Select date and time', sub: '', action: () => _pickCustomDate() },
       ];
 

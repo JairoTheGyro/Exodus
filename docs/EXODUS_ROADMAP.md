@@ -54,8 +54,9 @@ _Nothing in progress._
 ## Needs to get started
 
 ### Next up, in order (agreed 2026-10-25)
-1. **More Spanish:** Notes, Calendar, Email and Documents, then menus and
-   messages still in English.
+1. **More Spanish (wave 4):** the rest of the app still in English: chat,
+   the remaining tool windows (Gallery, Cookbook, Automations, Deep Research,
+   Compare, Memory), Advanced Settings and server error messages.
 2. **Smaller follow-ups:**
    - Move to Exodus: photos into Gallery, Keep note pictures, mail archives
      (`.mbox`), then live Google/Microsoft account connections.
@@ -115,6 +116,11 @@ done. See `docs/LOOKS.md` for how a new look plugs in.
 
 ## Finished
 
+- 2026-10-25 · **Spanish wave 3:** Notes, Calendar, Email, the Library and
+  the document editor are in Spanish (about 1,250 more strings and 65
+  patterns), with month and day names and dates in Spanish too. Field hints
+  are translated; people's events, notes, emails, documents and what they
+  type never are. See `docs/TRANSLATIONS.md`.
 - 2026-10-25 · **Apple-like look and the Dock:** Settings → Appearance →
   Workspace look switches the whole of Exodus to an Apple-like style: the
   computer's own system font, rounder windows with red and yellow buttons at
