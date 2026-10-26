@@ -54,7 +54,8 @@ import * as WorkspaceEvents from '/static/js/workspaceEvents.js';
 const api = createNotesApi({ origin: window.location.origin, request: (...args) => fetch(...args) });
 const persistence = createNotesPersistence({ storage: typeof localStorage === 'undefined' ? undefined : localStorage });
 const { _loadPendingHighlights, _loadGlowedReminders, _saveGlowedReminders, _loadActiveHighlights, _saveActiveHighlights, _savePendingHighlights, _loadFiredReminders, _saveFiredReminders, _draftKey, _loadDraft, _clearDraft } = persistence;
-const clock = { now: () => Date.now() };
+// The chosen Exodus language for dates (undefined keeps the browser default).
+const clock = { now: () => Date.now(), get locale() { return globalThis.__exodusLocale; } };
 const app = createNotesState({
  viewMode: (typeof localStorage !== 'undefined' && localStorage.getItem('odysseus-notes-view')) || 'list',
  labelsCollapsed: typeof localStorage !== 'undefined' && localStorage.getItem(NOTES_LABELS_COLLAPSED_KEY) === '1',

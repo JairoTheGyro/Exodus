@@ -14,12 +14,12 @@ export function _formatDueDate(dateStr, clock) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const due = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDays = Math.round((due - today) / 86400000);
-  const timeStr = hasTime ? d.toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }) : '';
+  const timeStr = hasTime ? d.toLocaleTimeString(clock.locale, { hour: 'numeric', minute: '2-digit' }) : '';
   if (hasTime && d < now) return 'overdue';
   if (!hasTime && diffDays < 0) return 'overdue';
   if (diffDays === 0) return hasTime ? timeStr : 'today';
   if (diffDays === 1) return hasTime ? `tmrw ${timeStr}` : 'tomorrow';
-  const dateLabel = d.toLocaleDateString(globalThis.__exodusLocale, { month: 'short', day: 'numeric' });
+  const dateLabel = d.toLocaleDateString(clock.locale, { month: 'short', day: 'numeric' });
   return hasTime ? `${dateLabel} ${timeStr}` : dateLabel;
 }
 
@@ -77,10 +77,10 @@ export function _formatReminderTag(dateStr, clock) {
   const sameDay = d.toDateString() === now.toDateString();
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
   const isTomorrow = d.toDateString() === tomorrow.toDateString();
-  const time = d.toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' });
+  const time = d.toLocaleTimeString(clock.locale, { hour: 'numeric', minute: '2-digit' });
   if (sameDay) return `Today, ${time}`;
   if (isTomorrow) return `Tomorrow, ${time}`;
-  const dateLabel = d.toLocaleDateString(globalThis.__exodusLocale, { month: 'short', day: 'numeric' });
+  const dateLabel = d.toLocaleDateString(clock.locale, { month: 'short', day: 'numeric' });
   return `${dateLabel}, ${time}`;
 }
 
