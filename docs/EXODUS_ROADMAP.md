@@ -54,19 +54,21 @@ _Nothing in progress._
 ## Needs to get started
 
 ### Next up, in order (agreed 2026-10-25)
-1. **Looks:** Windows-like next, then Google-like (Material), each with its
-   own launcher (Start menu, then app drawer). Apple-like and its Dock are
-   done.
-2. **More Spanish:** Notes, Calendar, Email and Documents, then menus and
+1. **More Spanish:** Notes, Calendar, Email and Documents, then menus and
    messages still in English.
-3. **Smaller follow-ups:**
+2. **Smaller follow-ups:**
    - Move to Exodus: photos into Gallery, Keep note pictures, mail archives
      (`.mbox`), then live Google/Microsoft account connections.
    - Updates card: show new versions of SearXNG, Vaultwarden, ntfy and the
      other tracked projects.
    - Prepare tested catch-up PRs from the original Odysseus automatically.
-4. **Waits for the new computer (Docker back on):** measure performance, then
+3. **Waits for the new computer (Docker back on):** measure performance, then
    trim (Stage 3).
+
+**Paused here (2026-10-25): looks.** Windows-like (with a Start menu) and
+Google-like / Material (with an app drawer) are handed to separate agents, one
+per look, so each one can be mastered on its own. Apple-like and its Dock are
+done. See `docs/LOOKS.md` for how a new look plugs in.
 
 ### Odysseus catch-up follow-ups (2026-10-19)
 - **Small regular catch-ups** from now on: when the License Tracker shows new
