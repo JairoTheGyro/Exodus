@@ -42,6 +42,7 @@ OPERATIONAL_GUIDES = {
     "UPDATES.md",
     "LOCAL_AI.md",
     "LOCAL_BACKUPS.md",
+    "LOOKS.md",
     "MOVE_TO_EXODUS.md",
     "PHONE_ALERTS.md",
     "PRACTICE_TESTS.md",

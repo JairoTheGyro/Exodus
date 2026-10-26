@@ -54,9 +54,9 @@ _Nothing in progress._
 ## Needs to get started
 
 ### Next up, in order (agreed 2026-10-25)
-1. **Looks:** Apple-like style first, then Windows-like and Google-like
-   (Material), plus the **app launcher** (Dock / Start menu / app drawer,
-   following the chosen look).
+1. **Looks:** Windows-like next, then Google-like (Material), each with its
+   own launcher (Start menu, then app drawer). Apple-like and its Dock are
+   done.
 2. **More Spanish:** Notes, Calendar, Email and Documents, then menus and
    messages still in English.
 3. **Smaller follow-ups:**
@@ -84,9 +84,9 @@ _Nothing in progress._
 - Home server setup and inviting people: see **Waiting on Jairo**.
 
 ### Stage 5 · Looks, apps and convenience
-- Style packs: **Apple-like → Windows-like → Material-like**, plus per-app
-  overrides.
-- **App launcher** (Dock / Start menu / app drawer, following the look).
+- Style packs: **Windows-like → Material-like** (Apple-like is done).
+- **App launcher** for those looks: Start menu (Windows-like), app drawer
+  (Material-like). The Dock for Apple-like is done.
 - More apps (small utilities). Familiar layouts for Documents, Email, Calendar
   and Contacts. Spreadsheet and presentations later.
 - Remaining Spanish waves.
@@ -113,6 +113,14 @@ _Nothing in progress._
 
 ## Finished
 
+- 2026-10-25 · **Apple-like look and the Dock:** Settings → Appearance →
+  Workspace look switches the whole of Exodus to an Apple-like style: the
+  computer's own system font, rounder windows with red and yellow buttons at
+  the top left, a frosted sidebar and menus. A Dock at the bottom opens Home,
+  chat, Email, Calendar, Notes, Library, Automations, every built-in app and
+  Settings, with a dot under what's open. It can show always, only when the
+  pointer reaches the bottom, or not at all. Colours still come from the theme,
+  and phones keep the sidebar. See `docs/LOOKS.md`.
 - 2026-10-25 · **One-command installer:** `curl … install.sh | bash` (or
   `./install.sh`) checks Docker, writes `.env` (invitation-only, local-only,
   a free port, the updater's project name), builds and starts Exodus,

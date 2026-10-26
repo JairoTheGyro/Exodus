@@ -1062,7 +1062,13 @@
   "The update couldn’t start.": "La actualización no pudo empezar.",
   "Waiting for the update helper…": "Esperando al asistente de actualizaciones…",
   "Updating: backing up, downloading and restarting Exodus. This can take several minutes.": "Actualizando: respaldando, descargando y reiniciando Exodus. Puede tardar varios minutos.",
-  "Exodus is up to date. Reload the page.": "Exodus está al día. Recarga la página."
+  "Exodus is up to date. Reload the page.": "Exodus está al día. Recarga la página.",
+  "Workspace look": "Aspecto del espacio",
+  "How all of Exodus looks: its own style, or Apple-like, with the system font, rounder windows and a Dock for your apps. Your colour theme stays the same.": "Cómo se ve todo Exodus: su propio estilo, o al estilo Apple, con la fuente del sistema, ventanas más redondeadas y un Dock para tus apps. Tu tema de colores no cambia.",
+  "Show when the pointer reaches the bottom": "Mostrar al llevar el puntero abajo",
+  "Always show": "Mostrar siempre",
+  "Hide": "Ocultar",
+  "Dock": "Dock"
  },
  "patterns": [
   [
@@ -1600,6 +1606,10 @@
   [
    "Last checked {date}. Exodus checks once a day and tells admins when a tested update is ready.",
    "Última revisión: {date}. Exodus revisa una vez al día y avisa a los administradores cuando hay una actualización probada lista."
+  ],
+  [
+   "{name} (open)",
+   "{name} (abierto)"
   ]
  ]
 }

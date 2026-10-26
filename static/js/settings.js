@@ -17,6 +17,7 @@ import { bindSettingsExperience } from './settings/experience.js';
 import { loadUpstreamUpdates } from './settings/upstream.js';
 import { mountUpdates } from './settings/exodusUpdates.js';
 import { mountAppLookPicker } from './settings/appLooks.js';
+import { mountWorkspaceLook } from './settings/workspaceLookSettings.js';
 import { mountLanguagePicker } from './settings/languagePicker.js';
 import { mountWorkspaceBrandSettings } from './settings/workspaceBrandSettings.js';
 import { mountServicesManager } from './settings/servicesManager.js';
@@ -96,7 +97,7 @@ const _shell = createSettingsShell({
         });
       }
     }
-    if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); mountLanguagePicker(byId('settings-language')); }
+    if (tab === 'appearance') { const rows = byId('app-look-rows'); if (rows) mountAppLookPicker(rows); mountWorkspaceLook(byId('workspace-look-rows')); mountLanguagePicker(byId('settings-language')); }
     if (tab === 'system') { mountWorkspaceBrandSettings(); mountServicesManager(byId('services-manager-rows')); }
   },
 });
