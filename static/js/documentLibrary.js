@@ -3185,8 +3185,8 @@ function _setLibraryCountChipContent(chip, label, count) {
       items = items.slice(0, _researchVisibleLimit);
       let html = '';
       for (const r of items) {
-        const date = r.completed_at ? new Date(r.completed_at * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-        const time = r.completed_at ? new Date(r.completed_at * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
+        const date = r.completed_at ? new Date(r.completed_at * 1000).toLocaleDateString(globalThis.__exodusLocale, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const time = r.completed_at ? new Date(r.completed_at * 1000).toLocaleTimeString(globalThis.__exodusLocale, { hour: '2-digit', minute: '2-digit' }) : '';
         const sources = r.source_count || 0;
         const duration = r.duration || '';
         const rounds = r.rounds || '';

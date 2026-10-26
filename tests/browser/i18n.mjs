@@ -139,7 +139,32 @@ try {
   });
   await app.waitForFunction(() => document.querySelector('.session-dropdown-menu button').textContent === 'Renombrar');
   assert.equal(await app.evaluate(() => document.querySelectorAll('.session-dropdown-menu button')[1].getAttribute('title')), 'Eliminar chat');
-  console.log('PASS: translations on sign-in, Home/Settings content, patterns, protected content, brand, restore');
+  // ── Wave 3: Notes, Calendar, Email and Documents ──
+  await app.evaluate(() => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="calendar-modal"><span class="cal-title"><span class="cal-title-month">October</span> 2026</span>
+        <button id="w3-new" title="New event">New</button><div class="cal-event-name" id="w3-event">Today</div>
+        <input id="w3-search" placeholder="Search all events…" value="Today"></div>
+      <div id="notes-pane"><div class="note-card"><div class="note-card-title" id="w3-note">Notes</div>
+        <div class="note-content-preview" id="w3-note-body">Delete</div></div><p id="w3-empty">No notes yet</p></div>
+      <div id="email-lib-modal"><div class="email-subject" id="w3-subject">Delete</div><button id="w3-reply">Reply All</button>
+        <span class="memory-count" id="w3-count">3 emails</span></div>
+      <div id="doc-editor-pane"><span class="doc-tab-title" id="w3-doc">Untitled</span><button id="w3-bold" title="Bold (Ctrl+B)">B</button>
+        <div contenteditable="true" id="w3-body">Delete</div></div>`);
+  });
+  await app.waitForFunction(() => document.getElementById('w3-empty').textContent === 'Todavía no hay notas');
+  const w3 = await app.evaluate(() => {
+    const $ = id => document.getElementById(id);
+    return { month: document.querySelector('.cal-title-month').textContent, newTitle: $('w3-new').title, newText: $('w3-new').textContent,
+      event: $('w3-event').textContent, hint: $('w3-search').placeholder, typed: $('w3-search').value,
+      note: $('w3-note').textContent, noteBody: $('w3-note-body').textContent, subject: $('w3-subject').textContent,
+      reply: $('w3-reply').textContent, count: $('w3-count').textContent, doc: $('w3-doc').textContent,
+      bold: $('w3-bold').title, body: $('w3-body').textContent };
+  });
+  assert.deepEqual(w3, { month: 'Octubre', newTitle: 'Nuevo evento', newText: 'Nuevo', event: 'Today', hint: 'Buscar en todos los eventos…',
+    typed: 'Today', note: 'Notes', noteBody: 'Delete', subject: 'Delete', reply: 'Responder a todos', count: '3 correos',
+    doc: 'Untitled', bold: 'Negrita (Ctrl+B)', body: 'Delete' });
+  console.log('PASS: translations on sign-in, Home/Settings content, patterns, protected content, brand, restore, wave 3 windows');
 } finally {
   await browser.close();
 }

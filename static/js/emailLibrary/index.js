@@ -3749,7 +3749,7 @@ function _formatEmailSuggestionDate(em) {
   const opts = d.getFullYear() === now.getFullYear()
     ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
     : { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
-  return d.toLocaleDateString(undefined, opts);
+  return d.toLocaleDateString(globalThis.__exodusLocale, opts);
 }
 
 // Filter / attachment suggestions surfaced inside the same chip-bar
@@ -5191,7 +5191,7 @@ async function _loadScheduled(grid, sp) {
     card.className = 'doclib-card memory-item';
 
     const sendDate = new Date(it.send_at);
-    const dateStr = sendDate.toLocaleString([], {
+    const dateStr = sendDate.toLocaleString(globalThis.__exodusLocale, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
@@ -5247,7 +5247,7 @@ function _emailDateBucketLabel(value) {
   const diff = Math.round((today - day) / 86400000);
   if (diff === 0) return 'Today';
   if (diff === 1) return 'Yesterday';
-  if (diff > 1 && diff < 7) return d.toLocaleDateString([], { weekday: 'long' });
+  if (diff > 1 && diff < 7) return d.toLocaleDateString(globalThis.__exodusLocale, { weekday: 'long' });
   if (diff >= 365) {
     const years = Math.floor(diff / 365);
     return `${years} ${years === 1 ? 'year' : 'years'} ago`;
@@ -5255,7 +5255,7 @@ function _emailDateBucketLabel(value) {
   if (diff >= 180) return '6 months ago';
   if (diff >= 30) return `${Math.floor(diff / 30) * 30} days ago`;
   const sameYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString([], sameYear ? { month: 'long', day: 'numeric' } : { month: 'long', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(globalThis.__exodusLocale, sameYear ? { month: 'long', day: 'numeric' } : { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function _createEmailDateHeader(label, timelineBreak = false) {
@@ -5484,7 +5484,7 @@ function _createCard(em) {
       const dateOpts = sameYear
         ? { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
         : { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-      dateStr = d.toLocaleString([], dateOpts);
+      dateStr = d.toLocaleString(globalThis.__exodusLocale, dateOpts);
     } catch (_) {}
   }
 
@@ -6031,7 +6031,7 @@ export async function _toggleCardPreview(card, em) {
       if (data.date) {
         const d = new Date(data.date);
         if (!isNaN(d.getTime())) {
-          dateDisplay = d.toLocaleString([], {
+          dateDisplay = d.toLocaleString(globalThis.__exodusLocale, {
             month: 'short', day: 'numeric', year: 'numeric',
             hour: '2-digit', minute: '2-digit',
           });

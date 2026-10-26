@@ -16,13 +16,31 @@ const TEXT_ATTRIBUTES = ['title', 'aria-label', 'placeholder', 'alt'];
 // Wave 1: sign-in ([data-i18n-scope]), Home and Settings.
 // Wave 2: the sidebar, menus (chat "+" menu, chat/folder/message/email/document
 // menus) and toast notifications.
+// Wave 3: Notes, Calendar, Email and Documents (the Library and the editor),
+// plus first-use tips and the chips of minimized windows.
 const SCOPES = [
   '#workspace-home', '#settings-modal', '[data-i18n-scope]',
   '#sidebar', '#toast', '#overflow-menu', '.dropdown', '.msg-overflow-menu', '.email-card-dropdown', '[role="menu"]',
+  '#calendar-modal', '#notes-pane', '.note-fullscreen-overlay', '#email-lib-modal', '#doclib-modal', '#doc-editor-pane',
+  '.tour-hint', '#minimized-dock', '#hamburger-btn', '#scroll-bottom-btn', '.edge-dock-resize-handle',
 ];
 // Dropdown choices are the app's wording and are translated; their values never change.
 // Never translated: people's chat titles and folder names in the sidebar.
-const SKIP = 'script, style, textarea, input, code, pre, [contenteditable=""], [contenteditable="true"], [data-i18n-skip], .session-item .text-ellipsis, .folder-name';
+// Never translated either: people's events, notes, emails and documents
+// wherever they are shown as plain text (titles, previews, names, bodies).
+const CONTENT = [
+  '.cal-event-name', '.cal-event-row', '.cal-event-loc', '.cal-wk-block-name', '.cal-wk-allday-event', '.cal-agenda-event-title',
+  '.note-card-title', '.note-content-preview', '.note-check-text', '.note-card-label', '.note-goal-desc', '.notes-today-title', '.notes-today-step', '.note-form-content',
+  '.email-subject', '.email-window-subject', '.email-sender', '.email-bubble-body', '.email-bubble-author', '.email-fold-summary-name', '.email-fold-summary-meta',
+  '.contact-name', '.contact-email', '.recipient-chip-label', '.recipient-chip-popover-name', '.recipient-chip-popover-detail', '.compose-chip-name',
+  '.email-tag', '.email-account-chip-label', '.email-unsub-card-subtitle', '.email-odysseus-attach-title', '.email-odysseus-attach-meta', '.email-reader-body', 'iframe',
+  '.doc-tab-title', '.doc-md-preview', '.doclib-card-preview', '.doclib-chat-preview-messages', '.doclib-shared-tag', '.doclib-chat-msg-model', '.doc-suggestion-reason', '.diff-add', '.diff-del',
+  '.memory-item-title', '.memory-item-content', '.cm-editor',
+];
+// Form fields keep whatever people typed; only their hint text (placeholder,
+// title, label) is the app's and gets translated.
+const SKIP_ATTRS = 'script, style, code, pre, [contenteditable=""], [contenteditable="true"], [data-i18n-skip], .session-item .text-ellipsis, .folder-name, ' + CONTENT.join(', ');
+const SKIP = 'textarea, input, ' + SKIP_ATTRS;
 
 let language = detectLanguage();
 let catalog = null;          // { messages: Map, patterns: [{ regex, names, target }] }
@@ -159,7 +177,7 @@ function translateText(node) {
 }
 
 function translateAttributes(element) {
-  if (skipped(element)) return;
+  if (!element.closest || element.closest(SKIP_ATTRS)) return;
   let saved = attrState.get(element);
   for (const attr of TEXT_ATTRIBUTES) {
     const value = element.getAttribute(attr);

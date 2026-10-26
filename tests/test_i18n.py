@@ -161,3 +161,34 @@ def test_translations_in_a_real_browser():
     result = subprocess.run(["node", "tests/browser/i18n.mjs"], cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "PASS: translations" in result.stdout
+
+
+WAVE3_SAMPLES = [
+    # Calendar
+    "New event", "Calendar settings", "Week", "Month", "Year", "Agenda", "No events", "Does not repeat",
+    "15 minutes before", "Import calendar", "Event title", "What’s happening?", "October", "Mon",
+    # Notes
+    "Search notes…", "Add a to-do…", "No notes yet", "Delete this note?", "View archive", "Edit reminder",
+    # Email
+    "New email", "Reply All", "Forward", "Mark as Read", "Auto Reply", "No scheduled emails", "Unsubscribe",
+    # Documents and the Library
+    "Bold (Ctrl+B)", "Version history", "Export as…", "Insert image", "Delete this document?",
+    "Search titles & content…", "All changes saved",
+]
+
+
+def test_wave3_windows_are_translated():
+    assert _missing(WAVE3_SAMPLES) == []
+    catalog = json.loads((ROOT / "static" / "locales" / "es-419.json").read_text(encoding="utf-8"))
+    patterns = {source for source, _ in catalog["patterns"]}
+    for source in ("{n} emails", "{n} documents", "{n} unread", "Restore {name}"):
+        assert source in patterns, source
+    i18n = (ROOT / "static" / "js" / "i18n.js").read_text(encoding="utf-8")
+    for scope in ("#calendar-modal", "#notes-pane", "#email-lib-modal", "#doclib-modal", "#doc-editor-pane"):
+        assert f"'{scope}'" in i18n, scope
+    # People's events, notes, emails and documents are never translated.
+    for content in (".cal-event-name", ".note-card-title", ".email-subject", ".doc-tab-title", ".memory-item-title"):
+        assert f"'{content}'" in i18n, content
+    calendar = (ROOT / "static" / "js" / "calendar.js").read_text(encoding="utf-8")
+    assert 'class="cal-title-month"' in calendar
+    assert "toLocaleDateString([]" not in calendar and "toLocaleDateString(undefined" not in calendar

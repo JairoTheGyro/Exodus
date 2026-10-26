@@ -588,9 +588,9 @@ function _createEmailItem(em) {
       const now = new Date();
       const isToday = d.toDateString() === now.toDateString();
       if (isToday) {
-        dateStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        dateStr = d.toLocaleTimeString(globalThis.__exodusLocale, { hour: '2-digit', minute: '2-digit' });
       } else {
-        dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        dateStr = d.toLocaleDateString(globalThis.__exodusLocale, { month: 'short', day: 'numeric' });
       }
     } catch (_) {}
   }
@@ -992,7 +992,7 @@ async function _openEmail(em, itemEl, preloadedData = null, mode = 'reply', note
       if (data.date) {
         const d = new Date(data.date);
         if (!isNaN(d.getTime())) {
-          niceDate = d.toLocaleString([], {
+          niceDate = d.toLocaleString(globalThis.__exodusLocale, {
             weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
             hour: '2-digit', minute: '2-digit',
           });
@@ -1221,9 +1221,9 @@ function _showRemindSubmenu(em, parentDropdown) {
   const nextWeek = new Date(now); nextWeek.setDate(now.getDate() + daysUntilMon); nextWeek.setHours(8, 0, 0, 0);
 
   const presets = [
-    { label: 'Later today', sub: laterToday.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), date: laterToday },
-    { label: 'Tomorrow', sub: tomorrow.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), date: tomorrow },
-    { label: 'Next week', sub: nextWeek.toLocaleDateString([], { weekday: 'short' }) + ' ' + nextWeek.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), date: nextWeek },
+    { label: 'Later today', sub: laterToday.toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }), date: laterToday },
+    { label: 'Tomorrow', sub: tomorrow.toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }), date: tomorrow },
+    { label: 'Next week', sub: nextWeek.toLocaleDateString(globalThis.__exodusLocale, { weekday: 'short' }) + ' ' + nextWeek.toLocaleTimeString(globalThis.__exodusLocale, { hour: 'numeric', minute: '2-digit' }), date: nextWeek },
   ];
   for (const p of presets) {
     const item = document.createElement('div');
@@ -1301,7 +1301,7 @@ async function _createReplyReminder(em, dueDate) {
     });
     if (!res.ok) throw new Error('Failed');
     const { showToast } = await import('./ui.js?v=20260916largetoolscroll1');
-    const fmt = dueDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const fmt = dueDate.toLocaleString(globalThis.__exodusLocale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     showToast(`Reminder set for ${fmt}`);
     // Request notification permission if needed
     if ('Notification' in window && Notification.permission === 'default') {

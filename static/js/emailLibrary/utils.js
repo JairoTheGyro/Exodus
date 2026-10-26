@@ -120,7 +120,7 @@ export function _formatBubbleDate(iso) {
   const d = new Date(iso);
   if (!d || isNaN(d.getTime())) return '';
   try {
-    return d.toLocaleString(undefined, {
+    return d.toLocaleString(globalThis.__exodusLocale, {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch (_) { return ''; }
