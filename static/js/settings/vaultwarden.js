@@ -76,7 +76,7 @@ export function initVaultwardenDetails(body) {
           ? 'Open registration is disabled by this deployment’s defaults. An administrator can invite your separate vault account and manage registration policy in Vaultwarden’s admin panel.'
           : 'Open registration is disabled. An administrator must configure secure vault administration before inviting a separate vault account.';
       const timestamp = new Date(health.checked_at);
-      if (!Number.isNaN(timestamp.getTime())) checked.textContent = 'Last checked: ' + timestamp.toLocaleString();
+      if (!Number.isNaN(timestamp.getTime())) checked.textContent = 'Last checked: ' + timestamp.toLocaleString(globalThis.__exodusLocale);
       sync.textContent = 'Device sync is shown inside the vault after signing in.';
       if (health.status === 'running' && health.reachable === true) {
         status.textContent = unsafe || 'Vaultwarden is running. Open the vault to access your separate account.';

@@ -1187,7 +1187,7 @@ export function applyModelColor(roleEl, modelName) {
         const _preset = _pid ? window.presetsModule.getPreset(_pid) : null;
         const _mt = _preset?.max_tokens;
         if (_mt && _mt > 0 && _mt <= 8192) {
-          html += '<div><span class="ctx-label">Max tokens</span> ' + _mt.toLocaleString() + ' <span style="opacity:0.4">(configured)</span></div>';
+          html += '<div><span class="ctx-label">Max tokens</span> ' + _mt.toLocaleString(globalThis.__exodusLocale) + ' <span style="opacity:0.4">(configured)</span></div>';
         }
       }
       if (isCostTrackedEndpoint(_epUrl)) {
@@ -1518,8 +1518,8 @@ export function roleTimestamp(when) {
   else if (typeof when === 'string' && when) d = new Date(when);
   else d = new Date();
   if (isNaN(d.getTime())) d = new Date();
-  ts.textContent = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  ts.title = d.toLocaleString();
+  ts.textContent = d.toLocaleTimeString(globalThis.__exodusLocale, {hour: '2-digit', minute:'2-digit'});
+  ts.title = d.toLocaleString(globalThis.__exodusLocale);
   return ts;
 }
 
@@ -2701,9 +2701,9 @@ export function displayMetrics(messageElement, metrics) {
       <div class="ctx-popup-title">Message stats</div>
       <div class="ctx-stat-section">
         <div class="ctx-stat-row"><span class="ctx-label">Model</span><span class="ctx-stat-value">${model.split('/').pop()}</span></div>
-        <div class="ctx-stat-row"><span class="ctx-label">Input</span><span class="ctx-stat-value">${inputTokens.toLocaleString()} tokens${isReal ? '' : '~'}</span></div>
-        <div class="ctx-stat-row"><span class="ctx-label">Output</span><span class="ctx-stat-value">${outputTokens.toLocaleString()} tokens${isReal ? '' : '~'}</span></div>
-        <div class="ctx-stat-row"><span class="ctx-label">Total</span><span class="ctx-stat-value">${totalTok.toLocaleString()} tokens</span></div>
+        <div class="ctx-stat-row"><span class="ctx-label">Input</span><span class="ctx-stat-value">${inputTokens.toLocaleString(globalThis.__exodusLocale)} tokens${isReal ? '' : '~'}</span></div>
+        <div class="ctx-stat-row"><span class="ctx-label">Output</span><span class="ctx-stat-value">${outputTokens.toLocaleString(globalThis.__exodusLocale)} tokens${isReal ? '' : '~'}</span></div>
+        <div class="ctx-stat-row"><span class="ctx-label">Total</span><span class="ctx-stat-value">${totalTok.toLocaleString(globalThis.__exodusLocale)} tokens</span></div>
       </div>
       <div class="ctx-stat-section">
         <div class="ctx-stat-row"><span class="ctx-label">${speedLabel}</span><span class="ctx-stat-value">${speedStr}</span></div>
@@ -2713,9 +2713,9 @@ export function displayMetrics(messageElement, metrics) {
         ${visibleTtft != null ? `<div class="ctx-stat-row"><span class="ctx-label">TTFT</span><span class="ctx-stat-value">${Number(visibleTtft).toFixed(3)}s</span></div>` : ''}
       </div>
       <div class="ctx-stat-section">
-        ${schemaCount != null ? `<div class="ctx-stat-row ctx-tool-schemas" tabindex="0"><span class="ctx-label">Tool schemas</span><span class="ctx-stat-value">${Number(schemaCount).toLocaleString()}</span></div>` : ''}
-        ${agentRounds != null ? `<div class="ctx-stat-row"><span class="ctx-label">Agent rounds</span><span class="ctx-stat-value">${Number(agentRounds).toLocaleString()}</span></div>` : ''}
-        ${toolCalls != null ? `<div class="ctx-stat-row"><span class="ctx-label">Tool calls</span><span class="ctx-stat-value">${Number(toolCalls).toLocaleString()}</span></div>` : ''}
+        ${schemaCount != null ? `<div class="ctx-stat-row ctx-tool-schemas" tabindex="0"><span class="ctx-label">Tool schemas</span><span class="ctx-stat-value">${Number(schemaCount).toLocaleString(globalThis.__exodusLocale)}</span></div>` : ''}
+        ${agentRounds != null ? `<div class="ctx-stat-row"><span class="ctx-label">Agent rounds</span><span class="ctx-stat-value">${Number(agentRounds).toLocaleString(globalThis.__exodusLocale)}</span></div>` : ''}
+        ${toolCalls != null ? `<div class="ctx-stat-row"><span class="ctx-label">Tool calls</span><span class="ctx-stat-value">${Number(toolCalls).toLocaleString(globalThis.__exodusLocale)}</span></div>` : ''}
         ${costRows}
         ${sessionCostStr}
       </div>
@@ -2791,7 +2791,7 @@ export function displayMetrics(messageElement, metrics) {
       const usedTokens = inputTokens || 0;
       const totalCtx = ctxLen || 0;
       const modelShort = model.split('/').pop();
-      const fmtNum = n => n ? n.toLocaleString() : '?';
+      const fmtNum = n => n ? n.toLocaleString(globalThis.__exodusLocale) : '?';
 
       const popup = document.createElement('div');
       popup.className = 'ctx-detail-popup';

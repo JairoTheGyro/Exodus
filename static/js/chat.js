@@ -284,7 +284,7 @@ import { invalidateSettings } from './appConfig.js';
 
   function _fmtContextNumber(n) {
     const v = Number(n || 0);
-    return v ? v.toLocaleString() : '?';
+    return v ? v.toLocaleString(globalThis.__exodusLocale) : '?';
   }
 
   function _contextColorClass(pct) {
@@ -456,7 +456,7 @@ import { invalidateSettings } from './appConfig.js';
       ['Used', `${_fmtContextNumber(d.used_tokens)} / ${_fmtContextNumber(d.context_length)}`],
       ['Usage', `${pct}%`],
       ['Window model', modelShort],
-      ['Messages', `${Number(d.messages || 0).toLocaleString()}`],
+      ['Messages', `${Number(d.messages || 0).toLocaleString(globalThis.__exodusLocale)}`],
     ];
 	    rows.forEach(([label, value]) => {
 	      const row = document.createElement('div');
@@ -592,7 +592,7 @@ import { invalidateSettings } from './appConfig.js';
       row.appendChild(input); popup.appendChild(row);
     };
     addGenerationSlider('Temperature', d.temperature_override ?? 1, 0, 2, 0.1, v => Number(v).toFixed(1), 'temperature_override');
-    addGenerationSlider('Max tokens', d.max_tokens_override ?? 8448, 256, 8448, 256, v => Number(v) > 8192 ? 'No limit' : Number(v).toLocaleString(), 'max_tokens_override');
+    addGenerationSlider('Max tokens', d.max_tokens_override ?? 8448, 256, 8448, 256, v => Number(v) > 8192 ? 'No limit' : Number(v).toLocaleString(globalThis.__exodusLocale), 'max_tokens_override');
 
 	    const threshold = _clampAutoCompactThreshold(d.auto_compact_threshold || 85);
     const thresholdRow = document.createElement('div');
@@ -2791,7 +2791,7 @@ import { invalidateSettings } from './appConfig.js';
       var roleLabel = _modelRouteLabel(modelName, modelName);
       var _charNameInit = presetsModule.getCharacterName ? presetsModule.getCharacterName() : '';
       if (_charNameInit) roleLabel = _charNameInit;
-      const roleTs = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const roleTs = new Date().toLocaleTimeString(globalThis.__exodusLocale, {hour: '2-digit', minute:'2-digit'});
       holder.innerHTML = `<div class="role">${uiModule.esc(roleLabel)} <span class="role-timestamp">${roleTs}</span></div><div class="body"></div>`;
       holder._requestedModel = modelName;
       holder._actualModel = modelName;
@@ -6334,7 +6334,7 @@ import { invalidateSettings } from './appConfig.js';
     holder.className = 'msg msg-ai';
     const meta = sessionModule.getSessions().find(s => s.id === sessionId);
     const roleLabel = _shortModel(meta && meta.model);
-    const roleTs = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const roleTs = new Date().toLocaleTimeString(globalThis.__exodusLocale, { hour: '2-digit', minute: '2-digit' });
     holder.innerHTML = '<div class="role">' + uiModule.esc(roleLabel) +
       ' <span class="role-timestamp">' + roleTs + '</span></div>' +
       '<div class="body"><div class="stream-content"></div></div>';
@@ -7484,7 +7484,7 @@ import { invalidateSettings } from './appConfig.js';
       const holder = document.createElement('div');
       holder.className = 'msg msg-ai research-reconnect';
       holder.dataset.researchSession = sessionId;
-      const roleTs = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const roleTs = new Date().toLocaleTimeString(globalThis.__exodusLocale, {hour: '2-digit', minute:'2-digit'});
       const agentMeta = sessionModule.getSessions().find(s => s.id === sessionModule.getCurrentSessionId());
       const agentModelLabel = _shortModel(agentMeta?.model);
       holder.innerHTML = `<div class="role">${uiModule.esc(agentModelLabel)} <span class="role-timestamp">${roleTs}</span></div><div class="body"></div>`;

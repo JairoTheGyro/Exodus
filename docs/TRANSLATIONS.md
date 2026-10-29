@@ -13,9 +13,18 @@ anything not translated yet simply stays in English.
   notifications, including messages with names or numbers in them; wave 3:
   Notes, Calendar (including month and day names and dates), Email, the
   Library and the document editor, plus first-use tips and minimized-window
-  chips. Later waves are listed in `docs/EXODUS_ROADMAP.md`. Chat titles and
+  chips; wave 4: the chat's controls (the top bar, the message box, message
+  buttons and status lines, welcome tips), Memory, Skills, Themes, the
+  Cookbook, Gallery and its image editor, Automations, Deep Research,
+  Compare, and all of Settings, including Advanced. Later waves are listed in
+  `docs/EXODUS_ROADMAP.md`. Chat titles and
   folder names in the sidebar are people's own words and are never
-  translated, and neither are event titles, notes, emails or documents.
+  translated, and neither are event titles, notes, emails, documents, chat
+  messages, AI replies, memories, skills, photos, task names or research
+  questions.
+- **Left in English on purpose:** product and model names, command lines,
+  the example prompts in Compare (they are sent to the AI as written) and
+  the text Exodus sends to the AI behind the scenes.
 - **Quick add in Calendar** still understands English phrases only ("lunch
   tomorrow 1pm"), so its examples stay in English.
 - **AI replies:** chat answers come back in the chosen language
@@ -52,5 +61,10 @@ Latin American Spanish ("computadora", "correo", "tú").
 `tests/test_i18n.py` fails if a visible English string on the sign-in page, in
 the Essentials Settings, the sidebar or the chat "+" menu has no Spanish entry,
 if more than 5% of toast messages are untranslated, and if sample wording
-from Notes, Calendar, Email and Documents is missing, so new wording gets
+from Notes, Calendar, Email, Documents, the chat, the tool windows or
+Advanced Settings is missing, so new wording gets
 translated in the same pull request.
+
+Patterns are tried in order, so put a longer pattern (`"Daily at {time} ·
+Next: {when}"`) before a shorter one that would also match it (`"Daily at
+{time}"`).

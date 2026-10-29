@@ -23,6 +23,14 @@ const SCOPES = [
   '#sidebar', '#toast', '#overflow-menu', '.dropdown', '.msg-overflow-menu', '.email-card-dropdown', '[role="menu"]',
   '#calendar-modal', '#notes-pane', '.note-fullscreen-overlay', '#email-lib-modal', '#doclib-modal', '#doc-editor-pane',
   '.tour-hint', '#minimized-dock', '#hamburger-btn', '#scroll-bottom-btn', '.edge-dock-resize-handle',
+  // Wave 4: the other tool windows, and the chat's own controls. Messages
+  // themselves (yours and the AI's) are people's content and stay as written.
+  '#memory-modal', '#theme-modal', '#cookbook-modal', '#gallery-modal', '#tasks-modal', '#research-overlay',
+  '#compare-model-overlay', '.compare-grid', '.compare-probe-overlay', '#custom-preset-modal', '#rename-session-modal',
+  '#search-overlay', '#welcome-screen', '.chat-top-bar', '.chat-input-bar', '#attach-strip',
+  '.msg-actions', '.msg-footer', '.stopped-indicator', '.edited-indicator', '.agent-thread-header', '.agent-thread-status',
+  '.thinking-header', '.sources-header', '.stall-banner', '.teacher-takeover-banner', '.plan-inline-actions',
+  '.memory-used-badge', '.import-prompt-banner', '.vision-editor-actions',
 ];
 // Dropdown choices are the app's wording and are translated; their values never change.
 // Never translated: people's chat titles and folder names in the sidebar.
@@ -35,7 +43,17 @@ const CONTENT = [
   '.contact-name', '.contact-email', '.recipient-chip-label', '.recipient-chip-popover-name', '.recipient-chip-popover-detail', '.compose-chip-name',
   '.email-tag', '.email-account-chip-label', '.email-unsub-card-subtitle', '.email-odysseus-attach-title', '.email-odysseus-attach-meta', '.email-reader-body', 'iframe',
   '.doc-tab-title', '.doc-md-preview', '.doclib-card-preview', '.doclib-chat-preview-messages', '.doclib-shared-tag', '.doclib-chat-msg-model', '.doc-suggestion-reason', '.diff-add', '.diff-del',
-  '.memory-item-title', '.memory-item-content', '.cm-editor',
+  '#doclib-modal .memory-item-title', '#tasks-list .memory-item-title', '.memory-item-content', '.cm-editor',
+  // Wave 4: chats, memories, skills, photos, research and model answers.
+  '.chat-history .msg-content', '.msg-text', '.markdown-body', '.thinking-content', '.sources-content',
+  '.search-result-snippet', '.search-result-item .search-result-title', '.compare-text-content', '.compare-pane-iframe',
+  '.compare-search-results', '.compare-sources-box', '.compare-probe-name', '.memory-item-text', '#memory-list .memory-item-meta', '.memory-cat-badge',
+  '.skill-card-name', '.skill-card-desc', '.skill-card-tags', '.skill-md-pre', '.skill-test-out',
+  '.gallery-album-name', '.gallery-card-prompt', '.gallery-card-model', '.gallery-ai-chip', '.gallery-detail-title',
+  '.gallery-detail-inspector-title', '.gallery-detail-prompt', '.gallery-detail-inline-link', '.gallery-editor-draft-name',
+  '.research-hero-query', '.research-job-query', '.research-job-error', '.research-job-model', '.research-nav-meta',
+  '.task-log-name', '.task-run-result', '.cookbook-output-pre', '.cookbook-gpu-proc-name', '.mcp-tools-list',
+  '.search-result-item', '.session-item .text-ellipsis',
 ];
 // Form fields keep whatever people typed; only their hint text (placeholder,
 // title, label) is the app's and gets translated.

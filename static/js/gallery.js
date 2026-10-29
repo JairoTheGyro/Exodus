@@ -1232,7 +1232,7 @@ function _humanRelativeDate(when) {
   if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
   if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
   if (diff < 86400 * 30) return Math.floor(diff / 86400) + 'd ago';
-  return when.toLocaleDateString();
+  return when.toLocaleDateString(globalThis.__exodusLocale);
 }
 
 // Edit tab empty state — shown when the user clicks the tab without a photo
@@ -1393,8 +1393,8 @@ function _renderGrid() {
   let html = uploadTile;
   _items.forEach(img => {
     const date = img.taken_at
-      ? new Date(img.taken_at).toLocaleDateString()
-      : (img.created_at ? new Date(img.created_at).toLocaleDateString() : '');
+      ? new Date(img.taken_at).toLocaleDateString(globalThis.__exodusLocale)
+      : (img.created_at ? new Date(img.created_at).toLocaleDateString(globalThis.__exodusLocale) : '');
     // Card label: prefer the prompt (which doubles as the user-editable
     // name for uploaded photos). Fall back to a cleaned filename so
     // imported photos with empty prompts still show something useful
@@ -1536,7 +1536,7 @@ function _openDetail(img) {
     return `${y} year${y !== 1 ? 's' : ''} ago`;
   };
   const date = _dateObj
-    ? `${_dateObj.toLocaleString()}<span class="gallery-date-rel"> (${_relAgo(_dateObj)})</span>`
+    ? `${_dateObj.toLocaleString(globalThis.__exodusLocale)}<span class="gallery-date-rel"> (${_relAgo(_dateObj)})</span>`
     : 'Unknown';
   const userTags = img.user_tags || img.tags || '';
   const aiTags = img.ai_tags || '';
@@ -1554,7 +1554,7 @@ function _openDetail(img) {
     const u = new Date(img.updated_at);
     const c = new Date(img.created_at);
     if (!isNaN(u) && !isNaN(c) && (u.getTime() - c.getTime() > 10000)) {
-      editedHtml = `<div class="gallery-detail-section"><label>Edited</label><div>${u.toLocaleString()}<span class="gallery-date-rel"> (${_relAgo(u)})</span></div></div>`;
+      editedHtml = `<div class="gallery-detail-section"><label>Edited</label><div>${u.toLocaleString(globalThis.__exodusLocale)}<span class="gallery-date-rel"> (${_relAgo(u)})</span></div></div>`;
     }
   }
 
