@@ -187,8 +187,40 @@ def test_wave3_windows_are_translated():
     for scope in ("#calendar-modal", "#notes-pane", "#email-lib-modal", "#doclib-modal", "#doc-editor-pane"):
         assert f"'{scope}'" in i18n, scope
     # People's events, notes, emails and documents are never translated.
-    for content in (".cal-event-name", ".note-card-title", ".email-subject", ".doc-tab-title", ".memory-item-title"):
+    for content in (".cal-event-name", ".note-card-title", ".email-subject", ".doc-tab-title", "#doclib-modal .memory-item-title"):
         assert f"'{content}'" in i18n, content
     calendar = (ROOT / "static" / "js" / "calendar.js").read_text(encoding="utf-8")
     assert 'class="cal-title-month"' in calendar
     assert "toLocaleDateString([]" not in calendar and "toLocaleDateString(undefined" not in calendar
+
+
+WAVE4_SAMPLES = [
+    # Chat controls
+    "Message Exodus...", "Stop generation", "Read aloud", "Plan mode", "Chat settings", "Agent mode", "Tip: Ctrl+K searches chats.",
+    # Tool windows
+    "Add Memory", "Search skills…", "Themes", "Upload", "Albums", "Add Task", "Run now", "Prompt on schedule",
+    "Cancel research", "Send to all models", "Blind mode", "Dependencies", "Configure & serve", "Scan / Download",
+    # Advanced Settings
+    "Default Chat Model", "Utility Model", "Keyboard Shortcuts", "Danger Zone", "Delete all chats", "Invite a teammate",
+    "Set Up 2FA", "Add MCP Server", "Data Backup", "Services",
+]
+
+
+def test_wave4_chat_tools_and_settings_are_translated():
+    assert _missing(WAVE4_SAMPLES) == []
+    catalog = json.loads((ROOT / "static" / "locales" / "es-419.json").read_text(encoding="utf-8"))
+    patterns = [source for source, _ in catalog["patterns"]]
+    for source in ("{n} tasks", "{n} photos", "{n} memories", "Round {n}", "Daily at {time} · Next: {when}"):
+        assert source in patterns, source
+    # A longer pattern must be tried before a shorter one that also matches it.
+    assert patterns.index("Daily at {time} · Next: {when}") < patterns.index("Daily at {time}")
+    i18n = (ROOT / "static" / "js" / "i18n.js").read_text(encoding="utf-8")
+    for scope in ("#memory-modal", "#gallery-modal", "#tasks-modal", "#cookbook-modal", "#research-overlay",
+                  "#compare-model-overlay", ".chat-input-bar", ".msg-actions"):
+        assert f"'{scope}'" in i18n, scope
+    # The chat history itself is never an area to translate; only its controls are.
+    assert "'#chat-history'" not in i18n.split("const SCOPES", 1)[1].split("];", 1)[0]
+    for content in (".markdown-body", ".gallery-album-name", "#tasks-list .memory-item-title", ".memory-item-text", ".skill-card-name"):
+        assert f"'{content}'" in i18n, content
+    tasks = (ROOT / "static" / "js" / "tasks.js").read_text(encoding="utf-8")
+    assert "toLocaleDateString([]" not in tasks and "toLocaleDateString()" not in tasks

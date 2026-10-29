@@ -366,7 +366,7 @@ function _scheduleLabel(task) {
   if (task.schedule === 'once') {
     if (task.scheduled_date) {
       const d = new Date(task.scheduled_date);
-      return `Once on ${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `Once on ${d.toLocaleDateString(globalThis.__exodusLocale)} at ${d.toLocaleTimeString(globalThis.__exodusLocale, { hour: '2-digit', minute: '2-digit' })}`;
     }
     return 'Once';
   }
@@ -388,7 +388,7 @@ function _utcTimeToLocal(hhmm) {
   const [h, m] = hhmm.split(':').map(Number);
   const d = new Date();
   d.setUTCHours(h, m, 0, 0);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(globalThis.__exodusLocale, { hour: '2-digit', minute: '2-digit' });
 }
 
 function _localTimeToUtc(hhmm) {
@@ -2568,7 +2568,7 @@ function _wireActivityRows(list) {
 function _renderCompletedPreviewEntry(entry) {
   const entryIdx = _activityEntries.indexOf(entry);
   const tsLabel = _relativeTime(entry.ts);
-  const tsAbs = entry.ts ? new Date(entry.ts).toLocaleString() : '';
+  const tsAbs = entry.ts ? new Date(entry.ts).toLocaleString(globalThis.__exodusLocale) : '';
   const modelTag = entry.model
     ? `<span class="doclib-chat-msg-model">${_escHtml(entry.model.split('/').pop())}</span>`
     : '';
@@ -2802,7 +2802,7 @@ function _renderActivityEntry(entry, opts = {}) {
     ? `<span class="task-log-repeat" title="${entry.repeatCount} similar activity rows">+${entry.repeatCount - 1} repeats</span>`
     : '';
   const tsLabel = _relativeTime(entry.ts);
-  const tsAbs = entry.ts ? new Date(entry.ts).toLocaleString() : '';
+  const tsAbs = entry.ts ? new Date(entry.ts).toLocaleString(globalThis.__exodusLocale) : '';
   // Prefer the run's own status (queued / running / success / error / skipped)
   // over heuristic text classification. Fall back to text-scan for older
   // rows where entry.status is missing.
@@ -3235,9 +3235,9 @@ export function openTasks(focusId, opts) {
     const el = document.getElementById('tasks-clock');
     if (!el) return;
     const now = new Date();
-    const day = now.toLocaleDateString([], { weekday: 'long' });
-    const date = now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-    const local = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const day = now.toLocaleDateString(globalThis.__exodusLocale, { weekday: 'long' });
+    const date = now.toLocaleDateString(globalThis.__exodusLocale, { month: 'short', day: 'numeric', year: 'numeric' });
+    const local = now.toLocaleTimeString(globalThis.__exodusLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     el.textContent = `${day}, ${date} · ${local}`;
   }
   _tickClock();

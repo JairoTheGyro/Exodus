@@ -13,7 +13,7 @@ const link = (label, url) => {
   element.rel = 'noopener noreferrer';
   return element;
 };
-const date = value => value ? new Date(value).toLocaleString() : 'Not checked yet';
+const date = value => value ? new Date(value).toLocaleString(globalThis.__exodusLocale) : 'Not checked yet';
 const short = sha => sha.slice(0, 8);
 
 async function request(url, method = 'GET') {

@@ -164,7 +164,28 @@ try {
   assert.deepEqual(w3, { month: 'Octubre', newTitle: 'Nuevo evento', newText: 'Nuevo', event: 'Today', hint: 'Buscar en todos los eventos…',
     typed: 'Today', note: 'Notes', noteBody: 'Delete', subject: 'Delete', reply: 'Responder a todos', count: '3 correos',
     doc: 'Untitled', bold: 'Negrita (Ctrl+B)', body: 'Delete' });
-  console.log('PASS: translations on sign-in, Home/Settings content, patterns, protected content, brand, restore, wave 3 windows');
+  // ── Wave 4: chat controls, tool windows, Advanced Settings (the workspace is still named Peralta Hub here) ──
+  await app.evaluate(() => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="chat-input-bar"><textarea id="w4-input" placeholder="Message Exodus...">Delete</textarea><button id="w4-stop" title="Stop generation">x</button></div>
+      <div id="chat-history"><div class="msg msg-user"><div class="msg-text" id="w4-said">Delete this message?</div>
+        <div class="msg-actions"><button id="w4-copy" title="Read aloud">r</button></div></div></div>
+      <div id="gallery-modal"><button id="w4-upload">Upload</button><div class="gallery-album-name" id="w4-album">Photos</div></div>
+      <div id="tasks-modal"><div class="memory-item-title" id="w4-type">Prompt on schedule</div>
+        <div id="tasks-list"><div class="memory-item-title" id="w4-task">Run now</div></div><span class="memory-count" id="w4-count">11 tasks</span></div>
+      <div id="memory-modal"><div class="memory-item-text" id="w4-memory">Settings</div><button id="w4-add">Add Memory</button></div>`);
+  });
+  await app.waitForFunction(() => document.getElementById('w4-upload').textContent === 'Subir');
+  const w4 = await app.evaluate(() => {
+    const $ = id => document.getElementById(id);
+    return { hint: $('w4-input').placeholder, typed: $('w4-input').value, stop: $('w4-stop').title, said: $('w4-said').textContent,
+      read: $('w4-copy').title, album: $('w4-album').textContent, type: $('w4-type').textContent, task: $('w4-task').textContent,
+      count: $('w4-count').textContent, memory: $('w4-memory').textContent, add: $('w4-add').textContent };
+  });
+  assert.deepEqual(w4, { hint: 'Escribe a Peralta Hub...', typed: 'Delete', stop: 'Detener respuesta', said: 'Delete this message?',
+    read: 'Leer en voz alta', album: 'Photos', type: 'Mensaje programado', task: 'Run now', count: '11 tareas', memory: 'Settings',
+    add: 'Agregar recuerdo' });
+  console.log('PASS: translations on sign-in, Home/Settings content, patterns, protected content, brand, restore, wave 3 windows, wave 4 chat and tools');
 } finally {
   await browser.close();
 }

@@ -2844,7 +2844,7 @@ function _wireTabEvents(body) {
           const meta = [];
           if (org) meta.push(esc(org));
           if (m.needed_vram_gb) meta.push(`~${m.needed_vram_gb}GB`);
-          if (m.downloads) meta.push(`${m.downloads.toLocaleString()} downloads`);
+          if (m.downloads) meta.push(`${m.downloads.toLocaleString(globalThis.__exodusLocale)} downloads`);
           const date = m.createdAt ? new Date(m.createdAt).toISOString().slice(0, 10) : '';
           if (date) meta.push(date);
           html += `<div class="hwfit-row cookbook-hf-latest-card" data-repo="${esc(m.repo_id)}" style="cursor:pointer;">`;
@@ -2853,7 +2853,7 @@ function _wireTabEvents(body) {
           html += `<span class="hwfit-col hwfit-c-vram">${m.needed_vram_gb ? `~${m.needed_vram_gb}G` : '?'}</span>`;
           html += `<span class="hwfit-col hwfit-c-params">?</span><span class="hwfit-col hwfit-c-quant">?</span>`;
           html += `<span class="hwfit-col hwfit-c-ctx">—</span><span class="hwfit-col hwfit-c-speed">—</span>`;
-          html += `<span class="hwfit-col hwfit-c-score">${m.downloads ? m.downloads.toLocaleString() : '?'}</span><span class="hwfit-col hwfit-c-mode">${esc(meta[0] || '')}</span>`;
+          html += `<span class="hwfit-col hwfit-c-score">${m.downloads ? m.downloads.toLocaleString(globalThis.__exodusLocale) : '?'}</span><span class="hwfit-col hwfit-c-mode">${esc(meta[0] || '')}</span>`;
           html += `</div>`;
         }
         hfList.innerHTML = html;

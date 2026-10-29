@@ -54,17 +54,17 @@ _Nothing in progress._
 ## Needs to get started
 
 ### Next up, in order (agreed 2026-10-25)
-1. **More Spanish (wave 4):** the rest of the app still in English: chat,
-   the remaining tool windows (Gallery, Cookbook, Automations, Deep Research,
-   Compare, Memory), Advanced Settings and server error messages.
+1. **Spanish review and server messages:** a native speaker clicks through
+   the Spanish screens and notes wording that sounds off; then the error
+   messages that come from the server (wave 5).
 2. **Smaller follow-ups:**
    - Move to Exodus: photos into Gallery, Keep note pictures, mail archives
      (`.mbox`), then live Google/Microsoft account connections.
    - Updates card: show new versions of SearXNG, Vaultwarden, ntfy and the
      other tracked projects.
    - Prepare tested catch-up PRs from the original Odysseus automatically.
-3. **Waits for the new computer (Docker back on):** measure performance, then
-   trim (Stage 3).
+3. **Performance (Docker is back on, 36 GB computer):** measure where memory
+   and time go, then trim (Stage 3).
 
 **Paused here (2026-10-25): looks.** Windows-like (with a Start menu) and
 Google-like / Material (with an app drawer) are handed to separate agents, one
@@ -116,6 +116,12 @@ done. See `docs/LOOKS.md` for how a new look plugs in.
 
 ## Finished
 
+- 2026-10-28 · **Spanish wave 4:** the chat's controls, Memory, Skills,
+  Themes, the Cookbook, Gallery and its image editor, Automations, Deep
+  Research, Compare and all of Settings (including Advanced) are in Spanish
+  (about 2,400 more strings and 130 patterns), with their dates too. Chat
+  messages, AI replies and people's own memories, photos and tasks are never
+  translated. See `docs/TRANSLATIONS.md`.
 - 2026-10-25 · **Spanish wave 3:** Notes, Calendar, Email, the Library and
   the document editor are in Spanish (about 1,250 more strings and 65
   patterns), with month and day names and dates in Spanish too. Field hints

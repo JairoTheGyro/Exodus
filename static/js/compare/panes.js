@@ -156,7 +156,7 @@ function togglePaneSettings(paneIdx, anchorBtn) {
     popup.appendChild(row);
   };
   addSlider('Temperature', settings.temperature_override ?? 1, 0, 2, 0.1, value => Number(value).toFixed(1), 'temperature_override', value => value);
-  addSlider('Max tokens', settings.max_tokens_override ?? 8448, 256, 8448, 256, value => value > 8192 ? 'No limit' : Number(value).toLocaleString(), 'max_tokens_override', value => value > 8192 ? null : value);
+  addSlider('Max tokens', settings.max_tokens_override ?? 8448, 256, 8448, 256, value => value > 8192 ? 'No limit' : Number(value).toLocaleString(globalThis.__exodusLocale), 'max_tokens_override', value => value > 8192 ? null : value);
 
   document.body.appendChild(popup);
   const rect = anchorBtn.getBoundingClientRect();

@@ -896,7 +896,7 @@ export function renderMemoryList() {
       const timeSpan = document.createElement('span');
       timeSpan.className = 'memory-item-time';
       timeSpan.textContent = relativeTime(memory.timestamp);
-      timeSpan.title = new Date(memory.timestamp * 1000).toLocaleString();
+      timeSpan.title = new Date(memory.timestamp * 1000).toLocaleString(globalThis.__exodusLocale);
       meta.appendChild(timeSpan);
     }
 

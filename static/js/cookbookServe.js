@@ -524,7 +524,7 @@ function _estimateVllmContextFit(model, fields, modelCtxMax, modelWeightsGb = 0,
       budgetGb,
       modelGb,
       kvGbPerToken,
-      reason: `~${ctx.toLocaleString()} tokens fits per-GPU KV (${freeForKv.toFixed(1)}G free)`,
+      reason: `~${ctx.toLocaleString(globalThis.__exodusLocale)} tokens fits per-GPU KV (${freeForKv.toFixed(1)}G free)`,
     };
   }
 
@@ -563,7 +563,7 @@ function _estimateVllmContextFit(model, fields, modelCtxMax, modelWeightsGb = 0,
     budgetGb,
     modelGb,
     kvGbPerToken,
-    reason: `~${ctx.toLocaleString()} tokens fits per-GPU KV (${freeForKv.toFixed(1)}G free)`,
+    reason: `~${ctx.toLocaleString(globalThis.__exodusLocale)} tokens fits per-GPU KV (${freeForKv.toFixed(1)}G free)`,
   };
 }
 
@@ -677,7 +677,7 @@ function _estimateLlamaContextFit(model, fields, modelCtxMax, modelWeightsGb = 0
     ctx,
     modelGb,
     kvGbPerToken,
-    reason: `~${ctx.toLocaleString()} tokens fits llama.cpp KV (${freeForKv.toFixed(1)}G free ${isUnifiedMode ? 'unified' : 'VRAM'}${reasonSuffix})`,
+    reason: `~${ctx.toLocaleString(globalThis.__exodusLocale)} tokens fits llama.cpp KV (${freeForKv.toFixed(1)}G free ${isUnifiedMode ? 'unified' : 'VRAM'}${reasonSuffix})`,
   };
 }
 
@@ -2019,7 +2019,7 @@ function _rerenderCachedModels() {
           return;
         }
         if (_ctxAutoNote) {
-          _ctxAutoNote.textContent = `Auto ${fit.ctx.toLocaleString()} · ${fit.reason}`;
+          _ctxAutoNote.textContent = `Auto ${fit.ctx.toLocaleString(globalThis.__exodusLocale)} · ${fit.reason}`;
           const _llamaMemoryLabel = String(f.llama_mode || '').toLowerCase() === 'unified' || f.unified_mem
             ? 'unified system memory'
             : 'selected GPU memory';
@@ -3598,7 +3598,7 @@ function _rerenderCachedModels() {
                 ov.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:10050;position:fixed;inset:0;background:rgba(0,0,0,0.4);';
                 const _btnRow = [];
                 if (_recCtx > 1024 && _recCtx < _ctx) {
-                  _btnRow.push(`<button data-vram-action="reduce" class="confirm-btn confirm-btn-primary" style="width:100%;">Reduce ctx to ${_recCtx.toLocaleString()}</button>`);
+                  _btnRow.push(`<button data-vram-action="reduce" class="confirm-btn confirm-btn-primary" style="width:100%;">Reduce ctx to ${_recCtx.toLocaleString(globalThis.__exodusLocale)}</button>`);
                 }
                 if (_canAddGpu) {
                   _btnRow.push(`<button data-vram-action="add_gpus" class="confirm-btn confirm-btn-primary" style="width:100%;">Add GPU${_addGpus.length > 1 ? 's' : ''} ${_addGpus.join(', ')}</button>`);
@@ -3611,7 +3611,7 @@ function _rerenderCachedModels() {
                   +   '<p>Model + KV cache would overflow VRAM on the selected GPU' + (_selIdx.length > 1 ? 's' : '') + '. llama-cpp-python will silently spill to CPU → very slow inference.</p>'
                   +   '<ul style="opacity:0.75;padding-left:18px;">'
                   +     '<li>Model: ~' + _modelGb.toFixed(1) + ' GB</li>'
-                  +     '<li>KV cache (ctx ' + _ctx.toLocaleString() + '): ~' + _kvGb.toFixed(1) + ' GB</li>'
+                  +     '<li>KV cache (ctx ' + _ctx.toLocaleString(globalThis.__exodusLocale) + '): ~' + _kvGb.toFixed(1) + ' GB</li>'
                   +     '<li>Total needed: ~' + _needGb.toFixed(1) + ' GB</li>'
                   +     '<li>Free on GPU ' + _selIdx.join(', ') + ': ~' + _selFreeGb.toFixed(1) + ' GB</li>'
                   +   '</ul>'
