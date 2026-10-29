@@ -3,7 +3,7 @@
 # which raises KeyError on Python 3.13+ (PEP 667). Build patched wheels here so
 # the final image / Cookbook never has to compile the broken sdists. See
 # docker/build-realesrgan-wheels.sh for the full rationale.
-FROM python:3.14.9-slim AS realesrgan-wheels
+FROM python:3.15.0-slim AS realesrgan-wheels
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY scripts/check_ca_trust.py /usr/local/bin/check-ca-trust.py
@@ -14,7 +14,7 @@ RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: --
 COPY docker/build-realesrgan-wheels.sh /usr/local/bin/build-realesrgan-wheels.sh
 RUN bash /usr/local/bin/build-realesrgan-wheels.sh /wheels
 
-FROM python:3.14.9-slim
+FROM python:3.15.0-slim
 
 # System deps. tmux is required by Cookbook for background downloads/serves.
 # openssh-client is required for Cookbook remote server tests, setup, probes,
